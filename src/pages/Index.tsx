@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,11 +20,17 @@ import {
   Zap,
   TestTube,
   Wifi,
-  Database
+  Database,
+  Sprout,
+  Tractor,
+  LogOut,
+  Mail,
+  MessageSquare
 } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
+import IrrigationCycle from '@/components/IrrigationCycle';
 
-const Index = () => {
+const Index = ({ user, onLogout }: { user: any, onLogout: () => void }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [moistureLevel, setMoistureLevel] = useState(65);
   const [temperature, setTemperature] = useState(24);
@@ -116,7 +121,14 @@ const Index = () => {
   const generateReport = () => {
     toast({
       title: "📊 Report Generated",
-      description: "Weekly irrigation report sent to your email.",
+      description: "Weekly irrigation report will be sent to your email (Supabase integration required).",
+    });
+  };
+
+  const sendSMSAlert = () => {
+    toast({
+      title: "📱 SMS Alert",
+      description: "SMS functionality requires Supabase integration for backend services.",
     });
   };
 
@@ -133,129 +145,165 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-blue-50 p-4">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">
-            🌱 Smart Irrigation System
-          </h1>
-          <p className="text-gray-600">
-            Automated soil monitoring, weather integration & intelligent watering
-          </p>
-          <p className="text-sm text-gray-500 mt-2">
-            Current Time: {currentTime.toLocaleString()}
-          </p>
+        {/* Enhanced Header with Agricultural Theme */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 border border-green-200 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-3">
+                <div className="p-3 bg-green-600 rounded-full">
+                  <Sprout className="w-8 h-8 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-4xl font-bold bg-gradient-to-r from-green-700 to-blue-600 bg-clip-text text-transparent">
+                    🌱 AgriSmart Pro
+                  </h1>
+                  <p className="text-gray-600 text-lg">
+                    {user?.farmName || 'Smart Irrigation'} - Precision Agriculture System
+                  </p>
+                </div>
+              </div>
+              <div className="hidden md:flex items-center space-x-3">
+                <Badge className="bg-green-500">
+                  <Tractor className="w-4 h-4 mr-1" />
+                  Farm Active
+                </Badge>
+                <Badge variant="outline" className="border-blue-500 text-blue-600">
+                  <Droplets className="w-4 h-4 mr-1" />
+                  Water Efficient
+                </Badge>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              <div className="text-right hidden sm:block">
+                <p className="text-sm text-gray-600">Welcome, {user?.name}</p>
+                <p className="text-xs text-gray-500">{currentTime.toLocaleString()}</p>
+              </div>
+              <Button onClick={onLogout} variant="outline" size="sm">
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </Button>
+            </div>
+          </div>
         </div>
 
-        {/* Status Overview */}
+        {/* Live Irrigation Cycle Video-like Component */}
+        <IrrigationCycle />
+
+        {/* Enhanced Status Overview with Agricultural Aesthetics */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <Card>
-            <CardContent className="p-4">
+          <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-xl border-0">
+            <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Soil Moisture</p>
-                  <p className={`text-2xl font-bold ${getStatusColor()}`}>{moistureLevel.toFixed(1)}%</p>
+                  <p className="text-blue-100">Soil Moisture</p>
+                  <p className={`text-3xl font-bold`}>{moistureLevel.toFixed(1)}%</p>
+                  <p className="text-sm text-blue-100">Critical: &lt;30%</p>
                 </div>
                 <div className="flex items-center space-x-2">
                   {getStatusIcon()}
-                  <Droplets className="w-8 h-8 text-blue-500" />
+                  <Droplets className="w-10 h-10 text-blue-200" />
                 </div>
               </div>
-              <Progress value={moistureLevel} className="mt-2" />
+              <Progress value={moistureLevel} className="mt-3 bg-blue-300" />
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="p-4">
+          <Card className="bg-gradient-to-br from-orange-500 to-red-500 text-white shadow-xl border-0">
+            <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Temperature</p>
-                  <p className="text-2xl font-bold text-orange-600">{temperature.toFixed(1)}°C</p>
+                  <p className="text-orange-100">Temperature</p>
+                  <p className="text-3xl font-bold">{temperature.toFixed(1)}°C</p>
+                  <p className="text-sm text-orange-100">Optimal: 20-25°C</p>
                 </div>
-                <Thermometer className="w-8 h-8 text-orange-500" />
-              </div>
-              <div className="mt-2 text-sm text-gray-500">
-                Optimal: 20-25°C
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Humidity</p>
-                  <p className="text-2xl font-bold text-blue-600">{humidity.toFixed(1)}%</p>
-                </div>
-                <CloudRain className="w-8 h-8 text-blue-500" />
-              </div>
-              <div className="mt-2 text-sm text-gray-500">
-                Air moisture level
+                <Thermometer className="w-10 h-10 text-orange-200" />
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="p-4">
+          <Card className="bg-gradient-to-br from-cyan-500 to-blue-500 text-white shadow-xl border-0">
+            <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Water Usage</p>
-                  <p className="text-2xl font-bold text-green-600">{waterUsage}L</p>
+                  <p className="text-cyan-100">Air Humidity</p>
+                  <p className="text-3xl font-bold">{humidity.toFixed(1)}%</p>
+                  <p className="text-sm text-cyan-100">Atmospheric moisture</p>
                 </div>
-                <Activity className="w-8 h-8 text-green-500" />
+                <CloudRain className="w-10 h-10 text-cyan-200" />
               </div>
-              <div className="mt-2 text-sm text-gray-500">
-                Today's consumption
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-xl border-0">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-green-100">Water Usage</p>
+                  <p className="text-3xl font-bold">{waterUsage}L</p>
+                  <p className="text-sm text-green-100">Today's consumption</p>
+                </div>
+                <Activity className="w-10 h-10 text-green-200" />
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Irrigation Status */}
-        <Card className={`border-2 ${isIrrigating ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`}>
+        {/* Enhanced Irrigation Status */}
+        <Card className={`border-2 shadow-xl ${isIrrigating ? 'border-blue-500 bg-gradient-to-r from-blue-50 to-cyan-50' : 'border-green-200 bg-gradient-to-r from-green-50 to-emerald-50'}`}>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <div className={`p-3 rounded-full ${isIrrigating ? 'bg-blue-500 animate-pulse' : 'bg-gray-300'}`}>
-                  <Droplets className={`w-6 h-6 ${isIrrigating ? 'text-white' : 'text-gray-600'}`} />
+                <div className={`p-4 rounded-full ${isIrrigating ? 'bg-blue-500 animate-pulse' : 'bg-green-300'} shadow-lg`}>
+                  <Droplets className={`w-8 h-8 ${isIrrigating ? 'text-white' : 'text-green-700'}`} />
                 </div>
                 <div>
-                  <h3 className="text-xl font-semibold">
-                    {isIrrigating ? '🚿 Irrigation Active' : '💧 Irrigation Standby'}
+                  <h3 className="text-2xl font-bold">
+                    {isIrrigating ? '🚿 Irrigation System Active' : '💧 System on Standby'}
                   </h3>
-                  <p className="text-gray-600">
+                  <p className="text-gray-600 text-lg">
                     Last irrigation: {lastIrrigation}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Next scheduled: Based on weather & soil conditions
                   </p>
                 </div>
               </div>
               {isIrrigating && (
-                <Badge variant="default" className="animate-pulse">
-                  <Zap className="w-4 h-4 mr-1" />
-                  ACTIVE
-                </Badge>
+                <div className="flex flex-col items-center space-y-2">
+                  <Badge variant="default" className="animate-pulse bg-blue-500">
+                    <Zap className="w-4 h-4 mr-1" />
+                    IRRIGATING
+                  </Badge>
+                  <div className="text-center">
+                    <p className="text-sm text-blue-600">Zone: A1-A4</p>
+                    <p className="text-xs text-gray-500">15.2 L/min</p>
+                  </div>
+                </div>
               )}
             </div>
           </CardContent>
         </Card>
 
         <Tabs defaultValue="monitoring" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="monitoring">📊 Monitoring</TabsTrigger>
-            <TabsTrigger value="weather">🌤️ Weather</TabsTrigger>
-            <TabsTrigger value="soil-lab">🧪 Soil Lab</TabsTrigger>
-            <TabsTrigger value="reports">📋 Reports</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4 bg-white/80 backdrop-blur-sm">
+            <TabsTrigger value="monitoring">📊 Live Monitoring</TabsTrigger>
+            <TabsTrigger value="weather">🌤️ Weather AI</TabsTrigger>
+            <TabsTrigger value="soil-lab">🧪 Soil Laboratory</TabsTrigger>
+            <TabsTrigger value="reports">📋 Reports & Alerts</TabsTrigger>
           </TabsList>
 
           <TabsContent value="monitoring" className="space-y-4">
-            <Card>
+            <Card className="shadow-xl border-0 bg-white/90">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <Activity className="w-5 h-5" />
-                  <span>Real-time Monitoring</span>
+                  <span>Real-time Field Monitoring</span>
                 </CardTitle>
                 <CardDescription>
-                  Live sensor data from field stations
+                  Live sensor data from agricultural field stations
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -271,8 +319,8 @@ const Index = () => {
                       <XAxis dataKey="time" />
                       <YAxis />
                       <ChartTooltip content={<ChartTooltipContent />} />
-                      <Line type="monotone" dataKey="moisture" stroke="#3b82f6" strokeWidth={2} />
-                      <Line type="monotone" dataKey="temperature" stroke="#f59e0b" strokeWidth={2} />
+                      <Line type="monotone" dataKey="moisture" stroke="#3b82f6" strokeWidth={3} />
+                      <Line type="monotone" dataKey="temperature" stroke="#f59e0b" strokeWidth={3} />
                     </LineChart>
                   </ResponsiveContainer>
                 </ChartContainer>
@@ -280,7 +328,7 @@ const Index = () => {
             </Card>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card>
+              <Card className="shadow-lg border-0 bg-white/90">
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
                     <Database className="w-5 h-5" />
@@ -292,36 +340,36 @@ const Index = () => {
                     <div className="flex items-center justify-between">
                       <span className="flex items-center space-x-2">
                         <Wifi className="w-4 h-4 text-green-500" />
-                        <span>Sensor A1</span>
+                        <span>Field Sensor A1</span>
                       </span>
-                      <Badge variant="outline">Online</Badge>
+                      <Badge variant="outline" className="bg-green-50">Online</Badge>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="flex items-center space-x-2">
                         <Wifi className="w-4 h-4 text-green-500" />
-                        <span>Sensor B2</span>
+                        <span>Weather Station B2</span>
                       </span>
-                      <Badge variant="outline">Online</Badge>
+                      <Badge variant="outline" className="bg-green-50">Online</Badge>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="flex items-center space-x-2">
                         <Wifi className="w-4 h-4 text-green-500" />
-                        <span>Sensor C3</span>
+                        <span>Irrigation Control C3</span>
                       </span>
-                      <Badge variant="outline">Online</Badge>
+                      <Badge variant="outline" className="bg-green-50">Online</Badge>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="shadow-lg border-0 bg-white/90">
                 <CardHeader>
                   <CardTitle>System Health</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <span>Pump Status</span>
+                      <span>Water Pump</span>
                       <Badge className="bg-green-500">Operational</Badge>
                     </div>
                     <div className="flex items-center justify-between">
@@ -332,18 +380,22 @@ const Index = () => {
                       <span>Network</span>
                       <Badge className="bg-green-500">Connected</Badge>
                     </div>
+                    <div className="flex items-center justify-between">
+                      <span>AI Engine</span>
+                      <Badge className="bg-blue-500">Learning</Badge>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="shadow-lg border-0 bg-white/90">
                 <CardHeader>
                   <CardTitle>Quick Actions</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
                     <Button 
-                      className="w-full" 
+                      className="w-full bg-blue-600 hover:bg-blue-700" 
                       onClick={() => {
                         setIsIrrigating(true);
                         setTimeout(() => setIsIrrigating(false), 5000);
@@ -351,11 +403,16 @@ const Index = () => {
                       }}
                       disabled={isIrrigating}
                     >
+                      <Droplets className="w-4 h-4 mr-2" />
                       Manual Irrigation
                     </Button>
                     <Button variant="outline" className="w-full">
                       <Settings className="w-4 h-4 mr-2" />
                       System Settings
+                    </Button>
+                    <Button variant="outline" className="w-full" onClick={sendSMSAlert}>
+                      <MessageSquare className="w-4 h-4 mr-2" />
+                      Send SMS Alert
                     </Button>
                   </div>
                 </CardContent>
@@ -364,30 +421,30 @@ const Index = () => {
           </TabsContent>
 
           <TabsContent value="weather" className="space-y-4">
-            <Card>
+            <Card className="shadow-xl border-0 bg-white/90">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <Sun className="w-5 h-5" />
-                  <span>Weather Forecast Integration</span>
+                  <span>AI-Powered Weather Integration</span>
                 </CardTitle>
                 <CardDescription>
-                  AI-powered weather predictions for optimal irrigation scheduling
+                  Machine learning predictions for optimal irrigation scheduling
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                   {weatherForecast.map((day, index) => (
-                    <Card key={index} className={index === 0 ? 'border-blue-500' : ''}>
+                    <Card key={index} className={`shadow-lg ${index === 0 ? 'border-2 border-blue-500 bg-blue-50' : 'border-0 bg-white'}`}>
                       <CardContent className="p-4 text-center">
-                        <p className="font-semibold">{day.day}</p>
-                        <div className="my-2">
+                        <p className="font-semibold text-lg">{day.day}</p>
+                        <div className="my-3">
                           {day.rain > 50 ? (
-                            <CloudRain className="w-8 h-8 mx-auto text-blue-500" />
+                            <CloudRain className="w-10 h-10 mx-auto text-blue-500" />
                           ) : (
-                            <Sun className="w-8 h-8 mx-auto text-yellow-500" />
+                            <Sun className="w-10 h-10 mx-auto text-yellow-500" />
                           )}
                         </div>
-                        <p className="text-lg font-bold">{day.temp}°C</p>
+                        <p className="text-xl font-bold">{day.temp}°C</p>
                         <p className="text-sm text-gray-600">💧 {day.humidity}%</p>
                         <p className="text-sm text-blue-600">🌧️ {day.rain}%</p>
                       </CardContent>
@@ -395,63 +452,71 @@ const Index = () => {
                   ))}
                 </div>
                 
-                <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-                  <h4 className="font-semibold text-blue-800 mb-2">🤖 AI Irrigation Recommendation</h4>
-                  <p className="text-blue-700">
-                    Based on weather forecast: Reduce irrigation by 40% for next 2 days due to expected rainfall. 
-                    Resume normal schedule on Friday.
+                <div className="mt-6 p-6 bg-gradient-to-r from-blue-50 to-green-50 rounded-lg border-2 border-blue-200">
+                  <h4 className="font-bold text-blue-800 mb-3 text-lg">🤖 AI Irrigation Recommendation</h4>
+                  <p className="text-blue-700 text-base">
+                    Based on weather forecast analysis: Reduce irrigation by 40% for next 2 days due to expected rainfall. 
+                    Resume normal schedule on Friday. Predicted water savings: 280L.
                   </p>
+                  <div className="mt-3 flex items-center space-x-4">
+                    <Badge className="bg-green-500">Water Efficient</Badge>
+                    <Badge variant="outline" className="border-blue-500 text-blue-600">94% Confidence</Badge>
+                  </div>
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
 
           <TabsContent value="soil-lab" className="space-y-4">
-            <Card>
+            <Card className="shadow-xl border-0 bg-white/90">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <TestTube className="w-5 h-5" />
-                  <span>Automated Soil Laboratory</span>
+                  <span>Automated Soil Analysis Laboratory</span>
                 </CardTitle>
                 <CardDescription>
-                  Weekly soil analysis and nutrient monitoring
+                  Weekly automated soil testing and nutrient monitoring for optimal crop health
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <h4 className="font-semibold mb-4">Soil Chemistry</h4>
-                    <div className="space-y-3">
+                  <div className="bg-gradient-to-br from-green-50 to-blue-50 p-6 rounded-lg">
+                    <h4 className="font-bold mb-4 text-lg">Soil Chemistry Analysis</h4>
+                    <div className="space-y-4">
                       <div className="flex items-center justify-between">
-                        <span>pH Level</span>
-                        <span className="font-bold text-green-600">{soilPh.toFixed(1)}</span>
+                        <span className="font-medium">pH Level</span>
+                        <span className="font-bold text-green-600 text-xl">{soilPh.toFixed(1)}</span>
                       </div>
-                      <Progress value={(soilPh - 5.5) / 2.5 * 100} className="h-2" />
-                      <p className="text-sm text-gray-600">Optimal: 6.0 - 7.5</p>
+                      <Progress value={(soilPh - 5.5) / 2.5 * 100} className="h-3" />
+                      <p className="text-sm text-gray-600">Optimal range: 6.0 - 7.5 for most crops</p>
+                      <div className="flex items-center space-x-2">
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                        <span className="text-sm text-green-600">pH levels are optimal</span>
+                      </div>
                     </div>
                   </div>
 
-                  <div>
-                    <h4 className="font-semibold mb-4">Nutrient Levels</h4>
+                  <div className="bg-gradient-to-br from-blue-50 to-purple-50 p-6 rounded-lg">
+                    <h4 className="font-bold mb-4 text-lg">Nutrient Levels (NPK)</h4>
                     <div className="space-y-4">
                       <div>
-                        <div className="flex justify-between mb-1">
-                          <span className="text-sm">Nitrogen (N)</span>
-                          <span className="text-sm font-semibold">{nutrients.nitrogen}%</span>
+                        <div className="flex justify-between mb-2">
+                          <span className="text-sm font-medium">Nitrogen (N)</span>
+                          <span className="text-sm font-bold">{nutrients.nitrogen}%</span>
                         </div>
                         <Progress value={nutrients.nitrogen} className="h-2" />
                       </div>
                       <div>
-                        <div className="flex justify-between mb-1">
-                          <span className="text-sm">Phosphorus (P)</span>
-                          <span className="text-sm font-semibold">{nutrients.phosphorus}%</span>
+                        <div className="flex justify-between mb-2">
+                          <span className="text-sm font-medium">Phosphorus (P)</span>
+                          <span className="text-sm font-bold">{nutrients.phosphorus}%</span>
                         </div>
                         <Progress value={nutrients.phosphorus} className="h-2" />
                       </div>
                       <div>
-                        <div className="flex justify-between mb-1">
-                          <span className="text-sm">Potassium (K)</span>
-                          <span className="text-sm font-semibold">{nutrients.potassium}%</span>
+                        <div className="flex justify-between mb-2">
+                          <span className="text-sm font-medium">Potassium (K)</span>
+                          <span className="text-sm font-bold">{nutrients.potassium}%</span>
                         </div>
                         <Progress value={nutrients.potassium} className="h-2" />
                       </div>
@@ -459,80 +524,98 @@ const Index = () => {
                   </div>
                 </div>
 
-                <div className="mt-6 p-4 bg-green-50 rounded-lg">
-                  <h4 className="font-semibold text-green-800 mb-2">🧪 Latest Test Results</h4>
-                  <p className="text-green-700">
+                <div className="mt-6 p-6 bg-gradient-to-r from-green-100 to-emerald-100 rounded-lg border-2 border-green-300">
+                  <h4 className="font-bold text-green-800 mb-3 text-lg">🧪 Latest Laboratory Results</h4>
+                  <p className="text-green-700 text-base mb-3">
                     Soil health: Excellent. Nutrient balance optimal for current crop cycle. 
-                    Next automated test scheduled in 6 days.
+                    Microorganism activity: High. Organic matter content: 4.2%.
                   </p>
+                  <div className="flex items-center space-x-4">
+                    <Badge className="bg-green-500">Soil Health: A+</Badge>
+                    <Badge variant="outline" className="border-green-500 text-green-600">Next test: 6 days</Badge>
+                  </div>
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
 
           <TabsContent value="reports" className="space-y-4">
-            <Card>
+            <Card className="shadow-xl border-0 bg-white/90">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <FileText className="w-5 h-5" />
-                  <span>Automated Reporting</span>
+                  <span>Automated Reporting & Communication Center</span>
                 </CardTitle>
                 <CardDescription>
-                  Generate and manage system reports
+                  Generate comprehensive reports and send alerts to stakeholders
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Card>
-                      <CardContent className="p-4">
-                        <h4 className="font-semibold mb-2">📊 Weekly Summary</h4>
-                        <ul className="text-sm space-y-1 text-gray-600">
-                          <li>• Total water usage: 1,250L</li>
-                          <li>• Irrigation cycles: 23</li>
-                          <li>• Average soil moisture: 68%</li>
-                          <li>• System uptime: 99.8%</li>
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Card className="border-2 border-blue-200 bg-blue-50">
+                      <CardContent className="p-6">
+                        <h4 className="font-bold mb-4 text-lg">📊 Weekly Performance Summary</h4>
+                        <ul className="text-sm space-y-2 text-gray-700 mb-4">
+                          <li>• Total water usage: 1,250L (-15% vs last week)</li>
+                          <li>• Irrigation cycles: 23 (optimal efficiency)</li>
+                          <li>• Average soil moisture: 68% (target: 65-75%)</li>
+                          <li>• System uptime: 99.8% (5 min maintenance)</li>
+                          <li>• Crop health index: 94% (excellent)</li>
+                          <li>• Weather prediction accuracy: 92%</li>
                         </ul>
                         <Button 
-                          className="w-full mt-3" 
-                          variant="outline"
+                          className="w-full bg-blue-600 hover:bg-blue-700" 
                           onClick={generateReport}
                         >
-                          Generate Report
+                          <Mail className="w-4 h-4 mr-2" />
+                          Email Weekly Report
                         </Button>
                       </CardContent>
                     </Card>
 
-                    <Card>
-                      <CardContent className="p-4">
-                        <h4 className="font-semibold mb-2">🔔 Notifications</h4>
-                        <div className="space-y-2">
+                    <Card className="border-2 border-green-200 bg-green-50">
+                      <CardContent className="p-6">
+                        <h4 className="font-bold mb-4 text-lg">🔔 Alert & Notification Center</h4>
+                        <div className="space-y-3 mb-4">
                           <div className="flex items-center space-x-2 text-sm">
                             <CheckCircle className="w-4 h-4 text-green-500" />
-                            <span>Report sent to admin@farm.com</span>
+                            <span>Weekly report sent to {user?.email}</span>
                           </div>
                           <div className="flex items-center space-x-2 text-sm">
                             <CheckCircle className="w-4 h-4 text-green-500" />
-                            <span>Soil test complete</span>
+                            <span>Soil test analysis complete</span>
                           </div>
                           <div className="flex items-center space-x-2 text-sm">
                             <AlertTriangle className="w-4 h-4 text-yellow-500" />
-                            <span>Low moisture alert sent</span>
+                            <span>Low moisture alert (resolved)</span>
+                          </div>
+                          <div className="flex items-center space-x-2 text-sm">
+                            <MessageSquare className="w-4 h-4 text-blue-500" />
+                            <span>SMS alerts: Requires Supabase setup</span>
                           </div>
                         </div>
+                        <Button 
+                          onClick={sendSMSAlert} 
+                          variant="outline" 
+                          className="w-full border-green-500 text-green-600"
+                        >
+                          <MessageSquare className="w-4 h-4 mr-2" />
+                          Setup SMS Alerts
+                        </Button>
                       </CardContent>
                     </Card>
                   </div>
 
-                  <Card>
-                    <CardContent className="p-4">
-                      <h4 className="font-semibold mb-4">📈 Performance Analytics</h4>
+                  <Card className="border-2 border-purple-200 bg-purple-50">
+                    <CardContent className="p-6">
+                      <h4 className="font-bold mb-4 text-lg">📈 Agricultural Performance Analytics</h4>
                       <ChartContainer
                         config={{
                           usage: { label: "Water Usage (L)", color: "#3b82f6" }
                         }}
                       >
-                        <ResponsiveContainer width="100%" height={200}>
+                        <ResponsiveContainer width="100%" height={250}>
                           <BarChart data={[
                             { day: 'Mon', usage: 180 },
                             { day: 'Tue', usage: 160 },
@@ -546,12 +629,25 @@ const Index = () => {
                             <XAxis dataKey="day" />
                             <YAxis />
                             <ChartTooltip content={<ChartTooltipContent />} />
-                            <Bar dataKey="usage" fill="#3b82f6" />
+                            <Bar dataKey="usage" fill="#3b82f6" radius={[4, 4, 0, 0]} />
                           </BarChart>
                         </ResponsiveContainer>
                       </ChartContainer>
                     </CardContent>
                   </Card>
+
+                  <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-300 rounded-lg p-6">
+                    <h4 className="font-bold text-yellow-800 mb-3 text-lg">🌍 Contributing to Global Food Security</h4>
+                    <p className="text-yellow-700 mb-4">
+                      Your smart irrigation system is part of a global network helping achieve UN Sustainable Development Goal 2: Zero Hunger. 
+                      This month you've saved 1,250L of water while maintaining optimal crop yield.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      <Badge className="bg-yellow-500">Water Saved: 1,250L</Badge>
+                      <Badge className="bg-green-500">Yield Increase: +12%</Badge>
+                      <Badge className="bg-blue-500">CO₂ Reduced: 45kg</Badge>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
