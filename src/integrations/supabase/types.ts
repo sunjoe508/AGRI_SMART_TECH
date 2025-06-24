@@ -9,6 +9,66 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      admin_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      daily_reports: {
+        Row: {
+          created_at: string
+          crop_suggestions: string[] | null
+          id: string
+          irrigation_summary: Json | null
+          recommendations: string[] | null
+          report_date: string
+          sensor_summary: Json | null
+          sent_at: string | null
+          user_id: string
+          weather_summary: Json | null
+        }
+        Insert: {
+          created_at?: string
+          crop_suggestions?: string[] | null
+          id?: string
+          irrigation_summary?: Json | null
+          recommendations?: string[] | null
+          report_date: string
+          sensor_summary?: Json | null
+          sent_at?: string | null
+          user_id: string
+          weather_summary?: Json | null
+        }
+        Update: {
+          created_at?: string
+          crop_suggestions?: string[] | null
+          id?: string
+          irrigation_summary?: Json | null
+          recommendations?: string[] | null
+          report_date?: string
+          sensor_summary?: Json | null
+          sent_at?: string | null
+          user_id?: string
+          weather_summary?: Json | null
+        }
+        Relationships: []
+      }
       irrigation_logs: {
         Row: {
           created_at: string
@@ -77,6 +137,63 @@ export type Database = {
           ward?: string
         }
         Relationships: []
+      }
+      orders: {
+        Row: {
+          created_at: string
+          delivery_address: string | null
+          id: string
+          order_notes: string | null
+          product_id: string
+          quantity: number
+          status: string | null
+          total_amount: number
+          updated_at: string
+          user_id: string
+          vendor_id: string
+        }
+        Insert: {
+          created_at?: string
+          delivery_address?: string | null
+          id?: string
+          order_notes?: string | null
+          product_id: string
+          quantity: number
+          status?: string | null
+          total_amount: number
+          updated_at?: string
+          user_id: string
+          vendor_id: string
+        }
+        Update: {
+          created_at?: string
+          delivery_address?: string | null
+          id?: string
+          order_notes?: string | null
+          product_id?: string
+          quantity?: number
+          status?: string | null
+          total_amount?: number
+          updated_at?: string
+          user_id?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       otp_messages: {
         Row: {
@@ -219,12 +336,95 @@ export type Database = {
         }
         Relationships: []
       }
+      vendor_products: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          price: number | null
+          product_name: string
+          stock_quantity: number | null
+          unit: string | null
+          vendor_id: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          price?: number | null
+          product_name: string
+          stock_quantity?: number | null
+          unit?: string | null
+          vendor_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          price?: number | null
+          product_name?: string
+          stock_quantity?: number | null
+          unit?: string | null
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_products_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendors: {
+        Row: {
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          id: string
+          location: string | null
+          name: string
+          rating: number | null
+          specialization: string[] | null
+        }
+        Insert: {
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          location?: string | null
+          name: string
+          rating?: number | null
+          specialization?: string[] | null
+        }
+        Update: {
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          location?: string | null
+          name?: string
+          rating?: number | null
+          specialization?: string[] | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin: {
+        Args: { user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

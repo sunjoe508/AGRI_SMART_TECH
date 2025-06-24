@@ -1,223 +1,258 @@
 
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { 
-  Sprout, 
-  Settings, 
-  Cloud, 
-  Phone, 
-  MessageSquare, 
-  BarChart3, 
-  Droplets,
-  User,
-  MapPin,
-  Bell,
-  LogOut
-} from 'lucide-react';
+import { LogOut, Home, User, Droplets, BarChart3, MessageSquare, Phone, ShoppingCart, Settings, Cloud } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import IrrigationCycle from "@/components/IrrigationCycle";
 import ProfileManagement from "@/components/ProfileManagement";
-import WeatherDashboard from "@/components/WeatherDashboard";
+import EnhancedIrrigationCycle from "@/components/EnhancedIrrigationCycle";
 import SensorMonitoring from "@/components/SensorMonitoring";
-import OTPManager from "@/components/OTPManager";
 import CustomerSupport from "@/components/CustomerSupport";
+import OTPManager from "@/components/OTPManager";
+import VendorMarketplace from "@/components/VendorMarketplace";
+import WeatherWidget from "@/components/WeatherWidget";
+import AdminDashboard from "@/components/AdminDashboard";
 
 interface DashboardProps {
   user: any;
 }
 
 const Dashboard = ({ user }: DashboardProps) => {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  const handleLogout = async () => {
+  useEffect(() => {
+    checkAdminStatus();
+  }, [user]);
+
+  const checkAdminStatus = async () => {
     try {
-      await supabase.auth.signOut();
+      const { data, error } = await supabase
+        .from('admin_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!error && data?.role === 'admin') {
+        setIsAdmin(true);
+      }
+    } catch (error) {
+      // User is not admin, continue as normal user
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
       toast({
-        title: "👋 Goodbye!",
-        description: "Successfully logged out of AgriSmart",
+        title: "👋 Signed Out",
+        description: "You have been successfully signed out",
       });
     } catch (error: any) {
       toast({
-        title: "❌ Logout Error",
+        title: "❌ Sign Out Failed",
         description: error.message,
         variant: "destructive"
       });
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-blue-50">
-      {/* Header */}
-      <div className="bg-white/80 backdrop-blur-sm border-b border-green-200 p-4 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <Sprout className="w-8 h-8 text-green-600" />
-              <div>
-                <h1 className="text-2xl font-bold text-green-800">AgriSmart Kenya</h1>
-                <p className="text-sm text-gray-600">Smart Irrigation Dashboard</p>
-              </div>
-            </div>
-            <Badge className="bg-green-500">🇰🇪 Kenya</Badge>
-          </div>
-          <div className="flex items-center space-x-4">
-            <div className="text-right">
-              <p className="text-sm font-medium text-gray-700">
-                {user?.user_metadata?.full_name || user?.email}
-              </p>
-              <p className="text-xs text-gray-500">
-                {user?.user_metadata?.county || 'Kenya'}
-              </p>
-            </div>
-            <Button onClick={handleLogout} variant="outline" size="sm">
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
-            </Button>
-          </div>
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-100 via-emerald-50 to-blue-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <p className="text-green-800 font-semibold">Loading Dashboard...</p>
         </div>
       </div>
+    );
+  }
 
-      <div className="max-w-7xl mx-auto p-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-7 mb-8 bg-white/50 backdrop-blur-sm">
-            <TabsTrigger 
-              value="dashboard" 
-              className="flex items-center space-x-2 data-[state=active]:bg-green-500 data-[state=active]:text-white"
-            >
-              <BarChart3 className="w-4 h-4" />
-              <span className="hidden sm:inline">Dashboard</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="irrigation"
-              className="flex items-center space-x-2 data-[state=active]:bg-blue-500 data-[state=active]:text-white"
-            >
-              <Droplets className="w-4 h-4" />
-              <span className="hidden sm:inline">Irrigation</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="weather"
-              className="flex items-center space-x-2 data-[state=active]:bg-orange-500 data-[state=active]:text-white"
-            >
-              <Cloud className="w-4 h-4" />
-              <span className="hidden sm:inline">Weather</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="profile"
-              className="flex items-center space-x-2 data-[state=active]:bg-purple-500 data-[state=active]:text-white"
-            >
-              <User className="w-4 h-4" />
-              <span className="hidden sm:inline">Profile</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="otp"
-              className="flex items-center space-x-2 data-[state=active]:bg-indigo-500 data-[state=active]:text-white"
-            >
-              <Bell className="w-4 h-4" />
-              <span className="hidden sm:inline">OTP</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="support"
-              className="flex items-center space-x-2 data-[state=active]:bg-red-500 data-[state=active]:text-white"
-            >
-              <MessageSquare className="w-4 h-4" />
-              <span className="hidden sm:inline">Support</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="sensors"
-              className="flex items-center space-x-2 data-[state=active]:bg-teal-500 data-[state=active]:text-white"
-            >
-              <Settings className="w-4 h-4" />
-              <span className="hidden sm:inline">Sensors</span>
-            </TabsTrigger>
-          </TabsList>
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-green-100 via-emerald-50 to-blue-100 bg-fixed"
+         style={{
+           backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2334d399' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+         }}>
+      
+      {/* Dynamic Farm Background Images */}
+      <div className="fixed inset-0 opacity-5 pointer-events-none">
+        <div className="absolute top-10 left-10 text-6xl">🌾</div>
+        <div className="absolute top-20 right-20 text-5xl">🚜</div>
+        <div className="absolute bottom-20 left-20 text-7xl">🌽</div>
+        <div className="absolute bottom-10 right-10 text-6xl">💧</div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-8xl">🏡</div>
+      </div>
 
-          <TabsContent value="dashboard" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-              <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-green-100">Active Zones</p>
-                      <p className="text-3xl font-bold">4</p>
-                      <p className="text-sm text-green-100">Irrigation running</p>
-                    </div>
-                    <Droplets className="w-12 h-12 text-green-200" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-blue-100">Water Saved</p>
-                      <p className="text-3xl font-bold">1,240L</p>
-                      <p className="text-sm text-blue-100">This week</p>
-                    </div>
-                    <Cloud className="w-12 h-12 text-blue-200" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-gradient-to-r from-orange-500 to-orange-600 text-white">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-orange-100">Temperature</p>
-                      <p className="text-3xl font-bold">28°C</p>
-                      <p className="text-sm text-orange-100">Current</p>
-                    </div>
-                    <MapPin className="w-12 h-12 text-orange-200" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-purple-100">Alerts Sent</p>
-                      <p className="text-3xl font-bold">12</p>
-                      <p className="text-sm text-purple-100">This month</p>
-                    </div>
-                    <Bell className="w-12 h-12 text-purple-200" />
-                  </div>
-                </CardContent>
-              </Card>
+      <div className="relative z-10">
+        {/* Header */}
+        <header className="bg-white/90 backdrop-blur-sm shadow-lg border-b-4 border-green-500">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center space-x-3">
+                <div className="text-3xl">🌱</div>
+                <div>
+                  <h1 className="text-2xl font-bold text-green-800">AgriSmart</h1>
+                  <p className="text-sm text-green-600">Smart Farming Management System</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center space-x-4">
+                <div className="text-right">
+                  <p className="text-sm text-gray-600">Welcome back,</p>
+                  <p className="font-semibold text-green-800">{user?.email}</p>
+                  {isAdmin && (
+                    <span className="inline-block px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
+                      Admin
+                    </span>
+                  )}
+                </div>
+                <Button 
+                  onClick={handleSignOut}
+                  variant="outline"
+                  className="border-green-500 text-green-700 hover:bg-green-50"
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Sign Out
+                </Button>
+              </div>
             </div>
+          </div>
+        </header>
 
-            <IrrigationCycle />
-          </TabsContent>
+        {/* Main Content */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <Tabs defaultValue={isAdmin ? "admin" : "overview"} className="space-y-6">
+            <TabsList className="grid grid-cols-4 md:grid-cols-8 lg:grid-cols-9 gap-2 bg-white/80 backdrop-blur-sm p-2 rounded-lg shadow-lg">
+              {isAdmin && (
+                <TabsTrigger value="admin" className="flex items-center space-x-2 text-xs lg:text-sm">
+                  <Settings className="w-4 h-4" />
+                  <span className="hidden lg:inline">Admin</span>
+                </TabsTrigger>
+              )}
+              <TabsTrigger value="overview" className="flex items-center space-x-2 text-xs lg:text-sm">
+                <Home className="w-4 h-4" />
+                <span className="hidden lg:inline">Overview</span>
+              </TabsTrigger>
+              <TabsTrigger value="profile" className="flex items-center space-x-2 text-xs lg:text-sm">
+                <User className="w-4 h-4" />
+                <span className="hidden lg:inline">Profile</span>
+              </TabsTrigger>
+              <TabsTrigger value="irrigation" className="flex items-center space-x-2 text-xs lg:text-sm">
+                <Droplets className="w-4 h-4" />
+                <span className="hidden lg:inline">Irrigation</span>
+              </TabsTrigger>
+              <TabsTrigger value="sensors" className="flex items-center space-x-2 text-xs lg:text-sm">
+                <BarChart3 className="w-4 h-4" />
+                <span className="hidden lg:inline">Sensors</span>
+              </TabsTrigger>
+              <TabsTrigger value="marketplace" className="flex items-center space-x-2 text-xs lg:text-sm">
+                <ShoppingCart className="w-4 h-4" />
+                <span className="hidden lg:inline">Shop</span>
+              </TabsTrigger>
+              <TabsTrigger value="weather" className="flex items-center space-x-2 text-xs lg:text-sm">
+                <Cloud className="w-4 h-4" />
+                <span className="hidden lg:inline">Weather</span>
+              </TabsTrigger>
+              <TabsTrigger value="support" className="flex items-center space-x-2 text-xs lg:text-sm">
+                <MessageSquare className="w-4 h-4" />
+                <span className="hidden lg:inline">Support</span>
+              </TabsTrigger>
+              <TabsTrigger value="otp" className="flex items-center space-x-2 text-xs lg:text-sm">
+                <Phone className="w-4 h-4" />
+                <span className="hidden lg:inline">Reports</span>
+              </TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="irrigation">
-            <IrrigationCycle />
-          </TabsContent>
+            {isAdmin && (
+              <TabsContent value="admin" className="space-y-6">
+                <AdminDashboard />
+              </TabsContent>
+            )}
 
-          <TabsContent value="weather">
-            <WeatherDashboard />
-          </TabsContent>
+            <TabsContent value="overview" className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2">
+                  <EnhancedIrrigationCycle user={user} />
+                </div>
+                <div>
+                  <WeatherWidget />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <SensorMonitoring user={user} />
+                <VendorMarketplace user={user} />
+              </div>
+            </TabsContent>
 
-          <TabsContent value="profile">
-            <ProfileManagement user={user} />
-          </TabsContent>
+            <TabsContent value="profile" className="space-y-6">
+              <ProfileManagement user={user} />
+            </TabsContent>
 
-          <TabsContent value="otp">
-            <OTPManager user={user} />
-          </TabsContent>
+            <TabsContent value="irrigation" className="space-y-6">
+              <EnhancedIrrigationCycle user={user} />
+            </TabsContent>
 
-          <TabsContent value="support">
-            <CustomerSupport user={user} />
-          </TabsContent>
+            <TabsContent value="sensors" className="space-y-6">
+              <SensorMonitoring user={user} />
+            </TabsContent>
 
-          <TabsContent value="sensors">
-            <SensorMonitoring user={user} />
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="marketplace" className="space-y-6">
+              <VendorMarketplace user={user} />
+            </TabsContent>
+
+            <TabsContent value="weather" className="space-y-6">
+              <WeatherWidget />
+            </TabsContent>
+
+            <TabsContent value="support" className="space-y-6">
+              <CustomerSupport user={user} />
+            </TabsContent>
+
+            <TabsContent value="otp" className="space-y-6">
+              <OTPManager user={user} />
+            </TabsContent>
+          </Tabs>
+        </div>
+
+        {/* Footer */}
+        <footer className="bg-green-800 text-white mt-16">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div>
+                <h3 className="text-lg font-semibold mb-4">🌱 AgriSmart</h3>
+                <p className="text-green-200">
+                  Empowering farmers with smart technology for sustainable agriculture and improved crop yields.
+                </p>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
+                <ul className="space-y-2 text-green-200">
+                  <li>• Irrigation Management</li>
+                  <li>• Sensor Monitoring</li>
+                  <li>• Weather Forecasting</li>
+                  <li>• Vendor Marketplace</li>
+                </ul>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Support</h3>
+                <ul className="space-y-2 text-green-200">
+                  <li>📞 +254 700 000 000</li>
+                  <li>📧 support@agrismart.co.ke</li>
+                  <li>🕐 24/7 Customer Support</li>
+                </ul>
+              </div>
+            </div>
+            <div className="border-t border-green-700 mt-8 pt-8 text-center text-green-200">
+              <p>&copy; 2024 AgriSmart. All rights reserved. Made with ❤️ for Kenyan farmers.</p>
+            </div>
+          </div>
+        </footer>
       </div>
     </div>
   );

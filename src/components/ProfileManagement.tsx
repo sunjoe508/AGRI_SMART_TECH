@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,9 +6,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, Phone, MapPin, Sprout, Save, Upload } from 'lucide-react';
+import { User, Phone, MapPin, Sprout, Save } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import ProfilePhotoUpload from './ProfilePhotoUpload';
 
 interface ProfileManagementProps {
   user: any;
@@ -28,7 +28,6 @@ const ProfileManagement = ({ user }: ProfileManagementProps) => {
     profile_picture_url: ''
   });
   const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const { toast } = useToast();
 
   const kenyanCounties = [
@@ -137,6 +136,10 @@ const ProfileManagement = ({ user }: ProfileManagementProps) => {
     }
   };
 
+  const handlePhotoUpdate = (url: string) => {
+    setProfile(prev => ({ ...prev, profile_picture_url: url }));
+  };
+
   return (
     <div className="space-y-6">
       <Card className="bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-200">
@@ -155,10 +158,11 @@ const ProfileManagement = ({ user }: ProfileManagementProps) => {
                 {profile.full_name ? profile.full_name.split(' ').map(n => n[0]).join('') : 'U'}
               </AvatarFallback>
             </Avatar>
-            <Button variant="outline" disabled={uploading}>
-              <Upload className="w-4 h-4 mr-2" />
-              {uploading ? 'Uploading...' : 'Upload Photo'}
-            </Button>
+            <ProfilePhotoUpload
+              userId={user.id}
+              currentPhotoUrl={profile.profile_picture_url}
+              onPhotoUpdate={handlePhotoUpdate}
+            />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
