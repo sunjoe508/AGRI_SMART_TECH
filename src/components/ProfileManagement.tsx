@@ -74,7 +74,7 @@ const ProfileManagement = ({ user }: ProfileManagementProps) => {
           sub_county: data.sub_county || '',
           ward: data.ward || '',
           farm_name: data.farm_name || '',
-          farm_size_acres: data.farm_size_acres || '',
+          farm_size_acres: data.farm_size_acres ? String(data.farm_size_acres) : '',
           crop_types: data.crop_types || [],
           profile_picture_url: data.profile_picture_url || ''
         });
@@ -95,8 +95,15 @@ const ProfileManagement = ({ user }: ProfileManagementProps) => {
         .from('profiles')
         .upsert({
           id: user.id,
-          ...profile,
-          updated_at: new Date().toISOString()
+          full_name: profile.full_name,
+          phone_number: profile.phone_number,
+          county: profile.county,
+          sub_county: profile.sub_county,
+          ward: profile.ward,
+          farm_name: profile.farm_name,
+          farm_size_acres: profile.farm_size_acres ? parseFloat(profile.farm_size_acres) : null,
+          crop_types: profile.crop_types,
+          profile_picture_url: profile.profile_picture_url
         });
 
       if (error) throw error;
