@@ -56,7 +56,14 @@ const SensorRegistration = ({ user, onSensorUpdate }: SensorRegistrationProps) =
         .eq('user_id', user.id);
 
       if (error) throw error;
-      setSensors(data || []);
+      
+      // Type cast the data to match our interface
+      const typedSensors: RegisteredSensor[] = (data || []).map(sensor => ({
+        ...sensor,
+        status: sensor.status as 'online' | 'offline'
+      }));
+      
+      setSensors(typedSensors);
     } catch (error: any) {
       console.error('Error fetching sensors:', error);
     }
