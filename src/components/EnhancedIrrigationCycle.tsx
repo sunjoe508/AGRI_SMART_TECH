@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Play, Pause, Square, Droplets, Clock, Thermometer, Gauge } from 'lucide-react';
+import { Play, Pause, Square, Droplets, Clock, Thermometer, Gauge, WifiOff } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -18,6 +18,8 @@ interface IrrigationZone {
   soilMoisture: number;
   temperature: number;
   status: 'idle' | 'running' | 'paused' | 'completed';
+  sensorConnected: boolean;
+  lastSensorReading: string | null;
 }
 
 interface EnhancedIrrigationCycleProps {
@@ -25,43 +27,14 @@ interface EnhancedIrrigationCycleProps {
 }
 
 const EnhancedIrrigationCycle = ({ user }: EnhancedIrrigationCycleProps) => {
-  const [zones, setZones] = useState<IrrigationZone[]>([
-    {
-      id: '1',
-      name: 'Zone A - Maize Field',
-      isActive: false,
-      progress: 0,
-      duration: 30,
-      waterAmount: 150,
-      soilMoisture: 45,
-      temperature: 24,
-      status: 'idle'
-    },
-    {
-      id: '2',
-      name: 'Zone B - Vegetable Garden',
-      isActive: false,
-      progress: 0,
-      duration: 20,
-      waterAmount: 80,
-      soilMoisture: 38,
-      temperature: 26,
-      status: 'idle'
-    },
-    {
-      id: '3',
-      name: 'Zone C - Bean Field',
-      isActive: false,
-      progress: 0,
-      duration: 25,
-      waterAmount: 120,
-      soilMoisture: 52,
-      temperature: 23,
-      status: 'idle'
-    }
-  ]);
+  const [zones, setZones] = useState<IrrigationZone[]>([]);
   const [globalStatus, setGlobalStatus] = useState<'idle' | 'running' | 'paused'>('idle');
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+
+  useEffect(() => {
+    initializeZones();
+  }, []);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -74,15 +47,10 @@ const EnhancedIrrigationCycle = ({ user }: EnhancedIrrigationCycleProps) => {
               const newProgress = Math.min(zone.progress + (100 / (zone.duration * 10)), 100);
               const newStatus = newProgress === 100 ? 'completed' : 'running';
               
-              // Update soil moisture as irrigation progresses
-              const moistureIncrease = (newProgress - zone.progress) * 0.3;
-              const newMoisture = Math.min(zone.soilMoisture + moistureIncrease, 80);
-              
               return {
                 ...zone,
                 progress: newProgress,
-                status: newStatus,
-                soilMoisture: Math.round(newMoisture)
+                status: newStatus
               };
             }
             return zone;
@@ -96,7 +64,82 @@ const EnhancedIrrigationCycle = ({ user }: EnhancedIrrigationCycleProps) => {
     };
   }, [globalStatus]);
 
+  const initializeZones = async () => {
+    try {
+      // Fetch registered sensors to determine real zones
+      const { data: sensors, error } = await supabase
+        .from('registered_sensors')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('sensor_type', 'moisture');
+
+      if (error) throw error;
+
+      if (!sensors || sensors.length === 0) {
+        // No sensors registered, show empty state
+        setZones([]);
+        setLoading(false);
+        return;
+      }
+
+      // Create zones based on registered sensors
+      const zonesData: IrrigationZone[] = [];
+      
+      for (const sensor of sensors) {
+        // Get latest sensor reading
+        const { data: latestReading } = await supabase
+          .from('sensor_data')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('location_zone', sensor.location_zone)
+          .eq('sensor_type', 'moisture')
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        const reading = latestReading?.[0];
+        const moistureLevel = reading ? reading.value : 0;
+        
+        zonesData.push({
+          id: sensor.id,
+          name: `${sensor.location_zone} - ${sensor.name}`,
+          isActive: false,
+          progress: 0,
+          duration: 30, // Default duration
+          waterAmount: 150, // Default amount
+          soilMoisture: moistureLevel,
+          temperature: 0, // Will be fetched from temperature sensor if available
+          status: 'idle',
+          sensorConnected: sensor.status === 'online',
+          lastSensorReading: reading?.created_at || null
+        });
+      }
+
+      setZones(zonesData);
+      
+    } catch (error: any) {
+      console.error('Error initializing zones:', error);
+      toast({
+        title: "❌ Initialization Error",
+        description: "Failed to load irrigation zones",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const startIrrigation = async (zoneId: string) => {
+    const zone = zones.find(z => z.id === zoneId);
+    
+    if (!zone?.sensorConnected) {
+      toast({
+        title: "❌ Sensor Offline",
+        description: "Cannot start irrigation. Sensor is not connected.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       setZones(prevZones =>
         prevZones.map(zone =>
@@ -109,7 +152,7 @@ const EnhancedIrrigationCycle = ({ user }: EnhancedIrrigationCycleProps) => {
 
       toast({
         title: "🚿 Irrigation Started",
-        description: `Irrigation cycle started for ${zones.find(z => z.id === zoneId)?.name}`,
+        description: `Irrigation cycle started for ${zone?.name}`,
       });
     } catch (error: any) {
       toast({
@@ -148,10 +191,10 @@ const EnhancedIrrigationCycle = ({ user }: EnhancedIrrigationCycleProps) => {
             zone: zone.name,
             duration_minutes: Math.round((zone.progress / 100) * zone.duration),
             water_amount_liters: Math.round((zone.progress / 100) * zone.waterAmount),
-            soil_moisture_before: 45,
-            soil_moisture_after: zone.soilMoisture,
+            soil_moisture_before: zone.soilMoisture,
+            soil_moisture_after: zone.soilMoisture + (zone.progress / 100) * 20, // Estimated increase
             temperature: zone.temperature,
-            humidity: Math.floor(Math.random() * 20) + 60 // Simulated humidity
+            humidity: 60 // Default value
           });
 
         if (error) throw error;
@@ -192,6 +235,36 @@ const EnhancedIrrigationCycle = ({ user }: EnhancedIrrigationCycleProps) => {
     }
   };
 
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center">Loading irrigation system...</div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (zones.length === 0) {
+    return (
+      <Card className="bg-gradient-to-r from-blue-50 to-cyan-50 border-2 border-blue-200">
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Droplets className="w-6 h-6 text-blue-600" />
+            <span>Smart Irrigation System</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="text-center py-8">
+          <WifiOff className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+          <h3 className="text-lg font-semibold mb-2">No Irrigation Zones Available</h3>
+          <p className="text-gray-600">
+            Register moisture sensors to create irrigation zones and start automated watering.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <Card className="bg-gradient-to-r from-blue-50 to-cyan-50 border-2 border-blue-200">
@@ -208,7 +281,7 @@ const EnhancedIrrigationCycle = ({ user }: EnhancedIrrigationCycleProps) => {
           {/* Irrigation Visualization */}
           <div className="bg-gradient-to-b from-green-100 to-green-200 p-6 rounded-lg">
             <div className="text-center text-lg font-semibold text-green-800 mb-4">
-              🌱 Farm Irrigation Layout 🌱
+              🌱 Real Sensor-Based Irrigation 🌱
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {zones.map((zone) => (
@@ -217,13 +290,14 @@ const EnhancedIrrigationCycle = ({ user }: EnhancedIrrigationCycleProps) => {
                   className={`relative p-4 rounded-lg border-2 transition-all ${
                     zone.isActive
                       ? 'border-blue-500 bg-blue-50 shadow-lg'
-                      : 'border-green-300 bg-green-50'
+                      : zone.sensorConnected
+                      ? 'border-green-300 bg-green-50'
+                      : 'border-red-300 bg-red-50'
                   }`}
                 >
                   <div className="text-center">
                     <div className="text-4xl mb-2">
-                      {zone.name.includes('Maize') ? '🌽' : 
-                       zone.name.includes('Vegetable') ? '🥕' : '🫘'}
+                      {zone.sensorConnected ? '🌿' : '⚠️'}
                     </div>
                     <div className="font-semibold text-sm">{zone.name}</div>
                     
@@ -231,6 +305,12 @@ const EnhancedIrrigationCycle = ({ user }: EnhancedIrrigationCycleProps) => {
                       <div className="mt-2">
                         <div className="text-2xl animate-pulse">💧</div>
                         <div className="text-xs text-blue-600">Irrigating...</div>
+                      </div>
+                    )}
+                    
+                    {!zone.sensorConnected && (
+                      <div className="mt-2">
+                        <div className="text-xs text-red-600">Sensor Offline</div>
                       </div>
                     )}
                   </div>
@@ -255,6 +335,14 @@ const EnhancedIrrigationCycle = ({ user }: EnhancedIrrigationCycleProps) => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {/* Sensor Status */}
+                  <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                    <span className="text-sm">Sensor Status:</span>
+                    <Badge variant={zone.sensorConnected ? 'default' : 'destructive'}>
+                      {zone.sensorConnected ? 'Connected' : 'Offline'}
+                    </Badge>
+                  </div>
+
                   {/* Progress Bar */}
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
@@ -289,6 +377,7 @@ const EnhancedIrrigationCycle = ({ user }: EnhancedIrrigationCycleProps) => {
                     {zone.status === 'idle' && (
                       <Button
                         onClick={() => startIrrigation(zone.id)}
+                        disabled={!zone.sensorConnected}
                         className="flex-1 bg-green-600 hover:bg-green-700"
                       >
                         <Play className="w-4 h-4 mr-2" />
