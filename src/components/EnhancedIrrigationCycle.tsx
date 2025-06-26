@@ -8,6 +8,16 @@ import { Play, Pause, Square, Droplets, Clock, Thermometer, Gauge, WifiOff } fro
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
+interface RegisteredSensor {
+  id: string;
+  name: string;
+  ip_address: string;
+  sensor_type: string;
+  location_zone: string;
+  status: 'online' | 'offline';
+  last_ping: string | null;
+}
+
 interface IrrigationZone {
   id: string;
   name: string;
@@ -85,7 +95,7 @@ const EnhancedIrrigationCycle = ({ user }: EnhancedIrrigationCycleProps) => {
       // Create zones based on registered sensors
       const zonesData: IrrigationZone[] = [];
       
-      for (const sensor of sensors) {
+      for (const sensor of sensors as RegisteredSensor[]) {
         // Get latest sensor reading
         const { data: latestReading } = await supabase
           .from('sensor_data')

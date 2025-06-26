@@ -18,6 +18,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 
+interface RegisteredSensor {
+  id: string;
+  name: string;
+  ip_address: string;
+  sensor_type: string;
+  location_zone: string;
+  status: 'online' | 'offline';
+  last_ping: string | null;
+}
+
 interface RealSensorData {
   id: string;
   sensor_type: string;
@@ -68,14 +78,19 @@ const RealSensorMonitoring = ({ user }: RealSensorMonitoringProps) => {
       // Fetch latest readings from each online sensor
       const allSensorData: RealSensorData[] = [];
       
-      for (const sensor of sensors) {
+      for (const sensor of sensors as RegisteredSensor[]) {
         if (sensor.status === 'online') {
           try {
-            // Fetch data from actual sensor
+            // Fetch data from actual sensor with proper AbortController
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
+            
             const response = await fetch(`http://${sensor.ip_address}/data`, {
               method: 'GET',
-              timeout: 5000
+              signal: controller.signal
             });
+            
+            clearTimeout(timeoutId);
             
             if (response.ok) {
               const data = await response.json();

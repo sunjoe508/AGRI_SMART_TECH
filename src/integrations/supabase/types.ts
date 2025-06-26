@@ -273,6 +273,45 @@ export type Database = {
         }
         Relationships: []
       }
+      registered_sensors: {
+        Row: {
+          created_at: string
+          id: string
+          ip_address: string
+          last_ping: string | null
+          location_zone: string
+          name: string
+          sensor_type: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ip_address: string
+          last_ping?: string | null
+          location_zone: string
+          name: string
+          sensor_type: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ip_address?: string
+          last_ping?: string | null
+          location_zone?: string
+          name?: string
+          sensor_type?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       sensor_data: {
         Row: {
           created_at: string
