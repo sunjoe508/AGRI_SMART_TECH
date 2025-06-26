@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Cloud, Sun, CloudRain, Wind, Thermometer, Droplets, AlertTriangle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface WeatherData {
   temperature: number;
@@ -40,62 +41,26 @@ const WeatherWidget = () => {
       const position = await getCurrentPosition();
       const { latitude, longitude } = position.coords;
       
-      // Fetch weather data from OpenWeatherMap API
-      // Note: You'll need to add your API key to Supabase secrets
-      const API_KEY = process.env.REACT_APP_WEATHER_API_KEY;
-      
-      if (!API_KEY) {
-        throw new Error('Weather API key not configured');
-      }
-      
-      const response = await fetch(
-        `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${API_KEY}&units=metric`
-      );
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch weather data');
-      }
-      
-      const data = await response.json();
-      
-      // Fetch 5-day forecast
-      const forecastResponse = await fetch(
-        `https://api.openweathermap.org/data/2.5/forecast?lat=${latitude}&lon=${longitude}&appid=${API_KEY}&units=metric`
-      );
-      
-      const forecastData = await forecastResponse.json();
-      
-      // Process forecast data
-      const forecast = processForecastData(forecastData);
-      
-      setWeather({
-        temperature: Math.round(data.main.temp),
-        humidity: data.main.humidity,
-        windSpeed: Math.round(data.wind.speed * 3.6), // Convert m/s to km/h
-        condition: data.weather[0].main,
-        location: data.name,
-        forecast: forecast
+      // Call our edge function for weather data
+      const { data, error } = await supabase.functions.invoke('get-weather', {
+        body: {
+          lat: latitude,
+          lon: longitude
+        }
       });
+
+      if (error) throw error;
+
+      setWeather(data);
       
     } catch (error: any) {
       console.error('Weather fetch error:', error);
       setError(error.message);
       
-      // Show fallback message
       toast({
         title: "⚠️ Weather Service Unavailable",
-        description: "Unable to fetch real weather data. Please configure weather API key.",
+        description: "Unable to fetch real weather data. Please check your location settings.",
         variant: "destructive"
-      });
-      
-      // Set fallback data indicating service is unavailable
-      setWeather({
-        temperature: 0,
-        humidity: 0,
-        windSpeed: 0,
-        condition: 'Unavailable',
-        location: 'Location Unknown',
-        forecast: []
       });
       
     } finally {
@@ -117,33 +82,6 @@ const WeatherWidget = () => {
     });
   };
 
-  const processForecastData = (data: any) => {
-    const dailyData: any = {};
-    
-    data.list.forEach((item: any) => {
-      const date = new Date(item.dt * 1000);
-      const day = date.toLocaleDateString('en-US', { weekday: 'short' });
-      
-      if (!dailyData[day]) {
-        dailyData[day] = {
-          day,
-          high: item.main.temp,
-          low: item.main.temp,
-          condition: item.weather[0].main
-        };
-      } else {
-        dailyData[day].high = Math.max(dailyData[day].high, item.main.temp);
-        dailyData[day].low = Math.min(dailyData[day].low, item.main.temp);
-      }
-    });
-    
-    return Object.values(dailyData).slice(0, 5).map((day: any) => ({
-      ...day,
-      high: Math.round(day.high),
-      low: Math.round(day.low)
-    }));
-  };
-
   const getWeatherIcon = (condition: string) => {
     switch (condition) {
       case 'Clear':
@@ -152,8 +90,6 @@ const WeatherWidget = () => {
         return <Cloud className="w-8 h-8 text-gray-500" />;
       case 'Rain':
         return <CloudRain className="w-8 h-8 text-blue-500" />;
-      case 'Unavailable':
-        return <AlertTriangle className="w-8 h-8 text-red-500" />;
       default:
         return <Cloud className="w-8 h-8 text-gray-500" />;
     }
@@ -182,7 +118,7 @@ const WeatherWidget = () => {
           <div className="text-center space-y-2">
             <p className="text-red-600">{error}</p>
             <p className="text-sm text-gray-600">
-              Configure weather API key to get real weather data
+              Please enable location access and try again
             </p>
           </div>
         </CardContent>
@@ -194,8 +130,8 @@ const WeatherWidget = () => {
     <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-200">
       <CardHeader>
         <CardTitle className="flex items-center space-x-2">
-          {getWeatherIcon(weather?.condition || 'Unavailable')}
-          <span>Real Weather Data</span>
+          {getWeatherIcon(weather?.condition || 'Clouds')}
+          <span>Live Weather</span>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -244,7 +180,6 @@ const WeatherWidget = () => {
           </div>
         )}
 
-        {/* Data Source Info */}
         <div className="text-xs text-gray-500 text-center">
           Real-time data from OpenWeatherMap
         </div>
