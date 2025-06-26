@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, ShoppingCart, BarChart3, Settings, Eye, Edit, Trash2 } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Users, ShoppingCart, BarChart3, Settings, Eye, Edit } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -33,9 +34,7 @@ interface Order {
   total_amount: number;
   status: string;
   created_at: string;
-  user_profile: {
-    full_name: string;
-  };
+  user_name: string;
 }
 
 const AdminDashboard = () => {
@@ -56,35 +55,49 @@ const AdminDashboard = () => {
 
   const fetchAdminData = async () => {
     try {
-      // Fetch users
+      // Fetch users from profiles
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('*');
 
       if (profilesError) throw profilesError;
 
-      // Fetch orders with user details
+      // Fetch orders with separate queries for related data
       const { data: ordersData, error: ordersError } = await supabase
         .from('orders')
         .select(`
           *,
           vendor_products (product_name),
-          vendors (name),
-          profiles (full_name)
+          vendors (name)
         `);
 
       if (ordersError) throw ordersError;
 
-      const formattedUsers = profilesData.map(profile => ({
+      // Fetch user profiles for orders
+      const userIds = ordersData?.map(order => order.user_id) || [];
+      const { data: orderUsers, error: orderUsersError } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', userIds);
+
+      if (orderUsersError) throw orderUsersError;
+
+      const formattedUsers = profilesData?.map(profile => ({
         id: profile.id,
         full_name: profile.full_name || 'N/A',
         email: 'N/A', // Email not stored in profiles
         phone_number: profile.phone_number || 'N/A',
         county: profile.county || 'N/A',
         created_at: profile.created_at
-      }));
+      })) || [];
 
-      const formattedOrders = ordersData.map(order => ({
+      // Create a map of user IDs to names
+      const userNameMap = orderUsers?.reduce((acc, user) => {
+        acc[user.id] = user.full_name || 'N/A';
+        return acc;
+      }, {} as Record<string, string>) || {};
+
+      const formattedOrders = ordersData?.map(order => ({
         id: order.id,
         user_id: order.user_id,
         product_name: order.vendor_products?.product_name || 'N/A',
@@ -93,10 +106,8 @@ const AdminDashboard = () => {
         total_amount: order.total_amount,
         status: order.status,
         created_at: order.created_at,
-        user_profile: {
-          full_name: order.profiles?.full_name || 'N/A'
-        }
-      }));
+        user_name: userNameMap[order.user_id] || 'N/A'
+      })) || [];
 
       setUsers(formattedUsers);
       setOrders(formattedOrders);
@@ -113,6 +124,7 @@ const AdminDashboard = () => {
       });
 
     } catch (error: any) {
+      console.error('Admin data fetch error:', error);
       toast({
         title: "❌ Error",
         description: "Failed to load admin data",
@@ -217,39 +229,37 @@ const AdminDashboard = () => {
               <CardTitle>Users Management</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-4">Name</th>
-                      <th className="text-left p-4">Phone</th>
-                      <th className="text-left p-4">County</th>
-                      <th className="text-left p-4">Joined</th>
-                      <th className="text-left p-4">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {users.map((user) => (
-                      <tr key={user.id} className="border-b hover:bg-gray-50">
-                        <td className="p-4">{user.full_name}</td>
-                        <td className="p-4">{user.phone_number}</td>
-                        <td className="p-4">{user.county}</td>
-                        <td className="p-4">{new Date(user.created_at).toLocaleDateString()}</td>
-                        <td className="p-4">
-                          <div className="flex space-x-2">
-                            <Button size="sm" variant="outline">
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                            <Button size="sm" variant="outline">
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Phone</TableHead>
+                    <TableHead>County</TableHead>
+                    <TableHead>Joined</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {users.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell>{user.full_name}</TableCell>
+                      <TableCell>{user.phone_number}</TableCell>
+                      <TableCell>{user.county}</TableCell>
+                      <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
+                      <TableCell>
+                        <div className="flex space-x-2">
+                          <Button size="sm" variant="outline">
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button size="sm" variant="outline">
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </TabsContent>
@@ -260,65 +270,63 @@ const AdminDashboard = () => {
               <CardTitle>Orders Management</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-4">Customer</th>
-                      <th className="text-left p-4">Product</th>
-                      <th className="text-left p-4">Vendor</th>
-                      <th className="text-left p-4">Amount</th>
-                      <th className="text-left p-4">Status</th>
-                      <th className="text-left p-4">Date</th>
-                      <th className="text-left p-4">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {orders.map((order) => (
-                      <tr key={order.id} className="border-b hover:bg-gray-50">
-                        <td className="p-4">{order.user_profile.full_name}</td>
-                        <td className="p-4">{order.product_name}</td>
-                        <td className="p-4">{order.vendor_name}</td>
-                        <td className="p-4">KSh {order.total_amount.toLocaleString()}</td>
-                        <td className="p-4">
-                          <Badge 
-                            variant={
-                              order.status === 'pending' ? 'destructive' :
-                              order.status === 'confirmed' ? 'default' :
-                              order.status === 'delivered' ? 'secondary' : 'outline'
-                            }
-                          >
-                            {order.status}
-                          </Badge>
-                        </td>
-                        <td className="p-4">{new Date(order.created_at).toLocaleDateString()}</td>
-                        <td className="p-4">
-                          <div className="flex space-x-2">
-                            {order.status === 'pending' && (
-                              <Button 
-                                size="sm" 
-                                onClick={() => updateOrderStatus(order.id, 'confirmed')}
-                                className="bg-green-600 hover:bg-green-700"
-                              >
-                                Confirm
-                              </Button>
-                            )}
-                            {order.status === 'confirmed' && (
-                              <Button 
-                                size="sm" 
-                                onClick={() => updateOrderStatus(order.id, 'delivered')}
-                                className="bg-blue-600 hover:bg-blue-700"
-                              >
-                                Deliver
-                              </Button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Customer</TableHead>
+                    <TableHead>Product</TableHead>
+                    <TableHead>Vendor</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {orders.map((order) => (
+                    <TableRow key={order.id}>
+                      <TableCell>{order.user_name}</TableCell>
+                      <TableCell>{order.product_name}</TableCell>
+                      <TableCell>{order.vendor_name}</TableCell>
+                      <TableCell>KSh {order.total_amount.toLocaleString()}</TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant={
+                            order.status === 'pending' ? 'destructive' :
+                            order.status === 'confirmed' ? 'default' :
+                            order.status === 'delivered' ? 'secondary' : 'outline'
+                          }
+                        >
+                          {order.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{new Date(order.created_at).toLocaleDateString()}</TableCell>
+                      <TableCell>
+                        <div className="flex space-x-2">
+                          {order.status === 'pending' && (
+                            <Button 
+                              size="sm" 
+                              onClick={() => updateOrderStatus(order.id, 'confirmed')}
+                              className="bg-green-600 hover:bg-green-700"
+                            >
+                              Confirm
+                            </Button>
+                          )}
+                          {order.status === 'confirmed' && (
+                            <Button 
+                              size="sm" 
+                              onClick={() => updateOrderStatus(order.id, 'delivered')}
+                              className="bg-blue-600 hover:bg-blue-700"
+                            >
+                              Deliver
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </TabsContent>
