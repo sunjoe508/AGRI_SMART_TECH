@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sprout, Mail, Phone, User, Eye, EyeOff, Shield, CheckCircle } from 'lucide-react';
+import { Sprout, Mail, Phone, User, Eye, EyeOff, Shield, CheckCircle, AlertTriangle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from 'react-router-dom';
@@ -17,6 +17,7 @@ const AuthPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const [adminMode, setAdminMode] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -98,6 +99,36 @@ const AuthPage = () => {
     }
 
     return true;
+  };
+
+  const createAdminUser = async () => {
+    try {
+      // First try to sign up the admin user
+      const { error: signUpError } = await supabase.auth.signUp({
+        email: 'admin@agrismart.co.ke',
+        password: 'admin123',
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            full_name: 'AgriSmart Admin',
+            phone_number: '+254700000000',
+            county: 'Nairobi',
+            farm_name: 'AgriSmart HQ'
+          }
+        }
+      });
+
+      if (signUpError && !signUpError.message.includes('already registered')) {
+        console.error('Admin creation error:', signUpError);
+        return false;
+      }
+
+      console.log('Admin user setup completed');
+      return true;
+    } catch (error) {
+      console.error('Error creating admin user:', error);
+      return false;
+    }
   };
 
   const signInWithGoogle = async () => {
@@ -191,13 +222,54 @@ const AuthPage = () => {
 
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      // If this is admin login, ensure admin user exists first
+      if (formData.email === 'admin@agrismart.co.ke') {
+        console.log('Admin login attempt - ensuring admin user exists');
+        await createAdminUser();
+      }
+
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password
       });
 
       if (error) {
         if (error.message.includes('Invalid login credentials')) {
+          // If admin login fails, try creating the admin user first
+          if (formData.email === 'admin@agrismart.co.ke') {
+            toast({
+              title: "🔧 Setting up Admin Account",
+              description: "Creating admin user for first-time login...",
+            });
+            
+            const adminCreated = await createAdminUser();
+            if (adminCreated) {
+              // Wait a moment and try again
+              setTimeout(async () => {
+                const { error: retryError } = await supabase.auth.signInWithPassword({
+                  email: formData.email,
+                  password: formData.password
+                });
+                
+                if (retryError) {
+                  toast({
+                    title: "ℹ️ Admin Setup Complete",
+                    description: "Admin user created! Please verify your email and try signing in again.",
+                    variant: "default"
+                  });
+                } else {
+                  toast({
+                    title: "🎉 Welcome Admin!",
+                    description: "Successfully signed in to AgriSmart Admin Dashboard",
+                  });
+                  navigate('/');
+                }
+                setIsLoading(false);
+              }, 2000);
+              return;
+            }
+          }
+          
           toast({
             title: "❌ Invalid Credentials",
             description: "Please check your email and password and try again.",
@@ -215,9 +287,10 @@ const AuthPage = () => {
         return;
       }
 
+      const isAdmin = formData.email === 'admin@agrismart.co.ke';
       toast({
-        title: "🌱 Welcome Back!",
-        description: "Successfully signed in to AgriSmart",
+        title: isAdmin ? "🎉 Welcome Admin!" : "🌱 Welcome Back!",
+        description: isAdmin ? "Successfully signed in to AgriSmart Admin Dashboard" : "Successfully signed in to AgriSmart",
       });
       
       navigate('/');
@@ -238,9 +311,23 @@ const AuthPage = () => {
       email: 'admin@agrismart.co.ke',
       password: 'admin123'
     }));
+    setAdminMode(true);
     toast({
       title: "🔑 Admin Credentials Filled",
       description: "Click Sign In to access the admin dashboard",
+    });
+  };
+
+  const fillDemoCredentials = () => {
+    setFormData(prev => ({
+      ...prev,
+      email: 'demo@farmer.co.ke',
+      password: 'demo123'
+    }));
+    setAdminMode(false);
+    toast({
+      title: "👨‍🌾 Demo Farmer Credentials Filled",
+      description: "Click Sign In to access the farmer dashboard",
     });
   };
 
@@ -255,11 +342,13 @@ const AuthPage = () => {
           <p className="text-gray-600 dark:text-gray-300">Smart Irrigation for Kenyan Farmers</p>
         </div>
 
-        <Card className="shadow-xl border-0 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm">
+        <Card className="shadow-xl border-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl text-green-800 dark:text-green-200">Join AgriSmart</CardTitle>
+            <CardTitle className="text-2xl text-green-800 dark:text-green-200">
+              {adminMode ? '🔐 Admin Access' : '🌱 Join AgriSmart'}
+            </CardTitle>
             <CardDescription className="dark:text-gray-300">
-              Connect with Kenya's smart farming revolution
+              {adminMode ? 'Access the administrative dashboard' : 'Connect with Kenya\'s smart farming revolution'}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -267,7 +356,16 @@ const AuthPage = () => {
               <Alert className="mb-6 border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20">
                 <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
                 <AlertDescription className="text-green-800 dark:text-green-200">
-                  Verification email sent! Please check your inbox and click the verification link before signing in.
+                  ✅ Verification email sent! Please check your inbox and click the verification link before signing in.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {adminMode && (
+              <Alert className="mb-6 border-purple-200 bg-purple-50 dark:border-purple-800 dark:bg-purple-900/20">
+                <Shield className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                <AlertDescription className="text-purple-800 dark:text-purple-200">
+                  🔐 Admin Mode: Enhanced security and management features enabled
                 </AlertDescription>
               </Alert>
             )}
@@ -305,17 +403,29 @@ const AuthPage = () => {
 
               <TabsContent value="signin" className="space-y-4">
                 <div className="flex justify-between items-center mb-4">
-                  <Label className="text-sm font-medium dark:text-gray-200">Demo Credentials</Label>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={fillAdminCredentials}
-                    className="text-xs dark:border-gray-600 dark:text-gray-200"
-                  >
-                    <Shield className="w-3 h-3 mr-1" />
-                    Fill Admin
-                  </Button>
+                  <Label className="text-sm font-medium dark:text-gray-200">Quick Access</Label>
+                  <div className="flex space-x-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={fillAdminCredentials}
+                      className="text-xs dark:border-gray-600 dark:text-gray-200 border-purple-300 text-purple-700 hover:bg-purple-50 dark:border-purple-600 dark:text-purple-300 dark:hover:bg-purple-950"
+                    >
+                      <Shield className="w-3 h-3 mr-1" />
+                      Admin
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={fillDemoCredentials}
+                      className="text-xs dark:border-gray-600 dark:text-gray-200"
+                    >
+                      <User className="w-3 h-3 mr-1" />
+                      Demo
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -323,7 +433,7 @@ const AuthPage = () => {
                   <Input
                     id="signin-email"
                     type="email"
-                    placeholder="farmer@example.com"
+                    placeholder={adminMode ? "admin@agrismart.co.ke" : "farmer@example.com"}
                     value={formData.email}
                     onChange={(e) => handleInputChange('email', e.target.value)}
                     className="dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
@@ -335,6 +445,7 @@ const AuthPage = () => {
                     <Input
                       id="signin-password"
                       type={showPassword ? "text" : "password"}
+                      placeholder={adminMode ? "admin123" : "Your password"}
                       value={formData.password}
                       onChange={(e) => handleInputChange('password', e.target.value)}
                       className="dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 pr-10"
@@ -356,10 +467,13 @@ const AuthPage = () => {
                 </div>
                 <Button 
                   onClick={handleSignIn}
-                  className="w-full bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800"
+                  className={`w-full ${adminMode 
+                    ? 'bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-800' 
+                    : 'bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800'
+                  }`}
                   disabled={isLoading}
                 >
-                  {isLoading ? 'Signing In...' : 'Sign In'}
+                  {isLoading ? (adminMode ? 'Accessing Admin...' : 'Signing In...') : (adminMode ? 'Access Admin Dashboard' : 'Sign In')}
                 </Button>
               </TabsContent>
 
@@ -498,10 +612,24 @@ const AuthPage = () => {
           </CardContent>
         </Card>
 
-        <div className="text-center mt-6 text-sm text-gray-600 dark:text-gray-300">
-          <p>🇰🇪 Empowering Kenyan farmers with smart technology</p>
-          <p className="mt-2 text-xs">
-            Admin Demo: <strong>admin@agrismart.co.ke</strong> / <strong>admin123</strong>
+        <div className="text-center mt-6 space-y-4">
+          <div className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-lg p-4 shadow-lg">
+            <p className="text-lg font-semibold text-green-800 dark:text-green-200 mb-2">🚀 Quick Demo Access</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+              <div className="p-2 bg-purple-50 dark:bg-purple-900/20 rounded border-l-4 border-purple-500">
+                <p className="font-medium text-purple-800 dark:text-purple-200">👑 Admin Login</p>
+                <p className="text-purple-600 dark:text-purple-300">admin@agrismart.co.ke</p>
+                <p className="text-purple-600 dark:text-purple-300">admin123</p>
+              </div>
+              <div className="p-2 bg-green-50 dark:bg-green-900/20 rounded border-l-4 border-green-500">
+                <p className="font-medium text-green-800 dark:text-green-200">👨‍🌾 Demo Farmer</p>
+                <p className="text-green-600 dark:text-green-300">demo@farmer.co.ke</p>
+                <p className="text-green-600 dark:text-green-300">demo123</p>
+              </div>
+            </div>
+          </div>
+          <p className="text-gray-600 dark:text-gray-300">
+            🇰🇪 Empowering Kenyan farmers with smart technology
           </p>
         </div>
       </div>
