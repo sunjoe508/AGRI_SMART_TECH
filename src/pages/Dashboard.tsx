@@ -1,9 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LogOut, Home, User, Droplets, BarChart3, MessageSquare, Phone, ShoppingCart, Settings, Cloud } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import ThemeToggle from "@/components/ThemeToggle";
 import ProfileManagement from "@/components/ProfileManagement";
 import EnhancedIrrigationCycle from "@/components/EnhancedIrrigationCycle";
 import SensorMonitoring from "@/components/SensorMonitoring";
@@ -64,17 +66,17 @@ const Dashboard = ({ user }: DashboardProps) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-100 via-emerald-50 to-blue-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-green-100 via-emerald-50 to-blue-100 dark:from-green-900 dark:via-emerald-900 dark:to-blue-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-600 mx-auto mb-4"></div>
-          <p className="text-green-800 font-semibold">Loading Dashboard...</p>
+          <p className="text-green-800 dark:text-green-200 font-semibold">Loading Dashboard...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-100 via-emerald-50 to-blue-100 bg-fixed relative"
+    <div className="min-h-screen bg-gradient-to-br from-green-100 via-emerald-50 to-blue-100 dark:from-green-900 dark:via-emerald-900 dark:to-blue-900 bg-fixed relative"
          style={{
            backgroundImage: `url("https://images.unsplash.com/photo-1574943320219-553eb213f72d?auto=format&fit=crop&w=1920&q=80")`,
            backgroundSize: 'cover',
@@ -83,27 +85,28 @@ const Dashboard = ({ user }: DashboardProps) => {
          }}>
       
       {/* Background overlay */}
-      <div className="absolute inset-0 bg-white/85 backdrop-blur-sm"></div>
+      <div className="absolute inset-0 bg-white/85 dark:bg-black/70 backdrop-blur-sm"></div>
 
       <div className="relative z-10">
         {/* Header */}
-        <header className="bg-white/90 backdrop-blur-sm shadow-lg border-b-4 border-green-500">
+        <header className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm shadow-lg border-b-4 border-green-500">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex justify-between items-center">
               <div className="flex items-center space-x-3">
                 <div className="text-3xl">🌱</div>
                 <div>
-                  <h1 className="text-2xl font-bold text-green-800">AgriSmart</h1>
-                  <p className="text-sm text-green-600">Smart Farming Management System</p>
+                  <h1 className="text-2xl font-bold text-green-800 dark:text-green-400">AgriSmart</h1>
+                  <p className="text-sm text-green-600 dark:text-green-300">Smart Farming Management System</p>
                 </div>
               </div>
               
               <div className="flex items-center space-x-4">
+                <ThemeToggle />
                 <div className="text-right">
-                  <p className="text-sm text-gray-600">Welcome back,</p>
-                  <p className="font-semibold text-green-800">{user?.email}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-300">Welcome back,</p>
+                  <p className="font-semibold text-green-800 dark:text-green-400">{user?.email}</p>
                   {isAdmin && (
-                    <span className="inline-block px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
+                    <span className="inline-block px-2 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 text-xs rounded-full">
                       Admin
                     </span>
                   )}
@@ -111,7 +114,7 @@ const Dashboard = ({ user }: DashboardProps) => {
                 <Button 
                   onClick={handleSignOut}
                   variant="outline"
-                  className="border-green-500 text-green-700 hover:bg-green-50"
+                  className="border-green-500 text-green-700 hover:bg-green-50 dark:border-green-400 dark:text-green-400 dark:hover:bg-green-950"
                 >
                   <LogOut className="w-4 h-4 mr-2" />
                   Sign Out
@@ -124,7 +127,7 @@ const Dashboard = ({ user }: DashboardProps) => {
         {/* Main Content */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <Tabs defaultValue={isAdmin ? "admin" : "overview"} className="space-y-6">
-            <TabsList className="grid grid-cols-4 md:grid-cols-8 lg:grid-cols-9 gap-2 bg-white/80 backdrop-blur-sm p-2 rounded-lg shadow-lg">
+            <TabsList className="grid grid-cols-4 md:grid-cols-8 lg:grid-cols-9 gap-2 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm p-2 rounded-lg shadow-lg">
               {isAdmin && (
                 <TabsTrigger value="admin" className="flex items-center space-x-2 text-xs lg:text-sm">
                   <Settings className="w-4 h-4" />
@@ -217,7 +220,7 @@ const Dashboard = ({ user }: DashboardProps) => {
         </div>
 
         {/* Footer */}
-        <footer className="bg-green-800/90 backdrop-blur-sm text-white mt-16">
+        <footer className="bg-green-800/90 dark:bg-green-900/90 backdrop-blur-sm text-white mt-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div>

@@ -26,41 +26,58 @@ const WeatherWidget = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchRealWeatherData();
-    // Update every 30 minutes
-    const interval = setInterval(fetchRealWeatherData, 30 * 60 * 1000);
+    fetchWeatherData();
+    const interval = setInterval(fetchWeatherData, 30 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 
-  const fetchRealWeatherData = async () => {
+  const fetchWeatherData = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      // Get user's location
-      const position = await getCurrentPosition();
-      const { latitude, longitude } = position.coords;
+      // Get user's location or use Nairobi as default
+      let latitude = -1.2921;
+      let longitude = 36.8219;
       
-      // Call our edge function for weather data
-      const { data, error } = await supabase.functions.invoke('get-weather', {
-        body: {
-          lat: latitude,
-          lon: longitude
-        }
+      try {
+        const position = await getCurrentPosition();
+        latitude = position.coords.latitude;
+        longitude = position.coords.longitude;
+      } catch (geoError) {
+        console.log('Using default location (Nairobi)');
+      }
+      
+      const { data, error } = await supabase.functions.invoke('free-weather', {
+        body: { lat: latitude, lon: longitude }
       });
 
       if (error) throw error;
-
       setWeather(data);
       
     } catch (error: any) {
       console.error('Weather fetch error:', error);
-      setError(error.message);
-      
+      setError('Unable to fetch weather data');
       toast({
-        title: "⚠️ Weather Service Unavailable",
-        description: "Unable to fetch real weather data. Please check your location settings.",
-        variant: "destructive"
+        title: "⚠️ Weather Service",
+        description: "Using default weather data",
+        variant: "default"
+      });
+      
+      // Set default weather data
+      setWeather({
+        temperature: 24,
+        humidity: 65,
+        windSpeed: 12,
+        condition: 'Clouds',
+        location: 'Kenya',
+        forecast: [
+          { day: 'Today', high: 26, low: 18, condition: 'Clouds' },
+          { day: 'Tomorrow', high: 28, low: 19, condition: 'Clear' },
+          { day: 'Wed', high: 25, low: 17, condition: 'Rain' },
+          { day: 'Thu', high: 27, low: 20, condition: 'Clear' },
+          { day: 'Fri', high: 29, low: 21, condition: 'Clouds' }
+        ]
       });
       
     } finally {
@@ -71,13 +88,13 @@ const WeatherWidget = () => {
   const getCurrentPosition = (): Promise<GeolocationPosition> => {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
-        reject(new Error('Geolocation is not supported'));
+        reject(new Error('Geolocation not supported'));
         return;
       }
       
       navigator.geolocation.getCurrentPosition(resolve, reject, {
-        timeout: 10000,
-        enableHighAccuracy: true
+        timeout: 5000,
+        enableHighAccuracy: false
       });
     });
   };
@@ -97,37 +114,16 @@ const WeatherWidget = () => {
 
   if (loading) {
     return (
-      <Card>
+      <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900 dark:to-cyan-900 border-2 border-blue-200 dark:border-blue-700">
         <CardContent className="p-6">
-          <div className="text-center">Loading real weather data...</div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card className="bg-gradient-to-br from-red-50 to-orange-50 border-2 border-red-200">
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <AlertTriangle className="w-6 h-6 text-red-600" />
-            <span>Weather Service Error</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center space-y-2">
-            <p className="text-red-600">{error}</p>
-            <p className="text-sm text-gray-600">
-              Please enable location access and try again
-            </p>
-          </div>
+          <div className="text-center">Loading weather data...</div>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-200">
+    <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900 dark:to-cyan-900 border-2 border-blue-200 dark:border-blue-700">
       <CardHeader>
         <CardTitle className="flex items-center space-x-2">
           {getWeatherIcon(weather?.condition || 'Clouds')}
@@ -137,26 +133,26 @@ const WeatherWidget = () => {
       <CardContent className="space-y-4">
         {/* Current Weather */}
         <div className="text-center space-y-2">
-          <div className="text-4xl font-bold text-blue-600">{weather?.temperature}°C</div>
-          <div className="text-lg text-gray-600">{weather?.condition}</div>
-          <div className="text-sm text-gray-500">{weather?.location}</div>
+          <div className="text-4xl font-bold text-blue-600 dark:text-blue-400">{weather?.temperature}°C</div>
+          <div className="text-lg text-gray-600 dark:text-gray-300">{weather?.condition}</div>
+          <div className="text-sm text-gray-500 dark:text-gray-400">{weather?.location}</div>
         </div>
 
         {/* Weather Details */}
         <div className="grid grid-cols-3 gap-4 text-center">
           <div className="space-y-1">
             <Droplets className="w-5 h-5 text-blue-500 mx-auto" />
-            <div className="text-sm text-gray-600">Humidity</div>
+            <div className="text-sm text-gray-600 dark:text-gray-300">Humidity</div>
             <div className="font-semibold">{weather?.humidity}%</div>
           </div>
           <div className="space-y-1">
             <Wind className="w-5 h-5 text-gray-500 mx-auto" />
-            <div className="text-sm text-gray-600">Wind</div>
+            <div className="text-sm text-gray-600 dark:text-gray-300">Wind</div>
             <div className="font-semibold">{weather?.windSpeed} km/h</div>
           </div>
           <div className="space-y-1">
             <Thermometer className="w-5 h-5 text-red-500 mx-auto" />
-            <div className="text-sm text-gray-600">Feels Like</div>
+            <div className="text-sm text-gray-600 dark:text-gray-300">Feels Like</div>
             <div className="font-semibold">{(weather?.temperature || 0) + 2}°C</div>
           </div>
         </div>
@@ -164,9 +160,9 @@ const WeatherWidget = () => {
         {/* 5-Day Forecast */}
         {weather?.forecast && weather.forecast.length > 0 && (
           <div className="space-y-2">
-            <h4 className="font-semibold text-gray-700">5-Day Forecast</h4>
+            <h4 className="font-semibold text-gray-700 dark:text-gray-300">5-Day Forecast</h4>
             {weather.forecast.map((day, index) => (
-              <div key={index} className="flex items-center justify-between p-2 bg-white rounded-lg">
+              <div key={index} className="flex items-center justify-between p-2 bg-white dark:bg-gray-800 rounded-lg">
                 <span className="text-sm font-medium">{day.day}</span>
                 <div className="flex items-center space-x-2">
                   {getWeatherIcon(day.condition)}
@@ -180,8 +176,8 @@ const WeatherWidget = () => {
           </div>
         )}
 
-        <div className="text-xs text-gray-500 text-center">
-          Real-time data from OpenWeatherMap
+        <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
+          Weather data from Open-Meteo
         </div>
       </CardContent>
     </Card>

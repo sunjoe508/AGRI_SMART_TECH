@@ -4,10 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Sprout, Droplets, BarChart3, Cloud, Users, Shield, Settings } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import ThemeToggle from '@/components/ThemeToggle';
 
 const Index = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-100 via-emerald-50 to-blue-100 relative overflow-hidden"
+    <div className="min-h-screen bg-gradient-to-br from-green-100 via-emerald-50 to-blue-100 dark:from-green-900 dark:via-emerald-900 dark:to-blue-900 relative overflow-hidden"
          style={{
            backgroundImage: `url("https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=1920&q=80")`,
            backgroundSize: 'cover',
@@ -16,23 +17,24 @@ const Index = () => {
          }}>
       
       {/* Background overlay */}
-      <div className="absolute inset-0 bg-white/80 backdrop-blur-sm"></div>
+      <div className="absolute inset-0 bg-white/80 dark:bg-black/60 backdrop-blur-sm"></div>
       
       {/* Content */}
       <div className="relative z-10">
         {/* Header */}
-        <header className="bg-white/90 backdrop-blur-sm shadow-lg border-b-4 border-green-500">
+        <header className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm shadow-lg border-b-4 border-green-500">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex justify-between items-center">
               <div className="flex items-center space-x-3">
                 <Sprout className="w-10 h-10 text-green-600" />
                 <div>
-                  <h1 className="text-3xl font-bold text-green-800">AgriSmart Kenya</h1>
-                  <p className="text-green-600">Smart Farming for Sustainable Agriculture</p>
+                  <h1 className="text-3xl font-bold text-green-800 dark:text-green-400">AgriSmart Kenya</h1>
+                  <p className="text-green-600 dark:text-green-300">Smart Farming for Sustainable Agriculture</p>
                 </div>
               </div>
               
               <div className="flex items-center space-x-4">
+                <ThemeToggle />
                 <Link to="/auth">
                   <Button className="bg-green-600 hover:bg-green-700">
                     <Users className="w-4 h-4 mr-2" />
@@ -40,7 +42,7 @@ const Index = () => {
                   </Button>
                 </Link>
                 <Link to="/auth">
-                  <Button variant="outline" className="border-purple-500 text-purple-700 hover:bg-purple-50">
+                  <Button variant="outline" className="border-purple-500 text-purple-700 hover:bg-purple-50 dark:border-purple-400 dark:text-purple-400 dark:hover:bg-purple-950">
                     <Settings className="w-4 h-4 mr-2" />
                     Admin Login
                   </Button>
@@ -53,25 +55,25 @@ const Index = () => {
         {/* Hero Section */}
         <section className="py-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <div className="bg-white/90 backdrop-blur-sm rounded-3xl p-12 shadow-2xl">
-              <h2 className="text-5xl font-bold text-gray-900 mb-6">
+            <div className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-3xl p-12 shadow-2xl">
+              <h2 className="text-5xl font-bold text-gray-900 dark:text-white mb-6">
                 🌱 Transform Your Farm with Smart Technology
               </h2>
-              <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+              <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-3xl mx-auto">
                 Join thousands of Kenyan farmers using AgriSmart to increase crop yields, 
                 conserve water, and build sustainable farming practices with AI-powered irrigation systems.
               </p>
               
-              <div className="flex items-center justify-center space-x-6 mb-8">
-                <Badge variant="outline" className="bg-green-50 text-green-700 px-4 py-2 text-lg">
+              <div className="flex items-center justify-center space-x-6 mb-8 flex-wrap">
+                <Badge variant="outline" className="bg-green-50 dark:bg-green-900 text-green-700 dark:text-green-300 px-4 py-2 text-lg">
                   <Droplets className="w-5 h-5 mr-2" />
                   40% Water Savings
                 </Badge>
-                <Badge variant="outline" className="bg-blue-50 text-blue-700 px-4 py-2 text-lg">
+                <Badge variant="outline" className="bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-4 py-2 text-lg">
                   <BarChart3 className="w-5 h-5 mr-2" />
                   25% Yield Increase
                 </Badge>
-                <Badge variant="outline" className="bg-purple-50 text-purple-700 px-4 py-2 text-lg">
+                <Badge variant="outline" className="bg-purple-50 dark:bg-purple-900 text-purple-700 dark:text-purple-300 px-4 py-2 text-lg">
                   <Shield className="w-5 h-5 mr-2" />
                   100% Secure
                 </Badge>
@@ -82,6 +84,11 @@ const Index = () => {
                   Start Smart Farming Today
                 </Button>
               </Link>
+              
+              <div className="mt-8 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg">
+                <p className="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-2">Default Admin Login:</p>
+                <p className="text-blue-600 dark:text-blue-300">Email: admin@agrismart.co.ke | Password: admin123</p>
+              </div>
             </div>
           </div>
         </section>
@@ -90,59 +97,61 @@ const Index = () => {
         <section className="py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              <Card className="bg-white/90 backdrop-blur-sm hover:bg-white/95 transition-all duration-300 transform hover:-translate-y-2">
-                <CardHeader className="text-center">
-                  <Droplets className="w-12 h-12 text-blue-600 mx-auto mb-4" />
-                  <CardTitle className="text-green-800">Smart Irrigation</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription className="text-center">
-                    AI-powered irrigation system that waters your crops at the perfect time with the right amount.
-                  </CardDescription>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-white/90 backdrop-blur-sm hover:bg-white/95 transition-all duration-300 transform hover:-translate-y-2">
-                <CardHeader className="text-center">
-                  <BarChart3 className="w-12 h-12 text-green-600 mx-auto mb-4" />
-                  <CardTitle className="text-green-800">Real-time Monitoring</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription className="text-center">
-                    Monitor soil moisture, temperature, and humidity levels in real-time through our mobile app.
-                  </CardDescription>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-white/90 backdrop-blur-sm hover:bg-white/95 transition-all duration-300 transform hover:-translate-y-2">
-                <CardHeader className="text-center">
-                  <Cloud className="w-12 h-12 text-purple-600 mx-auto mb-4" />
-                  <CardTitle className="text-green-800">Weather Integration</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription className="text-center">
-                    Automatic weather-based irrigation adjustments to optimize water usage and crop health.
-                  </CardDescription>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-white/90 backdrop-blur-sm hover:bg-white/95 transition-all duration-300 transform hover:-translate-y-2">
-                <CardHeader className="text-center">
-                  <Users className="w-12 h-12 text-orange-600 mx-auto mb-4" />
-                  <CardTitle className="text-green-800">Expert Support</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription className="text-center">
-                    24/7 support from agricultural experts and direct connection to verified vendors.
-                  </CardDescription>
-                </CardContent>
-              </Card>
+              {[
+                {
+                  icon: Droplets,
+                  title: "Smart Irrigation",
+                  description: "AI-powered irrigation system that waters your crops at the perfect time with the right amount.",
+                  color: "text-blue-600",
+                  image: "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=400"
+                },
+                {
+                  icon: BarChart3,
+                  title: "Real-time Monitoring",
+                  description: "Monitor soil moisture, temperature, and humidity levels in real-time through our mobile app.",
+                  color: "text-green-600",
+                  image: "https://images.unsplash.com/photo-1574943320219-553eb213f72d?w=400"
+                },
+                {
+                  icon: Cloud,
+                  title: "Weather Integration",
+                  description: "Automatic weather-based irrigation adjustments to optimize water usage and crop health.",
+                  color: "text-purple-600",
+                  image: "https://images.unsplash.com/photo-1504754524776-8f4f37790ca0?w=400"
+                },
+                {
+                  icon: Users,
+                  title: "Expert Support",
+                  description: "24/7 support from agricultural experts and direct connection to verified vendors.",
+                  color: "text-orange-600",
+                  image: "https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=400"
+                }
+              ].map((feature, index) => (
+                <Card key={index} className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm hover:bg-white/95 dark:hover:bg-gray-800/95 transition-all duration-300 transform hover:-translate-y-2">
+                  <div className="aspect-video w-full overflow-hidden rounded-t-lg">
+                    <img 
+                      src={feature.image} 
+                      alt={feature.title}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <CardHeader className="text-center">
+                    <feature.icon className={`w-12 h-12 ${feature.color} mx-auto mb-4`} />
+                    <CardTitle className="text-green-800 dark:text-green-400">{feature.title}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CardDescription className="text-center dark:text-gray-300">
+                      {feature.description}
+                    </CardDescription>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           </div>
         </section>
 
         {/* Footer */}
-        <footer className="bg-green-800/90 backdrop-blur-sm text-white py-12">
+        <footer className="bg-green-800/90 dark:bg-green-900/90 backdrop-blur-sm text-white py-12">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div>
@@ -151,7 +160,7 @@ const Index = () => {
                   Empowering Kenyan farmers with cutting-edge technology for sustainable agriculture 
                   and improved food security across the nation.
                 </p>
-                <div className="flex space-x-4">
+                <div className="flex space-x-4 flex-wrap">
                   <Badge variant="outline" className="bg-green-700 text-green-100 border-green-500">
                     🏆 Award Winning
                   </Badge>

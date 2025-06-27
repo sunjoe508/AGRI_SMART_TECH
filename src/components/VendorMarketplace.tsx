@@ -5,9 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ShoppingCart, Star, Package, Truck } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { ShoppingCart, Star, Package, Truck, CreditCard } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import PayPalCheckout from './PayPalCheckout';
 
 interface Product {
   id: string;
@@ -17,6 +19,7 @@ interface Product {
   unit: string;
   description: string;
   stock_quantity: number;
+  image_url?: string;
   vendor: {
     name: string;
     rating: number;
@@ -35,6 +38,7 @@ const VendorMarketplace = ({ user }: VendorMarketplaceProps) => {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [cart, setCart] = useState<{[key: string]: number}>({});
+  const [checkoutProduct, setCheckoutProduct] = useState<Product | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -57,6 +61,7 @@ const VendorMarketplace = ({ user }: VendorMarketplaceProps) => {
           unit,
           description,
           stock_quantity,
+          image_url,
           vendors (
             name,
             rating,
@@ -75,6 +80,7 @@ const VendorMarketplace = ({ user }: VendorMarketplaceProps) => {
         unit: item.unit,
         description: item.description,
         stock_quantity: item.stock_quantity,
+        image_url: item.image_url,
         vendor: {
           name: item.vendors.name,
           rating: item.vendors.rating,
@@ -105,7 +111,7 @@ const VendorMarketplace = ({ user }: VendorMarketplaceProps) => {
     }
 
     if (categoryFilter !== 'all') {
-      filtered = filtered.filter(product => product.category === categoryFilter);
+      filtered = filtered.filter(product => product.category.toLowerCase() === categoryFilter.toLowerCase());
     }
 
     setFilteredProducts(filtered);
@@ -122,35 +128,48 @@ const VendorMarketplace = ({ user }: VendorMarketplaceProps) => {
     });
   };
 
-  const placeOrder = async (product: Product) => {
+  const handlePaymentSuccess = async (paymentDetails: any) => {
+    if (!checkoutProduct) return;
+
     try {
-      const quantity = cart[product.id] || 1;
-      const totalAmount = product.price * quantity;
+      const quantity = cart[checkoutProduct.id] || 1;
+      const totalAmount = checkoutProduct.price * quantity;
+
+      const vendorResponse = await supabase
+        .from('vendors')
+        .select('id')
+        .eq('name', checkoutProduct.vendor.name)
+        .single();
+
+      if (vendorResponse.error) throw vendorResponse.error;
 
       const { error } = await supabase
         .from('orders')
         .insert({
           user_id: user.id,
-          vendor_id: (await supabase.from('vendors').select('id').eq('name', product.vendor.name).single()).data?.id,
-          product_id: product.id,
+          vendor_id: vendorResponse.data.id,
+          product_id: checkoutProduct.id,
           quantity: quantity,
           total_amount: totalAmount,
-          status: 'pending'
+          status: 'confirmed',
+          order_notes: `Paid via PayPal: ${paymentDetails.id}`
         });
 
       if (error) throw error;
 
       toast({
-        title: "✅ Order Placed",
-        description: `Order for ${product.product_name} placed successfully`,
+        title: "✅ Order Completed",
+        description: `Order for ${checkoutProduct.product_name} placed and paid successfully`,
       });
 
       // Remove from cart
       setCart(prev => {
         const newCart = { ...prev };
-        delete newCart[product.id];
+        delete newCart[checkoutProduct.id];
         return newCart;
       });
+
+      setCheckoutProduct(null);
     } catch (error: any) {
       toast({
         title: "❌ Order Failed",
@@ -166,7 +185,7 @@ const VendorMarketplace = ({ user }: VendorMarketplaceProps) => {
 
   return (
     <div className="space-y-6">
-      <Card className="bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-200">
+      <Card className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900 dark:to-blue-900 border-2 border-green-200 dark:border-green-700">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <ShoppingCart className="w-6 h-6 text-green-600" />
@@ -188,8 +207,9 @@ const VendorMarketplace = ({ user }: VendorMarketplaceProps) => {
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
                 <SelectItem value="seeds">Seeds</SelectItem>
-                <SelectItem value="fertilizer">Fertilizers</SelectItem>
-                <SelectItem value="equipment">Equipment</SelectItem>
+                <SelectItem value="fertilizers">Fertilizers</SelectItem>
+                <SelectItem value="tools">Tools</SelectItem>
+                <SelectItem value="pesticides">Pesticides</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -197,7 +217,16 @@ const VendorMarketplace = ({ user }: VendorMarketplaceProps) => {
           {/* Products Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredProducts.map((product) => (
-              <Card key={product.id} className="border-2 hover:border-green-300 transition-colors">
+              <Card key={product.id} className="border-2 hover:border-green-300 dark:hover:border-green-600 transition-colors">
+                {product.image_url && (
+                  <div className="aspect-square w-full overflow-hidden rounded-t-lg">
+                    <img 
+                      src={product.image_url} 
+                      alt={product.product_name}
+                      className="w-full h-full object-cover hover:scale-105 transition-transform"
+                    />
+                  </div>
+                )}
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <CardTitle className="text-lg">{product.product_name}</CardTitle>
@@ -210,11 +239,11 @@ const VendorMarketplace = ({ user }: VendorMarketplaceProps) => {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <p className="text-sm text-gray-600">{product.description}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-300">{product.description}</p>
                   
                   <div className="flex justify-between items-center">
                     <div>
-                      <p className="text-xl font-bold text-green-600">KSh {product.price.toLocaleString()}</p>
+                      <p className="text-xl font-bold text-green-600 dark:text-green-400">KSh {product.price.toLocaleString()}</p>
                       <p className="text-sm text-gray-500">per {product.unit}</p>
                     </div>
                     <div className="text-right">
@@ -232,13 +261,36 @@ const VendorMarketplace = ({ user }: VendorMarketplaceProps) => {
                       <Package className="w-4 h-4 mr-2" />
                       Add to Cart {cart[product.id] ? `(${cart[product.id]})` : ''}
                     </Button>
-                    <Button
-                      onClick={() => placeOrder(product)}
-                      className="flex-1 bg-green-600 hover:bg-green-700"
-                    >
-                      <Truck className="w-4 h-4 mr-2" />
-                      Order Now
-                    </Button>
+                    
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button
+                          onClick={() => setCheckoutProduct(product)}
+                          className="flex-1 bg-green-600 hover:bg-green-700"
+                        >
+                          <CreditCard className="w-4 h-4 mr-2" />
+                          Buy Now
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-md">
+                        <DialogHeader>
+                          <DialogTitle>Complete Purchase</DialogTitle>
+                        </DialogHeader>
+                        {checkoutProduct && (
+                          <PayPalCheckout
+                            amount={checkoutProduct.price * (cart[checkoutProduct.id] || 1)}
+                            onSuccess={handlePaymentSuccess}
+                            onError={(error) => {
+                              toast({
+                                title: "❌ Payment Error",
+                                description: "Payment processing failed",
+                                variant: "destructive"
+                              });
+                            }}
+                          />
+                        )}
+                      </DialogContent>
+                    </Dialog>
                   </div>
                 </CardContent>
               </Card>
