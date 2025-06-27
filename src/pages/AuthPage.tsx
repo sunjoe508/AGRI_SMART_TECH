@@ -6,16 +6,21 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sprout, Mail, Phone, MapPin, User } from 'lucide-react';
+import { Sprout, Mail, Phone, User, Eye, EyeOff, Shield, CheckCircle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from 'react-router-dom';
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const AuthPage = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
+    confirmPassword: '',
     fullName: '',
     phoneNumber: '',
     county: '',
@@ -27,11 +32,72 @@ const AuthPage = () => {
   const kenyanCounties = [
     'Nairobi', 'Kiambu', 'Nakuru', 'Meru', 'Kisumu', 'Mombasa', 
     'Uasin Gishu', 'Murang\'a', 'Nyeri', 'Machakos', 'Kajiado',
-    'Nyandarua', 'Laikipia', 'Kirinyaga', 'Embu', 'Tharaka Nithi'
+    'Nyandarua', 'Laikipia', 'Kirinyaga', 'Embu', 'Tharaka Nithi',
+    'Makueni', 'Kitui', 'Garissa', 'Wajir', 'Mandera'
   ];
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const validateForm = (isSignUp: boolean = false) => {
+    if (!formData.email) {
+      toast({
+        title: "❌ Validation Error",
+        description: "Email is required",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    if (!formData.email.includes('@')) {
+      toast({
+        title: "❌ Validation Error",
+        description: "Please enter a valid email address",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    if (!formData.password) {
+      toast({
+        title: "❌ Validation Error",
+        description: "Password is required",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    if (isSignUp) {
+      if (formData.password.length < 6) {
+        toast({
+          title: "❌ Validation Error",
+          description: "Password must be at least 6 characters long",
+          variant: "destructive"
+        });
+        return false;
+      }
+
+      if (formData.password !== formData.confirmPassword) {
+        toast({
+          title: "❌ Validation Error",
+          description: "Passwords do not match",
+          variant: "destructive"
+        });
+        return false;
+      }
+
+      if (!formData.fullName) {
+        toast({
+          title: "❌ Validation Error",
+          description: "Full name is required",
+          variant: "destructive"
+        });
+        return false;
+      }
+    }
+
+    return true;
   };
 
   const signInWithGoogle = async () => {
@@ -62,14 +128,7 @@ const AuthPage = () => {
   };
 
   const handleSignUp = async () => {
-    if (!formData.email || !formData.password || !formData.fullName || !formData.phoneNumber) {
-      toast({
-        title: "❌ Missing Information",
-        description: "Please fill in all required fields",
-        variant: "destructive"
-      });
-      return;
-    }
+    if (!validateForm(true)) return;
 
     setIsLoading(true);
     try {
@@ -87,14 +146,35 @@ const AuthPage = () => {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        if (error.message.includes('already registered')) {
+          toast({
+            title: "⚠️ Account Exists",
+            description: "This email is already registered. Please sign in instead.",
+            variant: "destructive"
+          });
+        } else {
+          throw error;
+        }
+        return;
+      }
 
+      setEmailSent(true);
       toast({
-        title: "🌱 Account Created!",
-        description: "Welcome to AgriSmart! Please check your email to verify your account.",
+        title: "🌱 Account Created Successfully!",
+        description: "Please check your email to verify your account before signing in.",
       });
       
-      navigate('/');
+      // Clear form
+      setFormData({
+        email: '',
+        password: '',
+        confirmPassword: '',
+        fullName: '',
+        phoneNumber: '',
+        county: '',
+        farmName: ''
+      });
     } catch (error: any) {
       toast({
         title: "❌ Signup Error",
@@ -107,14 +187,7 @@ const AuthPage = () => {
   };
 
   const handleSignIn = async () => {
-    if (!formData.email || !formData.password) {
-      toast({
-        title: "❌ Missing Information",
-        description: "Please enter email and password",
-        variant: "destructive"
-      });
-      return;
-    }
+    if (!validateForm()) return;
 
     setIsLoading(true);
     try {
@@ -123,7 +196,24 @@ const AuthPage = () => {
         password: formData.password
       });
 
-      if (error) throw error;
+      if (error) {
+        if (error.message.includes('Invalid login credentials')) {
+          toast({
+            title: "❌ Invalid Credentials",
+            description: "Please check your email and password and try again.",
+            variant: "destructive"
+          });
+        } else if (error.message.includes('Email not confirmed')) {
+          toast({
+            title: "⚠️ Email Not Verified",
+            description: "Please check your email and click the verification link before signing in.",
+            variant: "destructive"
+          });
+        } else {
+          throw error;
+        }
+        return;
+      }
 
       toast({
         title: "🌱 Welcome Back!",
@@ -142,29 +232,50 @@ const AuthPage = () => {
     }
   };
 
+  const fillAdminCredentials = () => {
+    setFormData(prev => ({
+      ...prev,
+      email: 'admin@agrismart.co.ke',
+      password: 'admin123'
+    }));
+    toast({
+      title: "🔑 Admin Credentials Filled",
+      description: "Click Sign In to access the admin dashboard",
+    });
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-100 via-emerald-50 to-blue-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-green-100 via-emerald-50 to-blue-100 dark:from-green-900 dark:via-emerald-900 dark:to-blue-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center space-x-2 mb-4">
-            <Sprout className="w-10 h-10 text-green-600" />
-            <h1 className="text-3xl font-bold text-green-800">AgriSmart Kenya</h1>
+            <Sprout className="w-10 h-10 text-green-600 dark:text-green-400" />
+            <h1 className="text-3xl font-bold text-green-800 dark:text-green-200">AgriSmart Kenya</h1>
           </div>
-          <p className="text-gray-600">Smart Irrigation for Kenyan Farmers</p>
+          <p className="text-gray-600 dark:text-gray-300">Smart Irrigation for Kenyan Farmers</p>
         </div>
 
-        <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm">
+        <Card className="shadow-xl border-0 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl text-green-800">Join AgriSmart</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-2xl text-green-800 dark:text-green-200">Join AgriSmart</CardTitle>
+            <CardDescription className="dark:text-gray-300">
               Connect with Kenya's smart farming revolution
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {emailSent && (
+              <Alert className="mb-6 border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20">
+                <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                <AlertDescription className="text-green-800 dark:text-green-200">
+                  Verification email sent! Please check your inbox and click the verification link before signing in.
+                </AlertDescription>
+              </Alert>
+            )}
+
             <div className="space-y-4 mb-6">
               <Button 
                 onClick={signInWithGoogle}
-                className="w-full bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                className="w-full bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-700"
                 disabled={isLoading}
               >
                 <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
@@ -178,43 +289,74 @@ const AuthPage = () => {
               
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
+                  <span className="w-full border-t dark:border-gray-600" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-white px-2 text-muted-foreground">Or continue with</span>
+                  <span className="bg-white dark:bg-gray-900 px-2 text-muted-foreground dark:text-gray-400">Or continue with</span>
                 </div>
               </div>
             </div>
 
             <Tabs defaultValue="signin" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="signin">Sign In</TabsTrigger>
-                <TabsTrigger value="signup">Sign Up</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 mb-6 dark:bg-gray-800">
+                <TabsTrigger value="signin" className="dark:data-[state=active]:bg-gray-700">Sign In</TabsTrigger>
+                <TabsTrigger value="signup" className="dark:data-[state=active]:bg-gray-700">Sign Up</TabsTrigger>
               </TabsList>
 
               <TabsContent value="signin" className="space-y-4">
+                <div className="flex justify-between items-center mb-4">
+                  <Label className="text-sm font-medium dark:text-gray-200">Demo Credentials</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={fillAdminCredentials}
+                    className="text-xs dark:border-gray-600 dark:text-gray-200"
+                  >
+                    <Shield className="w-3 h-3 mr-1" />
+                    Fill Admin
+                  </Button>
+                </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="signin-email">Email</Label>
+                  <Label htmlFor="signin-email" className="dark:text-gray-200">Email</Label>
                   <Input
                     id="signin-email"
                     type="email"
                     placeholder="farmer@example.com"
                     value={formData.email}
                     onChange={(e) => handleInputChange('email', e.target.value)}
+                    className="dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signin-password">Password</Label>
-                  <Input
-                    id="signin-password"
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) => handleInputChange('password', e.target.value)}
-                  />
+                  <Label htmlFor="signin-password" className="dark:text-gray-200">Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="signin-password"
+                      type={showPassword ? "text" : "password"}
+                      value={formData.password}
+                      onChange={(e) => handleInputChange('password', e.target.value)}
+                      className="dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 pr-10"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4 text-gray-400" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-gray-400" />
+                      )}
+                    </Button>
+                  </div>
                 </div>
                 <Button 
                   onClick={handleSignIn}
-                  className="w-full bg-green-600 hover:bg-green-700"
+                  className="w-full bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800"
                   disabled={isLoading}
                 >
                   {isLoading ? 'Signing In...' : 'Sign In'}
@@ -223,13 +365,13 @@ const AuthPage = () => {
 
               <TabsContent value="signup" className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="signup-name">Full Name *</Label>
+                  <Label htmlFor="signup-name" className="dark:text-gray-200">Full Name *</Label>
                   <div className="relative">
                     <User className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
                     <Input
                       id="signup-name"
                       placeholder="John Doe"
-                      className="pl-10"
+                      className="pl-10 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
                       value={formData.fullName}
                       onChange={(e) => handleInputChange('fullName', e.target.value)}
                     />
@@ -237,13 +379,13 @@ const AuthPage = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="signup-phone">Phone Number (Kenya) *</Label>
+                  <Label htmlFor="signup-phone" className="dark:text-gray-200">Phone Number (Kenya)</Label>
                   <div className="relative">
                     <Phone className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
                     <Input
                       id="signup-phone"
                       placeholder="+254700000000"
-                      className="pl-10"
+                      className="pl-10 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
                       value={formData.phoneNumber}
                       onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
                     />
@@ -251,38 +393,39 @@ const AuthPage = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="signup-county">County</Label>
+                  <Label htmlFor="signup-county" className="dark:text-gray-200">County</Label>
                   <Select onValueChange={(value) => handleInputChange('county', value)}>
-                    <SelectTrigger>
+                    <SelectTrigger className="dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100">
                       <SelectValue placeholder="Select your county" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="dark:bg-gray-800 dark:border-gray-600">
                       {kenyanCounties.map((county) => (
-                        <SelectItem key={county} value={county}>{county}</SelectItem>
+                        <SelectItem key={county} value={county} className="dark:text-gray-100 dark:focus:bg-gray-700">{county}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="signup-farm">Farm Name</Label>
+                  <Label htmlFor="signup-farm" className="dark:text-gray-200">Farm Name</Label>
                   <Input
                     id="signup-farm"
                     placeholder="Green Valley Farm"
                     value={formData.farmName}
                     onChange={(e) => handleInputChange('farmName', e.target.value)}
+                    className="dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email *</Label>
+                  <Label htmlFor="signup-email" className="dark:text-gray-200">Email *</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
                     <Input
                       id="signup-email"
                       type="email"
                       placeholder="farmer@example.com"
-                      className="pl-10"
+                      className="pl-10 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
                       value={formData.email}
                       onChange={(e) => handleInputChange('email', e.target.value)}
                     />
@@ -290,19 +433,62 @@ const AuthPage = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="signup-password">Password *</Label>
-                  <Input
-                    id="signup-password"
-                    type="password"
-                    placeholder="Create strong password"
-                    value={formData.password}
-                    onChange={(e) => handleInputChange('password', e.target.value)}
-                  />
+                  <Label htmlFor="signup-password" className="dark:text-gray-200">Password *</Label>
+                  <div className="relative">
+                    <Input
+                      id="signup-password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Create strong password (min 6 chars)"
+                      value={formData.password}
+                      onChange={(e) => handleInputChange('password', e.target.value)}
+                      className="dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 pr-10"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4 text-gray-400" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-gray-400" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="signup-confirm-password" className="dark:text-gray-200">Confirm Password *</Label>
+                  <div className="relative">
+                    <Input
+                      id="signup-confirm-password"
+                      type={showConfirmPassword ? "text" : "password"}
+                      placeholder="Confirm your password"
+                      value={formData.confirmPassword}
+                      onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                      className="dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 pr-10"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff className="h-4 w-4 text-gray-400" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-gray-400" />
+                      )}
+                    </Button>
+                  </div>
                 </div>
 
                 <Button 
                   onClick={handleSignUp}
-                  className="w-full bg-green-600 hover:bg-green-700"
+                  className="w-full bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800"
                   disabled={isLoading}
                 >
                   {isLoading ? 'Creating Account...' : 'Create Account'}
@@ -312,8 +498,11 @@ const AuthPage = () => {
           </CardContent>
         </Card>
 
-        <div className="text-center mt-6 text-sm text-gray-600">
+        <div className="text-center mt-6 text-sm text-gray-600 dark:text-gray-300">
           <p>🇰🇪 Empowering Kenyan farmers with smart technology</p>
+          <p className="mt-2 text-xs">
+            Admin Demo: <strong>admin@agrismart.co.ke</strong> / <strong>admin123</strong>
+          </p>
         </div>
       </div>
     </div>
