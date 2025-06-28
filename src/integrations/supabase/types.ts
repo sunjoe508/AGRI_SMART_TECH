@@ -30,6 +30,36 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_tokens: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          email: string
+          expires_at: string
+          id: string
+          token: string
+          used: boolean
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          email: string
+          expires_at?: string
+          id?: string
+          token: string
+          used?: boolean
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          email?: string
+          expires_at?: string
+          id?: string
+          token?: string
+          used?: boolean
+        }
+        Relationships: []
+      }
       daily_reports: {
         Row: {
           created_at: string
@@ -460,9 +490,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_admin_token: {
+        Args: { admin_email: string }
+        Returns: string
+      }
       is_admin: {
         Args: { user_id: string }
         Returns: boolean
+      }
+      validate_admin_token: {
+        Args: { token_value: string }
+        Returns: Json
       }
     }
     Enums: {

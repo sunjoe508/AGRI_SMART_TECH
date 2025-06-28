@@ -1,0 +1,215 @@
+
+import React, { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { Shield, Mail, UserPlus, RefreshCw } from 'lucide-react';
+
+const AdminManagement = () => {
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [resetEmail, setResetEmail] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+
+  const sendAdminInvite = async () => {
+    if (!inviteEmail) {
+      toast({
+        title: "❌ Email Required",
+        description: "Please enter an email address",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Generate admin token
+      const { data: tokenData, error: tokenError } = await supabase
+        .rpc('generate_admin_token', { admin_email: inviteEmail });
+
+      if (tokenError) throw tokenError;
+
+      // Send invitation email
+      const { data: emailData, error: emailError } = await supabase.functions.invoke('send-admin-email', {
+        body: {
+          type: 'admin_invite',
+          email: inviteEmail,
+          token: tokenData
+        }
+      });
+
+      if (emailError) throw emailError;
+
+      toast({
+        title: "🎉 Admin Invitation Sent!",
+        description: `Invitation email sent to ${inviteEmail}`,
+      });
+
+      setInviteEmail('');
+    } catch (error: any) {
+      console.error('Error sending admin invite:', error);
+      toast({
+        title: "❌ Failed to Send Invitation",
+        description: error.message || "An error occurred while sending the invitation",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const sendPasswordReset = async () => {
+    if (!resetEmail) {
+      toast({
+        title: "❌ Email Required",
+        description: "Please enter an email address",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: `${window.location.origin}/reset-password`
+      });
+
+      if (error) throw error;
+
+      // Also send custom email notification
+      await supabase.functions.invoke('send-admin-email', {
+        body: {
+          type: 'password_reset',
+          email: resetEmail,
+          resetUrl: `${window.location.origin}/reset-password`
+        }
+      });
+
+      toast({
+        title: "🔒 Password Reset Sent!",
+        description: `Password reset email sent to ${resetEmail}`,
+      });
+
+      setResetEmail('');
+    } catch (error: any) {
+      console.error('Error sending password reset:', error);
+      toast({
+        title: "❌ Failed to Send Reset",
+        description: error.message || "An error occurred while sending the password reset",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Create Admin Invitation */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <UserPlus className="w-5 h-5 text-purple-600" />
+              <span>Create Admin Account</span>
+            </CardTitle>
+            <CardDescription>
+              Send an invitation email to create a new admin account
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="invite-email">Admin Email Address</Label>
+              <Input
+                id="invite-email"
+                type="email"
+                placeholder="admin@example.com"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+              />
+            </div>
+            <Button 
+              onClick={sendAdminInvite}
+              disabled={isLoading}
+              className="w-full bg-purple-600 hover:bg-purple-700"
+            >
+              {isLoading ? (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  Sending Invitation...
+                </>
+              ) : (
+                <>
+                  <Mail className="w-4 h-4 mr-2" />
+                  Send Admin Invitation
+                </>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Password Reset */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <RefreshCw className="w-5 h-5 text-green-600" />
+              <span>Reset Password</span>
+            </CardTitle>
+            <CardDescription>
+              Send a password reset email to any user
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="reset-email">User Email Address</Label>
+              <Input
+                id="reset-email"
+                type="email"
+                placeholder="user@example.com"
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+              />
+            </div>
+            <Button 
+              onClick={sendPasswordReset}
+              disabled={isLoading}
+              className="w-full bg-green-600 hover:bg-green-700"
+            >
+              {isLoading ? (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  Sending Reset...
+                </>
+              ) : (
+                <>
+                  <Shield className="w-4 h-4 mr-2" />
+                  Send Password Reset
+                </>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Instructions */}
+      <Card className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+        <CardContent className="pt-6">
+          <div className="space-y-3 text-sm">
+            <h4 className="font-semibold text-blue-800 dark:text-blue-200">📋 Instructions:</h4>
+            <ul className="space-y-2 text-blue-700 dark:text-blue-300">
+              <li>• <strong>Admin Invitations:</strong> Send secure invitation tokens to create new admin accounts</li>
+              <li>• <strong>Password Reset:</strong> Help users reset their passwords via email</li>
+              <li>• <strong>Security:</strong> All tokens expire automatically for security</li>
+              <li>• <strong>Email Integration:</strong> For production, integrate with a service like Resend or SendGrid</li>
+            </ul>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+export default AdminManagement;

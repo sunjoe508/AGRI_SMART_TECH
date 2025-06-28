@@ -1,332 +1,165 @@
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Users, ShoppingCart, BarChart3, Settings, Eye, Edit } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-
-interface AdminStats {
-  totalUsers: number;
-  totalOrders: number;
-  pendingOrders: number;
-  totalRevenue: number;
-}
-
-interface User {
-  id: string;
-  full_name: string;
-  email: string;
-  phone_number: string;
-  county: string;
-  created_at: string;
-}
-
-interface Order {
-  id: string;
-  user_id: string;
-  product_name: string;
-  vendor_name: string;
-  quantity: number;
-  total_amount: number;
-  status: string;
-  created_at: string;
-  user_name: string;
-}
+import { useQuery } from "@tanstack/react-query";
+import { Users, Shield, Database, Activity, UserPlus, Settings } from 'lucide-react';
+import AdminManagement from './AdminManagement';
 
 const AdminDashboard = () => {
-  const [stats, setStats] = useState<AdminStats>({
-    totalUsers: 0,
-    totalOrders: 0,
-    pendingOrders: 0,
-    totalRevenue: 0
+  // Fetch admin statistics
+  const { data: stats, isLoading } = useQuery({
+    queryKey: ['admin-stats'],
+    queryFn: async () => {
+      const [
+        { count: totalUsers },
+        { count: totalAdmins },
+        { count: totalProfiles },
+        { count: totalOrders }
+      ] = await Promise.all([
+        supabase.from('profiles').select('*', { count: 'exact', head: true }),
+        supabase.from('admin_roles').select('*', { count: 'exact', head: true }),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }),
+        supabase.from('orders').select('*', { count: 'exact', head: true })
+      ]);
+
+      return {
+        totalUsers: totalUsers || 0,
+        totalAdmins: totalAdmins || 0,
+        totalProfiles: totalProfiles || 0,
+        totalOrders: totalOrders || 0
+      };
+    }
   });
-  const [users, setUsers] = useState<User[]>([]);
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
 
-  useEffect(() => {
-    fetchAdminData();
-  }, []);
-
-  const fetchAdminData = async () => {
-    try {
-      // Fetch users from profiles
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('*');
-
-      if (profilesError) throw profilesError;
-
-      // Fetch orders with separate queries for related data
-      const { data: ordersData, error: ordersError } = await supabase
-        .from('orders')
-        .select(`
-          *,
-          vendor_products (product_name),
-          vendors (name)
-        `);
-
-      if (ordersError) throw ordersError;
-
-      // Fetch user profiles for orders
-      const userIds = ordersData?.map(order => order.user_id) || [];
-      const { data: orderUsers, error: orderUsersError } = await supabase
-        .from('profiles')
-        .select('id, full_name')
-        .in('id', userIds);
-
-      if (orderUsersError) throw orderUsersError;
-
-      const formattedUsers = profilesData?.map(profile => ({
-        id: profile.id,
-        full_name: profile.full_name || 'N/A',
-        email: 'N/A', // Email not stored in profiles
-        phone_number: profile.phone_number || 'N/A',
-        county: profile.county || 'N/A',
-        created_at: profile.created_at
-      })) || [];
-
-      // Create a map of user IDs to names
-      const userNameMap = orderUsers?.reduce((acc, user) => {
-        acc[user.id] = user.full_name || 'N/A';
-        return acc;
-      }, {} as Record<string, string>) || {};
-
-      const formattedOrders = ordersData?.map(order => ({
-        id: order.id,
-        user_id: order.user_id,
-        product_name: order.vendor_products?.product_name || 'N/A',
-        vendor_name: order.vendors?.name || 'N/A',
-        quantity: order.quantity,
-        total_amount: order.total_amount,
-        status: order.status,
-        created_at: order.created_at,
-        user_name: userNameMap[order.user_id] || 'N/A'
-      })) || [];
-
-      setUsers(formattedUsers);
-      setOrders(formattedOrders);
-
-      // Calculate stats
-      const pendingOrders = formattedOrders.filter(order => order.status === 'pending').length;
-      const totalRevenue = formattedOrders.reduce((sum, order) => sum + order.total_amount, 0);
-
-      setStats({
-        totalUsers: formattedUsers.length,
-        totalOrders: formattedOrders.length,
-        pendingOrders: pendingOrders,
-        totalRevenue: totalRevenue
-      });
-
-    } catch (error: any) {
-      console.error('Admin data fetch error:', error);
-      toast({
-        title: "❌ Error",
-        description: "Failed to load admin data",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const updateOrderStatus = async (orderId: string, newStatus: string) => {
-    try {
-      const { error } = await supabase
-        .from('orders')
-        .update({ status: newStatus })
-        .eq('id', orderId);
-
-      if (error) throw error;
-
-      toast({
-        title: "✅ Order Updated",
-        description: "Order status updated successfully",
-      });
-
-      fetchAdminData(); // Refresh data
-    } catch (error: any) {
-      toast({
-        title: "❌ Update Failed",
-        description: error.message,
-        variant: "destructive"
-      });
-    }
-  };
-
-  if (loading) {
-    return <div className="text-center p-8">Loading admin dashboard...</div>;
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
+      {/* Header */}
+      <div className="flex items-center space-x-3 mb-6">
+        <Shield className="w-8 h-8 text-purple-600" />
+        <div>
+          <h2 className="text-3xl font-bold text-purple-800 dark:text-purple-400">Admin Dashboard</h2>
+          <p className="text-gray-600 dark:text-gray-300">Manage users, admins, and system settings</p>
+        </div>
+      </div>
+
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <Card className="border-blue-200 dark:border-blue-800">
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <Users className="w-8 h-8 text-blue-600" />
               <div>
-                <p className="text-sm font-medium text-blue-600">Total Users</p>
-                <p className="text-2xl font-bold text-blue-900">{stats.totalUsers}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Total Users</p>
+                <p className="text-2xl font-bold text-blue-800 dark:text-blue-400">{stats?.totalUsers}</p>
               </div>
-              <Users className="w-8 h-8 text-blue-500" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-r from-green-50 to-green-100 border-green-200">
+        <Card className="border-purple-200 dark:border-purple-800">
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <Shield className="w-8 h-8 text-purple-600" />
               <div>
-                <p className="text-sm font-medium text-green-600">Total Orders</p>
-                <p className="text-2xl font-bold text-green-900">{stats.totalOrders}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Total Admins</p>
+                <p className="text-2xl font-bold text-purple-800 dark:text-purple-400">{stats?.totalAdmins}</p>
               </div>
-              <ShoppingCart className="w-8 h-8 text-green-500" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-r from-yellow-50 to-yellow-100 border-yellow-200">
+        <Card className="border-green-200 dark:border-green-800">
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <Database className="w-8 h-8 text-green-600" />
               <div>
-                <p className="text-sm font-medium text-yellow-600">Pending Orders</p>
-                <p className="text-2xl font-bold text-yellow-900">{stats.pendingOrders}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Profiles</p>
+                <p className="text-2xl font-bold text-green-800 dark:text-green-400">{stats?.totalProfiles}</p>
               </div>
-              <BarChart3 className="w-8 h-8 text-yellow-500" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-r from-purple-50 to-purple-100 border-purple-200">
+        <Card className="border-orange-200 dark:border-orange-800">
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <Activity className="w-8 h-8 text-orange-600" />
               <div>
-                <p className="text-sm font-medium text-purple-600">Total Revenue</p>
-                <p className="text-2xl font-bold text-purple-900">KSh {stats.totalRevenue.toLocaleString()}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Total Orders</p>
+                <p className="text-2xl font-bold text-orange-800 dark:text-orange-400">{stats?.totalOrders}</p>
               </div>
-              <Settings className="w-8 h-8 text-purple-500" />
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Data Tables */}
-      <Tabs defaultValue="users" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="users">Users Management</TabsTrigger>
-          <TabsTrigger value="orders">Orders Management</TabsTrigger>
+      {/* Admin Management Tabs */}
+      <Tabs defaultValue="admin-management" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
+          <TabsTrigger value="admin-management" className="flex items-center space-x-2">
+            <UserPlus className="w-4 h-4" />
+            <span>Admin Management</span>
+          </TabsTrigger>
+          <TabsTrigger value="user-management" className="flex items-center space-x-2">
+            <Users className="w-4 h-4" />
+            <span>User Management</span>
+          </TabsTrigger>
+          <TabsTrigger value="system-settings" className="flex items-center space-x-2">
+            <Settings className="w-4 h-4" />
+            <span>System Settings</span>
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="users">
+        <TabsContent value="admin-management" className="space-y-6">
+          <AdminManagement />
+        </TabsContent>
+
+        <TabsContent value="user-management" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Users Management</CardTitle>
+              <CardTitle>User Management</CardTitle>
+              <CardDescription>Manage user accounts and permissions</CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Phone</TableHead>
-                    <TableHead>County</TableHead>
-                    <TableHead>Joined</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {users.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell>{user.full_name}</TableCell>
-                      <TableCell>{user.phone_number}</TableCell>
-                      <TableCell>{user.county}</TableCell>
-                      <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
-                      <TableCell>
-                        <div className="flex space-x-2">
-                          <Button size="sm" variant="outline">
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                          <Button size="sm" variant="outline">
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <p className="text-gray-600 dark:text-gray-300">
+                User management features will be implemented here. This could include:
+              </p>
+              <ul className="mt-4 space-y-2 text-sm text-gray-600 dark:text-gray-300">
+                <li>• View all registered users</li>
+                <li>• Activate/deactivate user accounts</li>
+                <li>• Reset user passwords</li>
+                <li>• View user activity logs</li>
+              </ul>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="orders">
+        <TabsContent value="system-settings" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Orders Management</CardTitle>
+              <CardTitle>System Settings</CardTitle>
+              <CardDescription>Configure system-wide settings</CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Product</TableHead>
-                    <TableHead>Vendor</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {orders.map((order) => (
-                    <TableRow key={order.id}>
-                      <TableCell>{order.user_name}</TableCell>
-                      <TableCell>{order.product_name}</TableCell>
-                      <TableCell>{order.vendor_name}</TableCell>
-                      <TableCell>KSh {order.total_amount.toLocaleString()}</TableCell>
-                      <TableCell>
-                        <Badge 
-                          variant={
-                            order.status === 'pending' ? 'destructive' :
-                            order.status === 'confirmed' ? 'default' :
-                            order.status === 'delivered' ? 'secondary' : 'outline'
-                          }
-                        >
-                          {order.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{new Date(order.created_at).toLocaleDateString()}</TableCell>
-                      <TableCell>
-                        <div className="flex space-x-2">
-                          {order.status === 'pending' && (
-                            <Button 
-                              size="sm" 
-                              onClick={() => updateOrderStatus(order.id, 'confirmed')}
-                              className="bg-green-600 hover:bg-green-700"
-                            >
-                              Confirm
-                            </Button>
-                          )}
-                          {order.status === 'confirmed' && (
-                            <Button 
-                              size="sm" 
-                              onClick={() => updateOrderStatus(order.id, 'delivered')}
-                              className="bg-blue-600 hover:bg-blue-700"
-                            >
-                              Deliver
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <p className="text-gray-600 dark:text-gray-300">
+                System settings will be implemented here. This could include:
+              </p>
+              <ul className="mt-4 space-y-2 text-sm text-gray-600 dark:text-gray-300">
+                <li>• Email configuration</li>
+                <li>• API key management</li>
+                <li>• System maintenance mode</li>
+                <li>• Database backup settings</li>
+              </ul>
             </CardContent>
           </Card>
         </TabsContent>

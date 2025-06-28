@@ -10,6 +10,7 @@ import { Session, User } from '@supabase/supabase-js';
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import Index from "./pages/Index";
 import AuthPage from "./pages/AuthPage";
+import AdminSignup from "./pages/AdminSignup";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 
@@ -66,6 +67,7 @@ const App = () => {
                 } 
               />
               <Route path="/auth" element={<AuthPage />} />
+              <Route path="/admin-signup" element={<AdminSignup />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
