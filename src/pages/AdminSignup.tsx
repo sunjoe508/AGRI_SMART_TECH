@@ -10,6 +10,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Sprout, Shield, Eye, EyeOff, CheckCircle, AlertTriangle } from 'lucide-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
+interface TokenValidationResponse {
+  valid: boolean;
+  email?: string;
+  message: string;
+}
+
 const AdminSignup = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -51,18 +57,20 @@ const AdminSignup = () => {
 
       if (error) throw error;
 
-      if (data.valid) {
+      const response = data as TokenValidationResponse;
+
+      if (response.valid) {
         setTokenValid(true);
-        setAdminEmail(data.email);
+        setAdminEmail(response.email || '');
         toast({
           title: "✅ Valid Invitation",
-          description: `Creating admin account for ${data.email}`,
+          description: `Creating admin account for ${response.email}`,
         });
       } else {
         setTokenValid(false);
         toast({
           title: "❌ Invalid Token",
-          description: data.message || "This invitation token is invalid or expired",
+          description: response.message || "This invitation token is invalid or expired",
           variant: "destructive"
         });
       }
@@ -164,7 +172,7 @@ const AdminSignup = () => {
 
         // Redirect to login page after a short delay
         setTimeout(() => {
-          navigate('/auth');
+          navigate('/admin-auth');
         }, 3000);
       }
     } catch (error: any) {
@@ -203,10 +211,10 @@ const AdminSignup = () => {
           <CardContent className="text-center space-y-4">
             <p className="text-red-600">This invitation link is invalid or has expired.</p>
             <Button 
-              onClick={() => navigate('/auth')}
+              onClick={() => navigate('/admin-auth')}
               className="w-full"
             >
-              Go to Login
+              Go to Admin Login
             </Button>
           </CardContent>
         </Card>
