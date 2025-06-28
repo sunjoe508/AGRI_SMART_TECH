@@ -74,7 +74,7 @@ const AdminManagement = () => {
     setIsLoading(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-        redirectTo: `${window.location.origin}/reset-password`
+        redirectTo: `${window.location.origin}/admin-auth?tab=signin&reset=true`
       });
 
       if (error) throw error;
@@ -84,7 +84,7 @@ const AdminManagement = () => {
         body: {
           type: 'password_reset',
           email: resetEmail,
-          resetUrl: `${window.location.origin}/reset-password`
+          resetUrl: `${window.location.origin}/admin-auth?tab=signin&reset=true`
         }
       });
 
@@ -185,7 +185,7 @@ const AdminManagement = () => {
                 </>
               ) : (
                 <>
-                  <Shield className="w-4 h-4 mr-2" />
+                  <Shield className="w-4 w-4 mr-2" />
                   Send Password Reset
                 </>
               )}
@@ -204,6 +204,7 @@ const AdminManagement = () => {
               <li>• <strong>Password Reset:</strong> Help users reset their passwords via email</li>
               <li>• <strong>Security:</strong> All tokens expire automatically for security</li>
               <li>• <strong>Email Integration:</strong> For production, integrate with a service like Resend or SendGrid</li>
+              <li>• <strong>Default Admin:</strong> joemunga329@gmail.com with password: joe123</li>
             </ul>
           </div>
         </CardContent>

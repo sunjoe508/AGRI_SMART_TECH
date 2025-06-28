@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -57,22 +56,27 @@ const AdminSignup = () => {
 
       if (error) throw error;
 
-      const response = data as TokenValidationResponse;
+      // Type assertion with proper validation
+      const response = data as unknown as TokenValidationResponse;
 
-      if (response.valid) {
-        setTokenValid(true);
-        setAdminEmail(response.email || '');
-        toast({
-          title: "✅ Valid Invitation",
-          description: `Creating admin account for ${response.email}`,
-        });
+      if (response && typeof response === 'object' && 'valid' in response) {
+        if (response.valid) {
+          setTokenValid(true);
+          setAdminEmail(response.email || '');
+          toast({
+            title: "✅ Valid Invitation",
+            description: `Creating admin account for ${response.email}`,
+          });
+        } else {
+          setTokenValid(false);
+          toast({
+            title: "❌ Invalid Token",
+            description: response.message || "This invitation token is invalid or expired",
+            variant: "destructive"
+          });
+        }
       } else {
-        setTokenValid(false);
-        toast({
-          title: "❌ Invalid Token",
-          description: response.message || "This invitation token is invalid or expired",
-          variant: "destructive"
-        });
+        throw new Error('Invalid response format from token validation');
       }
     } catch (error: any) {
       console.error('Token validation error:', error);
@@ -139,7 +143,7 @@ const AdminSignup = () => {
         email: adminEmail,
         password: formData.password,
         options: {
-          emailRedirectTo: `${window.location.origin}/`,
+          emailRedirectTo: `${window.location.origin}/admin-auth`,
           data: {
             full_name: formData.fullName,
             phone_number: formData.phoneNumber,
