@@ -8,14 +8,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sprout, Shield, Mail, Eye, EyeOff, CheckCircle, AlertTriangle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const AdminAuth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [emailSent, setEmailSent] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -23,6 +25,42 @@ const AdminAuth = () => {
   });
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  // Check for password reset flow
+  useEffect(() => {
+    const checkPasswordReset = async () => {
+      const accessToken = searchParams.get('access_token');
+      const refreshToken = searchParams.get('refresh_token');
+      const type = searchParams.get('type');
+      
+      if (accessToken && refreshToken && type === 'recovery') {
+        setIsResettingPassword(true);
+        
+        // Set the session with the tokens
+        const { error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken
+        });
+        
+        if (error) {
+          console.error('Error setting session:', error);
+          toast({
+            title: "❌ Session Error",
+            description: "Failed to verify reset link. Please try again.",
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "✅ Reset Link Verified",
+            description: "Please enter your new password below.",
+          });
+        }
+      }
+    };
+
+    checkPasswordReset();
+  }, [searchParams, toast]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -46,6 +84,16 @@ const AdminAuth = () => {
       toast({
         title: "❌ Invalid Email",
         description: "Please enter a valid email address",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Ensure only the specific admin email can sign in
+    if (formData.email !== 'joemunga329@gmail.com') {
+      toast({
+        title: "❌ Access Denied",
+        description: "This email is not authorized for admin access.",
         variant: "destructive"
       });
       return;
@@ -134,10 +182,20 @@ const AdminAuth = () => {
       return;
     }
 
+    // Ensure only the admin email can reset password
+    if (formData.resetEmail !== 'joemunga329@gmail.com') {
+      toast({
+        title: "❌ Access Denied",
+        description: "This email is not authorized for admin access.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(formData.resetEmail, {
-        redirectTo: `${window.location.origin}/admin-auth?tab=signin&reset=true`
+        redirectTo: `${window.location.origin}/admin-auth?type=recovery`
       });
 
       if (error) throw error;
@@ -150,6 +208,63 @@ const AdminAuth = () => {
     } catch (error: any) {
       toast({
         title: "❌ Reset Failed",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handlePasswordUpdate = async () => {
+    if (!newPassword || !confirmPassword) {
+      toast({
+        title: "❌ Missing Information",
+        description: "Please enter both password fields",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: "❌ Passwords Don't Match",
+        description: "Please ensure both password fields match",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast({
+        title: "❌ Password Too Short",
+        description: "Password must be at least 6 characters long",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "✅ Password Updated",
+        description: "Your password has been successfully updated. Redirecting to dashboard...",
+      });
+
+      // Redirect to admin dashboard after successful password update
+      setTimeout(() => {
+        navigate('/');
+      }, 2000);
+
+    } catch (error: any) {
+      toast({
+        title: "❌ Update Failed",
         description: error.message,
         variant: "destructive"
       });
@@ -185,6 +300,64 @@ const AdminAuth = () => {
     }
   };
 
+  // Show password reset form if in password reset mode
+  if (isResettingPassword) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-100 via-indigo-50 to-blue-100 flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <div className="flex items-center justify-center space-x-2 mb-4">
+              <Shield className="w-10 h-10 text-purple-600" />
+              <Sprout className="w-8 h-8 text-green-600" />
+            </div>
+            <h1 className="text-3xl font-bold text-purple-800">Reset Admin Password</h1>
+            <p className="text-gray-600">Enter your new password</p>
+          </div>
+
+          <Card className="shadow-xl border-0 bg-white/95 backdrop-blur-sm">
+            <CardHeader className="text-center">
+              <CardTitle className="text-2xl text-purple-800 flex items-center justify-center space-x-2">
+                <Shield className="w-6 h-6" />
+                <span>New Password</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="new-password">New Password</Label>
+                <Input
+                  id="new-password"
+                  type="password"
+                  placeholder="Enter new password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirm-password">Confirm Password</Label>
+                <Input
+                  id="confirm-password"
+                  type="password"
+                  placeholder="Confirm new password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                />
+              </div>
+
+              <Button 
+                onClick={handlePasswordUpdate}
+                className="w-full bg-purple-600 hover:bg-purple-700"
+                disabled={isLoading}
+              >
+                {isLoading ? 'Updating Password...' : 'Update Password'}
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-100 via-indigo-50 to-blue-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -215,6 +388,13 @@ const AdminAuth = () => {
               </TabsList>
 
               <TabsContent value="signin" className="space-y-4">
+                <Alert className="border-blue-200 bg-blue-50">
+                  <AlertTriangle className="h-4 w-4 text-blue-600" />
+                  <AlertDescription className="text-blue-800">
+                    <strong>Default Admin:</strong> joemunga329@gmail.com | Password: joe123
+                  </AlertDescription>
+                </Alert>
+
                 <div className="space-y-4 mb-6">
                   <Button 
                     onClick={signInWithGoogle}
@@ -247,7 +427,7 @@ const AdminAuth = () => {
                     <Input
                       id="admin-email"
                       type="email"
-                      placeholder="admin@agrismart.co.ke"
+                      placeholder="joemunga329@gmail.com"
                       className="pl-10"
                       value={formData.email}
                       onChange={(e) => handleInputChange('email', e.target.value)}
@@ -296,7 +476,7 @@ const AdminAuth = () => {
                   <Alert className="border-green-200 bg-green-50">
                     <CheckCircle className="h-4 w-4 text-green-600" />
                     <AlertDescription className="text-green-800">
-                      ✅ Password reset email sent! Please check your inbox.
+                      ✅ Password reset email sent! Please check your inbox and click the link to reset your password.
                     </AlertDescription>
                   </Alert>
                 )}
@@ -308,7 +488,7 @@ const AdminAuth = () => {
                     <Input
                       id="reset-email"
                       type="email"
-                      placeholder="Enter your admin email"
+                      placeholder="joemunga329@gmail.com"
                       className="pl-10"
                       value={formData.resetEmail}
                       onChange={(e) => handleInputChange('resetEmail', e.target.value)}
@@ -332,7 +512,7 @@ const AdminAuth = () => {
           <div className="bg-white/90 backdrop-blur-sm rounded-lg p-4 shadow-lg">
             <p className="text-sm text-purple-800 font-semibold mb-2">🔐 Secure Admin Portal</p>
             <p className="text-xs text-gray-600">
-              This portal is restricted to authorized AgriSmart administrators only.
+              Only joemunga329@gmail.com is authorized for admin access.
               All access attempts are logged and monitored.
             </p>
             <Button 

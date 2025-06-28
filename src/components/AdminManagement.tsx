@@ -24,6 +24,16 @@ const AdminManagement = () => {
       return;
     }
 
+    // Only allow the specific admin email
+    if (inviteEmail !== 'joemunga329@gmail.com') {
+      toast({
+        title: "❌ Access Denied",
+        description: "Only joemunga329@gmail.com is authorized for admin access.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
       // Generate admin token
@@ -71,10 +81,20 @@ const AdminManagement = () => {
       return;
     }
 
+    // Only allow the specific admin email
+    if (resetEmail !== 'joemunga329@gmail.com') {
+      toast({
+        title: "❌ Access Denied",
+        description: "Only joemunga329@gmail.com is authorized for admin access.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-        redirectTo: `${window.location.origin}/admin-auth?tab=signin&reset=true`
+        redirectTo: `${window.location.origin}/admin-auth?type=recovery`
       });
 
       if (error) throw error;
@@ -84,13 +104,13 @@ const AdminManagement = () => {
         body: {
           type: 'password_reset',
           email: resetEmail,
-          resetUrl: `${window.location.origin}/admin-auth?tab=signin&reset=true`
+          resetUrl: `${window.location.origin}/admin-auth?type=recovery`
         }
       });
 
       toast({
         title: "🔒 Password Reset Sent!",
-        description: `Password reset email sent to ${resetEmail}`,
+        description: `Password reset email sent to ${resetEmail}. Click the link to reset your password.`,
       });
 
       setResetEmail('');
@@ -126,7 +146,7 @@ const AdminManagement = () => {
               <Input
                 id="invite-email"
                 type="email"
-                placeholder="admin@example.com"
+                placeholder="joemunga329@gmail.com"
                 value={inviteEmail}
                 onChange={(e) => setInviteEmail(e.target.value)}
               />
@@ -159,16 +179,16 @@ const AdminManagement = () => {
               <span>Reset Password</span>
             </CardTitle>
             <CardDescription>
-              Send a password reset email to any user
+              Send a password reset email to the admin user
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="reset-email">User Email Address</Label>
+              <Label htmlFor="reset-email">Admin Email Address</Label>
               <Input
                 id="reset-email"
                 type="email"
-                placeholder="user@example.com"
+                placeholder="joemunga329@gmail.com"
                 value={resetEmail}
                 onChange={(e) => setResetEmail(e.target.value)}
               />
@@ -185,7 +205,7 @@ const AdminManagement = () => {
                 </>
               ) : (
                 <>
-                  <Shield className="w-4 w-4 mr-2" />
+                  <Shield className="w-4 h-4 mr-2" />
                   Send Password Reset
                 </>
               )}
@@ -200,11 +220,11 @@ const AdminManagement = () => {
           <div className="space-y-3 text-sm">
             <h4 className="font-semibold text-blue-800 dark:text-blue-200">📋 Instructions:</h4>
             <ul className="space-y-2 text-blue-700 dark:text-blue-300">
-              <li>• <strong>Admin Invitations:</strong> Send secure invitation tokens to create new admin accounts</li>
-              <li>• <strong>Password Reset:</strong> Help users reset their passwords via email</li>
+              <li>• <strong>Admin Access:</strong> Only joemunga329@gmail.com is authorized for admin access</li>
+              <li>• <strong>Default Password:</strong> joe123 (can be changed via password reset)</li>
+              <li>• <strong>Password Reset:</strong> Reset link will redirect directly to admin dashboard after password update</li>
               <li>• <strong>Security:</strong> All tokens expire automatically for security</li>
               <li>• <strong>Email Integration:</strong> For production, integrate with a service like Resend or SendGrid</li>
-              <li>• <strong>Default Admin:</strong> joemunga329@gmail.com with password: joe123</li>
             </ul>
           </div>
         </CardContent>
