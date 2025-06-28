@@ -14,6 +14,7 @@ import AdminAuth from "./pages/AdminAuth";
 import AdminSignup from "./pages/AdminSignup";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
+import AdminDashboard from "./components/AdminDashboard";
 
 const queryClient = new QueryClient();
 
@@ -21,21 +22,50 @@ const App = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
+        
+        // Check if user is admin
+        if (session?.user) {
+          const { data: adminCheck } = await supabase
+            .from('admin_roles')
+            .select('role')
+            .eq('user_id', session.user.id)
+            .eq('role', 'admin')
+            .single();
+          
+          setIsAdmin(!!adminCheck);
+        } else {
+          setIsAdmin(false);
+        }
+        
         setLoading(false);
       }
     );
 
     // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      
+      // Check if user is admin
+      if (session?.user) {
+        const { data: adminCheck } = await supabase
+          .from('admin_roles')
+          .select('role')
+          .eq('user_id', session.user.id)
+          .eq('role', 'admin')
+          .single();
+        
+        setIsAdmin(!!adminCheck);
+      }
+      
       setLoading(false);
     });
 
@@ -64,7 +94,9 @@ const App = () => {
               <Route 
                 path="/" 
                 element={
-                  !user ? <Index /> : <Dashboard user={user} />
+                  !user ? <Index /> : 
+                  isAdmin ? <AdminDashboard /> : 
+                  <Dashboard user={user} />
                 } 
               />
               <Route path="/auth" element={<AuthPage />} />

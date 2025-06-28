@@ -6,13 +6,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Shield, Mail, UserPlus, RefreshCw } from 'lucide-react';
+import { Shield, Mail, UserPlus, RefreshCw, Users } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const AdminManagement = () => {
   const [inviteEmail, setInviteEmail] = useState('');
   const [resetEmail, setResetEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const sendAdminInvite = async () => {
     if (!inviteEmail) {
@@ -126,15 +128,44 @@ const AdminManagement = () => {
     }
   };
 
+  const navigateToAdminSignup = () => {
+    navigate('/admin-signup');
+  };
+
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Direct Admin Registration */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Users className="w-5 h-5 text-green-600" />
+              <span>Direct Registration</span>
+            </CardTitle>
+            <CardDescription>
+              Register a new admin account directly
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button 
+              onClick={navigateToAdminSignup}
+              className="w-full bg-green-600 hover:bg-green-700"
+            >
+              <UserPlus className="w-4 h-4 mr-2" />
+              Create New Admin
+            </Button>
+            <p className="text-xs text-gray-500 text-center">
+              Direct registration for joemunga329@gmail.com
+            </p>
+          </CardContent>
+        </Card>
+
         {/* Create Admin Invitation */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <UserPlus className="w-5 h-5 text-purple-600" />
-              <span>Create Admin Account</span>
+              <span>Send Invitation</span>
             </CardTitle>
             <CardDescription>
               Send an invitation email to create a new admin account
@@ -175,7 +206,7 @@ const AdminManagement = () => {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
-              <RefreshCw className="w-5 h-5 text-green-600" />
+              <RefreshCw className="w-5 h-5 text-orange-600" />
               <span>Reset Password</span>
             </CardTitle>
             <CardDescription>
@@ -196,7 +227,7 @@ const AdminManagement = () => {
             <Button 
               onClick={sendPasswordReset}
               disabled={isLoading}
-              className="w-full bg-green-600 hover:bg-green-700"
+              className="w-full bg-orange-600 hover:bg-orange-700"
             >
               {isLoading ? (
                 <>
@@ -218,8 +249,9 @@ const AdminManagement = () => {
       <Card className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
         <CardContent className="pt-6">
           <div className="space-y-3 text-sm">
-            <h4 className="font-semibold text-blue-800 dark:text-blue-200">📋 Instructions:</h4>
+            <h4 className="font-semibold text-blue-800 dark:text-blue-200">📋 Admin Management Instructions:</h4>
             <ul className="space-y-2 text-blue-700 dark:text-blue-300">
+              <li>• <strong>Direct Registration:</strong> Click "Create New Admin" to register directly without invitation</li>
               <li>• <strong>Admin Access:</strong> Only joemunga329@gmail.com is authorized for admin access</li>
               <li>• <strong>Default Password:</strong> joe123 (can be changed via password reset)</li>
               <li>• <strong>Password Reset:</strong> Reset link will redirect directly to admin dashboard after password update</li>

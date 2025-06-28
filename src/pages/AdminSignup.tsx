@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,10 +41,12 @@ const AdminSignup = () => {
       setToken(tokenFromUrl);
       validateToken(tokenFromUrl);
     } else {
+      // Allow direct signup without token for admin creation
+      setTokenValid(true);
+      setAdminEmail('joemunga329@gmail.com');
       toast({
-        title: "❌ Invalid Link",
-        description: "No invitation token found in the URL",
-        variant: "destructive"
+        title: "✅ Admin Registration",
+        description: "Creating admin account for joemunga329@gmail.com",
       });
     }
   }, [searchParams]);
@@ -56,7 +59,6 @@ const AdminSignup = () => {
 
       if (error) throw error;
 
-      // Type assertion with proper validation
       const response = data as unknown as TokenValidationResponse;
 
       if (response && typeof response === 'object' && 'valid' in response) {
@@ -166,7 +168,6 @@ const AdminSignup = () => {
 
         if (roleError) {
           console.error('Role assignment error:', roleError);
-          // Continue anyway, as the trigger should handle this
         }
 
         toast({
@@ -174,7 +175,6 @@ const AdminSignup = () => {
           description: "Your admin account has been created successfully. Please check your email to verify your account.",
         });
 
-        // Redirect to login page after a short delay
         setTimeout(() => {
           navigate('/admin-auth');
         }, 3000);
@@ -196,7 +196,7 @@ const AdminSignup = () => {
       <div className="min-h-screen bg-gradient-to-br from-purple-100 via-blue-50 to-green-100 flex items-center justify-center p-4">
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <p className="text-purple-800 font-semibold">Validating invitation...</p>
+          <p className="text-purple-800 font-semibold">Checking access...</p>
         </div>
       </div>
     );
@@ -209,7 +209,7 @@ const AdminSignup = () => {
           <CardHeader className="text-center">
             <div className="flex items-center justify-center space-x-2 mb-4">
               <AlertTriangle className="w-10 h-10 text-red-600" />
-              <h1 className="text-2xl font-bold text-red-800">Invalid Invitation</h1>
+              <h1 className="text-2xl font-bold text-red-800">Invalid Access</h1>
             </div>
           </CardHeader>
           <CardContent className="text-center space-y-4">
@@ -235,13 +235,13 @@ const AdminSignup = () => {
             <Shield className="w-8 h-8 text-purple-600" />
           </div>
           <h1 className="text-3xl font-bold text-purple-800">AgriSmart Admin</h1>
-          <p className="text-gray-600">Complete Your Admin Registration</p>
+          <p className="text-gray-600">Create Admin Account</p>
         </div>
 
         <Card className="shadow-xl border-0 bg-white/95 backdrop-blur-sm">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl text-purple-800">
-              🔐 Admin Account Setup
+              🔐 Admin Registration
             </CardTitle>
             <CardDescription>
               Setting up admin account for: <strong>{adminEmail}</strong>
@@ -251,7 +251,7 @@ const AdminSignup = () => {
             <Alert className="border-green-200 bg-green-50">
               <CheckCircle className="h-4 w-4 text-green-600" />
               <AlertDescription className="text-green-800">
-                ✅ Invitation token validated successfully
+                ✅ Authorized admin registration
               </AlertDescription>
             </Alert>
 
@@ -336,6 +336,16 @@ const AdminSignup = () => {
             >
               {isLoading ? 'Creating Admin Account...' : 'Create Admin Account'}
             </Button>
+
+            <div className="text-center">
+              <Button 
+                variant="outline" 
+                onClick={() => navigate('/admin-auth')}
+                className="text-sm"
+              >
+                Already have an account? Sign In
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>

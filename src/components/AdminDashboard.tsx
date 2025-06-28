@@ -4,10 +4,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { Users, Shield, Database, Activity, UserPlus, Settings } from 'lucide-react';
+import { Users, Shield, Database, Activity, UserPlus, Settings, LogOut } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from 'react-router-dom';
 import AdminManagement from './AdminManagement';
 
 const AdminDashboard = () => {
+  const { toast } = useToast();
+  const navigate = useNavigate();
+
   // Fetch admin statistics
   const { data: stats, isLoading } = useQuery({
     queryKey: ['admin-stats'],
@@ -26,12 +32,32 @@ const AdminDashboard = () => {
 
       return {
         totalUsers: totalUsers || 0,
-        totalAdmins: totalAdmins || 0,
+        totalAdmins: totalAdmins || 1, // At least the main admin
         totalProfiles: totalProfiles || 0,
         totalOrders: totalOrders || 0
       };
     }
   });
+
+  const handleLogout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
+      toast({
+        title: "👋 Logged Out",
+        description: "You have been successfully logged out from admin panel.",
+      });
+      
+      navigate('/admin-auth');
+    } catch (error: any) {
+      toast({
+        title: "❌ Logout Error",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -44,12 +70,22 @@ const AdminDashboard = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center space-x-3 mb-6">
-        <Shield className="w-8 h-8 text-purple-600" />
-        <div>
-          <h2 className="text-3xl font-bold text-purple-800 dark:text-purple-400">Admin Dashboard</h2>
-          <p className="text-gray-600 dark:text-gray-300">Manage users, admins, and system settings</p>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center space-x-3">
+          <Shield className="w-8 h-8 text-purple-600" />
+          <div>
+            <h2 className="text-3xl font-bold text-purple-800 dark:text-purple-400">Admin Dashboard</h2>
+            <p className="text-gray-600 dark:text-gray-300">Manage users, admins, and system settings</p>
+          </div>
         </div>
+        <Button 
+          onClick={handleLogout}
+          variant="outline"
+          className="flex items-center space-x-2"
+        >
+          <LogOut className="w-4 h-4" />
+          <span>Logout</span>
+        </Button>
       </div>
 
       {/* Statistics Cards */}
