@@ -1,7 +1,8 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sprout, Droplets, BarChart3, Cloud, Users, Shield, Settings } from 'lucide-react';
+import { Sprout, Droplets, BarChart3, Cloud, Users, Shield } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ThemeToggle from '@/components/ThemeToggle';
 import { useNavigate } from 'react-router-dom';
@@ -80,11 +81,6 @@ const Index = () => {
                   Start Smart Farming Today
                 </Button>
               </Link>
-              
-              <div className="mt-8 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg">
-                <p className="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-2">Default Admin Login:</p>
-                <p className="text-blue-600 dark:text-blue-300">Email: admin@agrismart.co.ke | Password: admin123</p>
-              </div>
             </div>
           </div>
         </section>

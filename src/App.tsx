@@ -10,10 +10,8 @@ import { Session, User } from '@supabase/supabase-js';
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import Index from "./pages/Index";
 import AuthPage from "./pages/AuthPage";
-import AdminAuth from "./pages/AdminAuth";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
-import AdminSignup from "./pages/AdminSignup";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 
@@ -75,10 +73,6 @@ const App = () => {
               {/* Separate Admin System Routes */}
               <Route path="/admin-login" element={<AdminLogin />} />
               <Route path="/admin-dashboard" element={<AdminDashboard />} />
-              
-              {/* Legacy Admin Routes (kept for compatibility) */}
-              <Route path="/admin-auth" element={<AdminAuth />} />
-              <Route path="/admin-signup" element={<AdminSignup />} />
               
               <Route path="*" element={<NotFound />} />
             </Routes>
