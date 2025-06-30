@@ -11,10 +11,11 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import Index from "./pages/Index";
 import AuthPage from "./pages/AuthPage";
 import AdminAuth from "./pages/AdminAuth";
+import AdminLogin from "./pages/AdminLogin";
+import AdminDashboard from "./pages/AdminDashboard";
 import AdminSignup from "./pages/AdminSignup";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
-import AdminDashboard from "./components/AdminDashboard";
 
 const queryClient = new QueryClient();
 
@@ -22,29 +23,13 @@ const App = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    // Set up auth state listener
+    // Set up auth state listener for farmers system only
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
-        
-        // Check if user is admin
-        if (session?.user) {
-          const { data: adminCheck } = await supabase
-            .from('admin_roles')
-            .select('role')
-            .eq('user_id', session.user.id)
-            .eq('role', 'admin')
-            .single();
-          
-          setIsAdmin(!!adminCheck);
-        } else {
-          setIsAdmin(false);
-        }
-        
         setLoading(false);
       }
     );
@@ -53,19 +38,6 @@ const App = () => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      
-      // Check if user is admin
-      if (session?.user) {
-        const { data: adminCheck } = await supabase
-          .from('admin_roles')
-          .select('role')
-          .eq('user_id', session.user.id)
-          .eq('role', 'admin')
-          .single();
-        
-        setIsAdmin(!!adminCheck);
-      }
-      
       setLoading(false);
     });
 
@@ -91,17 +63,23 @@ const App = () => {
           <Sonner />
           <BrowserRouter>
             <Routes>
+              {/* Farmers System Routes */}
               <Route 
                 path="/" 
                 element={
-                  !user ? <Index /> : 
-                  isAdmin ? <AdminDashboard /> : 
-                  <Dashboard user={user} />
+                  !user ? <Index /> : <Dashboard user={user} />
                 } 
               />
               <Route path="/auth" element={<AuthPage />} />
+              
+              {/* Separate Admin System Routes */}
+              <Route path="/admin-login" element={<AdminLogin />} />
+              <Route path="/admin-dashboard" element={<AdminDashboard />} />
+              
+              {/* Legacy Admin Routes (kept for compatibility) */}
               <Route path="/admin-auth" element={<AdminAuth />} />
               <Route path="/admin-signup" element={<AdminSignup />} />
+              
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

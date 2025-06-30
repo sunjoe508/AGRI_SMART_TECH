@@ -23,22 +23,57 @@ import {
   MessageSquare,
   BarChart3,
   Wheat,
-  Tractor
+  Tractor,
+  LogOut,
+  Shield
 } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from 'react-router-dom';
 
-const AdminDashboard = ({ user, onLogout }: { user: any, onLogout: () => void }) => {
+const AdminDashboard = () => {
+  const [adminSession, setAdminSession] = useState<any>(null);
   const [totalFarms, setTotalFarms] = useState(247);
   const [activeFarms, setActiveFarms] = useState(231);
-  const [totalWaterSaved, setTotalWaterSaved] = useState(1.2); // Million liters
+  const [totalWaterSaved, setTotalWaterSaved] = useState(1.2);
   const [globalStats, setGlobalStats] = useState({
     foodSecurityIndex: 78,
     waterEfficiency: 92,
-    cropYield: 15.2, // % increase
-    carbonReduction: 3400 // tons CO2
+    cropYield: 15.2,
+    carbonReduction: 3400
   });
 
   const { toast } = useToast();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const session = localStorage.getItem('adminSession');
+    if (!session) {
+      navigate('/admin-login');
+      return;
+    }
+    
+    try {
+      const parsedSession = JSON.parse(session);
+      if (!parsedSession.isAdmin || parsedSession.username !== 'joe') {
+        localStorage.removeItem('adminSession');
+        navigate('/admin-login');
+        return;
+      }
+      setAdminSession(parsedSession);
+    } catch (error) {
+      localStorage.removeItem('adminSession');
+      navigate('/admin-login');
+    }
+  }, [navigate]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('adminSession');
+    toast({
+      title: "👋 Logged Out",
+      description: "You have been successfully logged out from admin panel.",
+    });
+    navigate('/admin-login');
+  };
 
   const farmData = [
     { name: 'Green Valley', status: 'active', efficiency: 95, location: 'California', waterSaved: 15400 },
@@ -86,6 +121,17 @@ const AdminDashboard = ({ user, onLogout }: { user: any, onLogout: () => void })
     });
   };
 
+  if (!adminSession) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-100 via-emerald-50 to-blue-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <p className="text-green-800 font-semibold">Loading Admin Dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-blue-50">
       {/* Header */}
@@ -93,17 +139,19 @@ const AdminDashboard = ({ user, onLogout }: { user: any, onLogout: () => void })
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
+              <Shield className="w-8 h-8 text-purple-600" />
               <Globe className="w-8 h-8 text-green-600" />
               <div>
-                <h1 className="text-2xl font-bold text-green-800">AgriSmart Global Command</h1>
-                <p className="text-sm text-gray-600">Worldwide Farm Management System</p>
+                <h1 className="text-2xl font-bold text-green-800">AgriSmart Admin Command Center</h1>
+                <p className="text-sm text-gray-600">Independent Administrative Interface</p>
               </div>
             </div>
-            <Badge className="bg-red-500">Admin</Badge>
+            <Badge className="bg-purple-500">Admin Portal</Badge>
           </div>
           <div className="flex items-center space-x-4">
-            <span className="text-sm text-gray-600">Welcome, {user.name}</span>
-            <Button onClick={onLogout} variant="outline" size="sm">
+            <span className="text-sm text-gray-600">Welcome, {adminSession.username}</span>
+            <Button onClick={handleLogout} variant="outline" size="sm">
+              <LogOut className="w-4 h-4 mr-2" />
               Logout
             </Button>
           </div>

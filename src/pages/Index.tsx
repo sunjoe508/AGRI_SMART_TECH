@@ -1,12 +1,14 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Sprout, Droplets, BarChart3, Cloud, Users, Shield, Settings } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ThemeToggle from '@/components/ThemeToggle';
+import { useNavigate } from 'react-router-dom';
 
 const Index = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-100 via-emerald-50 to-blue-100 dark:from-green-900 dark:via-emerald-900 dark:to-blue-900 relative overflow-hidden"
          style={{
@@ -22,31 +24,25 @@ const Index = () => {
       {/* Content */}
       <div className="relative z-10">
         {/* Header */}
-        <header className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm shadow-lg border-b-4 border-green-500">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center space-x-3">
-                <Sprout className="w-10 h-10 text-green-600" />
-                <div>
-                  <h1 className="text-3xl font-bold text-green-800 dark:text-green-400">AgriSmart Kenya</h1>
-                  <p className="text-green-600 dark:text-green-300">Smart Farming for Sustainable Agriculture</p>
-                </div>
+        <header className="relative z-10 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-green-200 dark:border-green-800">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center py-4">
+              <div className="flex items-center space-x-2">
+                <Sprout className="w-8 h-8 text-green-600" />
+                <span className="text-2xl font-bold text-green-800 dark:text-green-300">AgriSmart</span>
               </div>
-              
               <div className="flex items-center space-x-4">
                 <ThemeToggle />
-                <Link to="/auth">
-                  <Button className="bg-green-600 hover:bg-green-700">
-                    <Users className="w-4 h-4 mr-2" />
-                    Farmer Login
-                  </Button>
-                </Link>
-                <Link to="/auth">
-                  <Button variant="outline" className="border-purple-500 text-purple-700 hover:bg-purple-50 dark:border-purple-400 dark:text-purple-400 dark:hover:bg-purple-950">
-                    <Settings className="w-4 h-4 mr-2" />
-                    Admin Login
-                  </Button>
-                </Link>
+                <Button onClick={() => navigate('/auth')} variant="outline">
+                  Farmer Login
+                </Button>
+                <Button 
+                  onClick={() => navigate('/admin-login')} 
+                  variant="outline"
+                  className="bg-purple-100 hover:bg-purple-200 text-purple-800 border-purple-300"
+                >
+                  Admin Portal
+                </Button>
               </div>
             </div>
           </div>
