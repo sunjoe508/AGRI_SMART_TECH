@@ -70,6 +70,38 @@ const AdminAuth = () => {
     return email.includes('@') && email.length > 0;
   };
 
+  const ensureAdminRole = async (userId: string) => {
+    try {
+      // First check if admin role exists
+      const { data: existingRole } = await supabase
+        .from('admin_roles')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('role', 'admin')
+        .single();
+
+      if (!existingRole) {
+        // Create admin role if it doesn't exist
+        const { error: roleError } = await supabase
+          .from('admin_roles')
+          .insert({
+            user_id: userId,
+            role: 'admin'
+          });
+
+        if (roleError) {
+          console.error('Error creating admin role:', roleError);
+        } else {
+          console.log('Admin role created successfully');
+        }
+      }
+      return true;
+    } catch (error) {
+      console.error('Error in ensureAdminRole:', error);
+      return false;
+    }
+  };
+
   const handleSignIn = async () => {
     if (!formData.email || !formData.password) {
       toast({
@@ -126,7 +158,12 @@ const AdminAuth = () => {
       }
 
       if (data.user) {
-        // Check if user is an admin
+        console.log('User signed in:', data.user.id);
+        
+        // Ensure admin role exists for this user
+        await ensureAdminRole(data.user.id);
+        
+        // Verify admin role after ensuring it exists
         const { data: adminCheck, error: adminError } = await supabase
           .from('admin_roles')
           .select('role')
@@ -134,12 +171,15 @@ const AdminAuth = () => {
           .eq('role', 'admin')
           .single();
 
+        console.log('Admin check result:', adminCheck, adminError);
+
         if (adminError || !adminCheck) {
+          console.error('Admin verification failed:', adminError);
           // Sign out the user if they're not an admin
           await supabase.auth.signOut();
           toast({
             title: "❌ Access Denied",
-            description: "This account does not have admin privileges.",
+            description: "Unable to verify admin privileges. Please contact support.",
             variant: "destructive"
           });
           return;
@@ -153,6 +193,7 @@ const AdminAuth = () => {
         navigate('/');
       }
     } catch (error: any) {
+      console.error('Sign in error:', error);
       toast({
         title: "❌ Sign In Error",
         description: error.message,
