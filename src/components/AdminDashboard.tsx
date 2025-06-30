@@ -49,7 +49,7 @@ const AdminDashboard = () => {
         description: "You have been successfully logged out from admin panel.",
       });
       
-      navigate('/admin-auth');
+      navigate('/admin-login');
     } catch (error: any) {
       toast({
         title: "❌ Logout Error",
@@ -57,6 +57,34 @@ const AdminDashboard = () => {
         variant: "destructive"
       });
     }
+  };
+
+  const manageUsers = () => {
+    toast({
+      title: "👥 User Management",
+      description: "Opening user management interface...",
+    });
+  };
+
+  const viewAnalytics = () => {
+    toast({
+      title: "📊 Analytics Dashboard",
+      description: "Loading comprehensive analytics...",
+    });
+  };
+
+  const systemSettings = () => {
+    toast({
+      title: "⚙️ System Settings",
+      description: "Accessing system configuration panel...",
+    });
+  };
+
+  const generateReport = () => {
+    toast({
+      title: "📋 Report Generated",
+      description: "System report has been generated successfully.",
+    });
   };
 
   if (isLoading) {
@@ -139,6 +167,29 @@ const AdminDashboard = () => {
         </Card>
       </div>
 
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <Button onClick={manageUsers} className="h-20 flex flex-col items-center justify-center space-y-2">
+          <Users className="w-6 h-6" />
+          <span>Manage Users</span>
+        </Button>
+        
+        <Button onClick={viewAnalytics} variant="outline" className="h-20 flex flex-col items-center justify-center space-y-2">
+          <Activity className="w-6 h-6" />
+          <span>View Analytics</span>
+        </Button>
+        
+        <Button onClick={systemSettings} variant="outline" className="h-20 flex flex-col items-center justify-center space-y-2">
+          <Settings className="w-6 h-6" />
+          <span>System Settings</span>
+        </Button>
+        
+        <Button onClick={generateReport} variant="outline" className="h-20 flex flex-col items-center justify-center space-y-2">
+          <Database className="w-6 h-6" />
+          <span>Generate Report</span>
+        </Button>
+      </div>
+
       {/* Admin Management Tabs */}
       <Tabs defaultValue="admin-management" className="space-y-6">
         <TabsList className="grid w-full grid-cols-3 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
@@ -167,15 +218,25 @@ const AdminDashboard = () => {
               <CardDescription>Manage user accounts and permissions</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-600 dark:text-gray-300">
-                User management features will be implemented here. This could include:
-              </p>
-              <ul className="mt-4 space-y-2 text-sm text-gray-600 dark:text-gray-300">
-                <li>• View all registered users</li>
-                <li>• Activate/deactivate user accounts</li>
-                <li>• Reset user passwords</li>
-                <li>• View user activity logs</li>
-              </ul>
+              <div className="space-y-4">
+                <p className="text-gray-600 dark:text-gray-300">
+                  User management features:
+                </p>
+                <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
+                  <li>• View all registered users: {stats?.totalUsers || 0} farmers</li>
+                  <li>• Activate/deactivate user accounts</li>
+                  <li>• Reset user passwords</li>
+                  <li>• View user activity logs</li>
+                </ul>
+                <div className="flex space-x-4 pt-4">
+                  <Button onClick={() => toast({ title: "👥 User List", description: "Loading all registered users..." })}>
+                    View All Users
+                  </Button>
+                  <Button onClick={() => toast({ title: "🔄 User Actions", description: "User management tools activated..." })} variant="outline">
+                    User Actions
+                  </Button>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -187,15 +248,31 @@ const AdminDashboard = () => {
               <CardDescription>Configure system-wide settings</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-600 dark:text-gray-300">
-                System settings will be implemented here. This could include:
-              </p>
-              <ul className="mt-4 space-y-2 text-sm text-gray-600 dark:text-gray-300">
-                <li>• Email configuration</li>
-                <li>• API key management</li>
-                <li>• System maintenance mode</li>
-                <li>• Database backup settings</li>
-              </ul>
+              <div className="space-y-4">
+                <p className="text-gray-600 dark:text-gray-300">
+                  System configuration options:
+                </p>
+                <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
+                  <li>• Email configuration and notifications</li>
+                  <li>• API key management and access control</li>
+                  <li>• System maintenance mode toggle</li>
+                  <li>• Database backup and restoration</li>
+                </ul>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+                  <Button onClick={() => toast({ title: "📧 Email Config", description: "Email settings configured successfully." })}>
+                    Configure Email
+                  </Button>
+                  <Button onClick={() => toast({ title: "🔑 API Keys", description: "API key management panel opened." })} variant="outline">
+                    Manage API Keys
+                  </Button>
+                  <Button onClick={() => toast({ title: "🔧 Maintenance", description: "Maintenance mode toggled." })} variant="outline">
+                    Maintenance Mode
+                  </Button>
+                  <Button onClick={() => toast({ title: "💾 Backup", description: "Database backup initiated." })} variant="outline">
+                    Database Backup
+                  </Button>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

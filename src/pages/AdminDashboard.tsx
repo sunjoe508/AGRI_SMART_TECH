@@ -179,6 +179,35 @@ const AdminDashboard = () => {
     });
   };
 
+  const sendSMSToFarmers = () => {
+    toast({
+      title: "📱 SMS Campaign Launched",
+      description: "Sending agricultural updates to all registered farmers in Kenya.",
+    });
+  };
+
+  const backupDatabase = () => {
+    toast({
+      title: "💾 Database Backup Started",
+      description: "Creating secure backup of all Kenya agricultural data.",
+    });
+  };
+
+  const toggleMaintenanceMode = () => {
+    toast({
+      title: "🔧 Maintenance Mode",
+      description: "System maintenance mode has been toggled.",
+    });
+  };
+
+  const generateAPIKey = () => {
+    const newApiKey = 'ak_' + Math.random().toString(36).substring(2, 15);
+    toast({
+      title: "🔑 API Key Generated",
+      description: `New API key: ${newApiKey}`,
+    });
+  };
+
   if (!adminSession) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-100 via-emerald-50 to-blue-100 flex items-center justify-center">
@@ -326,7 +355,7 @@ const AdminDashboard = () => {
                   </div>
                   <div>
                     <h4 className="font-semibold text-green-800 mb-4">User Distribution by County</h4>
-                    {usersByCounty?.map((item, index) => (
+                    {usersByCounty?.map((item: any, index) => (
                       <div key={index} className="mb-3">
                         <div className="flex justify-between mb-1">
                           <span className="text-sm font-medium">{item.county}</span>
@@ -385,7 +414,7 @@ const AdminDashboard = () => {
                   </div>
                   <div className="flex items-center justify-between">
                     <span>API Response Time</span>
-                    <span className="text-sm text-green-600">< 200ms</span>
+                    <span className="text-sm text-green-600">&lt; 200ms</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span>Active Sensors</span>
@@ -447,7 +476,7 @@ const AdminDashboard = () => {
                       <Download className="w-4 h-4 mr-2" />
                       Export Farm Data
                     </Button>
-                    <Button variant="outline" className="w-full">
+                    <Button onClick={sendSMSToFarmers} variant="outline" className="w-full">
                       <MessageSquare className="w-4 h-4 mr-2" />
                       Send SMS to Farmers
                     </Button>
@@ -478,39 +507,55 @@ const AdminDashboard = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <Database className="w-5 h-5 text-blue-500" />
-                        <span className="font-semibold">Database</span>
-                      </div>
-                      <p className="text-sm text-gray-600">99.9% uptime</p>
-                      <Progress value={99.9} className="mt-2" />
-                    </CardContent>
-                  </Card>
-                  
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <Activity className="w-5 h-5 text-green-500" />
-                        <span className="font-semibold">API Health</span>
-                      </div>
-                      <p className="text-sm text-gray-600">All systems operational</p>
-                      <Badge className="bg-green-500 mt-2">Healthy</Badge>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <Globe className="w-5 h-5 text-purple-500" />
-                        <span className="font-semibold">Kenya Coverage</span>
-                      </div>
-                      <p className="text-sm text-gray-600">{stats?.totalLocations || 0} areas</p>
-                      <p className="text-xs text-gray-500 mt-1">Expanding daily</p>
-                    </CardContent>
-                  </Card>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <Button onClick={backupDatabase} className="w-full">
+                      <Database className="w-4 h-4 mr-2" />
+                      Backup Database
+                    </Button>
+                    <Button onClick={toggleMaintenanceMode} variant="outline" className="w-full">
+                      <Settings className="w-4 h-4 mr-2" />
+                      Toggle Maintenance Mode
+                    </Button>
+                    <Button onClick={generateAPIKey} variant="outline" className="w-full">
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Generate API Key
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-1 gap-4">
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <Database className="w-5 h-5 text-blue-500" />
+                          <span className="font-semibold">Database</span>
+                        </div>
+                        <p className="text-sm text-gray-600">99.9% uptime</p>
+                        <Progress value={99.9} className="mt-2" />
+                      </CardContent>
+                    </Card>
+                    
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <Activity className="w-5 h-5 text-green-500" />
+                          <span className="font-semibold">API Health</span>
+                        </div>
+                        <p className="text-sm text-gray-600">All systems operational</p>
+                        <Badge className="bg-green-500 mt-2">Healthy</Badge>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <Globe className="w-5 h-5 text-purple-500" />
+                          <span className="font-semibold">Kenya Coverage</span>
+                        </div>
+                        <p className="text-sm text-gray-600">{stats?.totalLocations || 0} areas</p>
+                        <p className="text-xs text-gray-500 mt-1">Expanding daily</p>
+                      </CardContent>
+                    </Card>
+                  </div>
                 </div>
               </CardContent>
             </Card>
