@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,19 +13,23 @@ const VoiceCommands = () => {
 
   const commands = {
     'show users': () => {
-      document.querySelector('[data-value="neural-users"]')?.click();
+      const element = document.querySelector('[data-value="neural-users"]') as HTMLElement;
+      element?.click();
       speak("Displaying neural user matrix");
     },
     'show analytics': () => {
-      document.querySelector('[data-value="quantum-analytics"]')?.click();
+      const element = document.querySelector('[data-value="quantum-analytics"]') as HTMLElement;
+      element?.click();
       speak("Activating quantum analytics");
     },
     'show insights': () => {
-      document.querySelector('[data-value="ai-insights"]')?.click();
+      const element = document.querySelector('[data-value="ai-insights"]') as HTMLElement;
+      element?.click();
       speak("Loading AI insights");
     },
     'command center': () => {
-      document.querySelector('[data-value="command-center"]')?.click();
+      const element = document.querySelector('[data-value="command-center"]') as HTMLElement;
+      element?.click();
       speak("Opening command center");
     },
     'export data': () => {
@@ -85,7 +88,6 @@ const VoiceCommands = () => {
       setConfidence(Math.round(confidence * 100));
 
       if (result.isFinal && confidence > 0.7) {
-        // Find matching command
         const matchedCommand = Object.keys(commands).find(cmd => 
           transcript.includes(cmd)
         );
@@ -120,9 +122,6 @@ const VoiceCommands = () => {
 
   const stopListening = () => {
     setIsListening(false);
-    if ('webkitSpeechRecognition' in window) {
-      // Stop recognition
-    }
   };
 
   return (
@@ -173,7 +172,6 @@ const VoiceCommands = () => {
             </Button>
           </div>
 
-          {/* Voice Visualization */}
           {isListening && (
             <div className="flex items-center justify-center space-x-1 mt-3">
               {[...Array(5)].map((_, i) => (

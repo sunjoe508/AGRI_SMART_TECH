@@ -1,258 +1,254 @@
-
 import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LogOut, Home, User, Droplets, BarChart3, MessageSquare, Phone, ShoppingCart, Settings, Cloud } from 'lucide-react';
-import { supabase } from "@/integrations/supabase/client";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { 
+  Users, 
+  MapPin, 
+  Droplets, 
+  TrendingUp, 
+  Globe, 
+  AlertTriangle,
+  CheckCircle,
+  Activity,
+  Database,
+  Settings,
+  Download,
+  Mail,
+  MessageSquare,
+  BarChart3,
+  Wheat,
+  Tractor,
+  LogOut,
+  Shield,
+  Bot,
+  Leaf
+} from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
-import ThemeToggle from "@/components/ThemeToggle";
-import ProfileManagement from "@/components/ProfileManagement";
-import EnhancedIrrigationCycle from "@/components/EnhancedIrrigationCycle";
-import SensorMonitoring from "@/components/SensorMonitoring";
-import CustomerSupport from "@/components/CustomerSupport";
-import OTPManager from "@/components/OTPManager";
-import VendorMarketplace from "@/components/VendorMarketplace";
-import WeatherWidget from "@/components/WeatherWidget";
-import AdminDashboard from "@/components/AdminDashboard";
+import { useNavigate } from 'react-router-dom';
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import IrrigationCycle from '../components/IrrigationCycle';
+import EnhancedIrrigationCycle from '../components/EnhancedIrrigationCycle';
+import SensorMonitoring from '../components/SensorMonitoring';
+import RealSensorMonitoring from '../components/RealSensorMonitoring';
+import SensorRegistration from '../components/SensorRegistration';
+import WeatherDashboard from '../components/WeatherDashboard';
+import WeatherWidget from '../components/WeatherWidget';
+import VendorMarketplace from '../components/VendorMarketplace';
+import PayPalCheckout from '../components/PayPalCheckout';
+import CustomerSupport from '../components/CustomerSupport';
+import ProfileManagement from '../components/ProfileManagement';
+import UserAIAssistant from '../components/UserAIAssistant';
 
-interface DashboardProps {
-  user: any;
-}
-
-const Dashboard = ({ user }: DashboardProps) => {
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [loading, setLoading] = useState(true);
+const Dashboard = () => {
+  const [user, setUser] = useState<any>(null);
+  const [showAIAssistant, setShowAIAssistant] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    checkAdminStatus();
-  }, [user]);
-
-  const checkAdminStatus = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('admin_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!error && data?.role === 'admin') {
-        setIsAdmin(true);
+    const checkUser = async () => {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error || !user) {
+        navigate('/login');
+        return;
       }
-    } catch (error) {
-      // User is not admin, continue as normal user
-    } finally {
-      setLoading(false);
-    }
-  };
+      setUser(user);
+    };
 
-  const handleSignOut = async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+    checkUser();
+  }, [navigate]);
+
+  const { data: stats, isLoading: statsLoading } = useQuery({
+    queryKey: ['dashboard-stats', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
       
-      toast({
-        title: "👋 Signed Out",
-        description: "You have been successfully signed out",
-      });
-    } catch (error: any) {
-      toast({
-        title: "❌ Sign Out Failed",
-        description: error.message,
-        variant: "destructive"
-      });
-    }
+      const [
+        { count: totalIrrigationLogs },
+        { count: totalSensorData },
+        { count: totalSupportTickets },
+        { data: recentLogs }
+      ] = await Promise.all([
+        supabase.from('irrigation_logs').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
+        supabase.from('sensor_data').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
+        supabase.from('support_tickets').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
+        supabase.from('irrigation_logs').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(5)
+      ]);
+
+      return {
+        totalIrrigationLogs: totalIrrigationLogs || 0,
+        totalSensorData: totalSensorData || 0,
+        totalSupportTickets: totalSupportTickets || 0,
+        recentLogs: recentLogs || []
+      };
+    },
+    enabled: !!user?.id,
+    refetchInterval: 30000
+  });
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate('/login');
   };
 
-  if (loading) {
+  const toggleAIAssistant = () => {
+    setShowAIAssistant(!showAIAssistant);
+    toast({
+      title: showAIAssistant ? "🤖 AI Assistant Disabled" : "🌱 AI Assistant Activated",
+      description: showAIAssistant ? "AI assistant is now hidden" : "Your farming AI assistant is ready to help!",
+    });
+  };
+
+  if (!user || statsLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-100 via-emerald-50 to-blue-100 dark:from-green-900 dark:via-emerald-900 dark:to-blue-900 flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-600 mx-auto mb-4"></div>
-          <p className="text-green-800 dark:text-green-200 font-semibold">Loading Dashboard...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mb-4"></div>
+          <p className="text-gray-600">Loading your AgriSmart dashboard...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-100 via-emerald-50 to-blue-100 dark:from-green-900 dark:via-emerald-900 dark:to-blue-900 bg-fixed relative"
-         style={{
-           backgroundImage: `url("https://images.unsplash.com/photo-1574943320219-553eb213f72d?auto=format&fit=crop&w=1920&q=80")`,
-           backgroundSize: 'cover',
-           backgroundPosition: 'center',
-           backgroundAttachment: 'fixed',
-         }}>
-      
-      {/* Background overlay */}
-      <div className="absolute inset-0 bg-white/85 dark:bg-black/70 backdrop-blur-sm"></div>
-
-      <div className="relative z-10">
-        {/* Header */}
-        <header className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm shadow-lg border-b-4 border-green-500">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center space-x-3">
-                <div className="text-3xl">🌱</div>
-                <div>
-                  <h1 className="text-2xl font-bold text-green-800 dark:text-green-400">AgriSmart</h1>
-                  <p className="text-sm text-green-600 dark:text-green-300">Smart Farming Management System</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center space-x-4">
-                <ThemeToggle />
-                <div className="text-right">
-                  <p className="text-sm text-gray-600 dark:text-gray-300">Welcome back,</p>
-                  <p className="font-semibold text-green-800 dark:text-green-400">{user?.email}</p>
-                  {isAdmin && (
-                    <span className="inline-block px-2 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 text-xs rounded-full">
-                      Admin
-                    </span>
-                  )}
-                </div>
-                <Button 
-                  onClick={handleSignOut}
-                  variant="outline"
-                  className="border-green-500 text-green-700 hover:bg-green-50 dark:border-green-400 dark:text-green-400 dark:hover:bg-green-950"
-                >
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Sign Out
-                </Button>
-              </div>
-            </div>
+    <div className="space-y-6 pb-20">
+      {/* Header with AI Assistant Toggle */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center space-x-3">
+          <Leaf className="w-8 h-8 text-green-600" />
+          <div>
+            <h2 className="text-3xl font-bold text-green-800 dark:text-green-400">AgriSmart Dashboard</h2>
+            <p className="text-gray-600 dark:text-gray-300">Smart Farming Made Simple</p>
           </div>
-        </header>
-
-        {/* Main Content */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <Tabs defaultValue={isAdmin ? "admin" : "overview"} className="space-y-6">
-            <TabsList className="grid grid-cols-4 md:grid-cols-8 lg:grid-cols-9 gap-2 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm p-2 rounded-lg shadow-lg">
-              {isAdmin && (
-                <TabsTrigger value="admin" className="flex items-center space-x-2 text-xs lg:text-sm">
-                  <Settings className="w-4 h-4" />
-                  <span className="hidden lg:inline">Admin</span>
-                </TabsTrigger>
-              )}
-              <TabsTrigger value="overview" className="flex items-center space-x-2 text-xs lg:text-sm">
-                <Home className="w-4 h-4" />
-                <span className="hidden lg:inline">Overview</span>
-              </TabsTrigger>
-              <TabsTrigger value="profile" className="flex items-center space-x-2 text-xs lg:text-sm">
-                <User className="w-4 h-4" />
-                <span className="hidden lg:inline">Profile</span>
-              </TabsTrigger>
-              <TabsTrigger value="irrigation" className="flex items-center space-x-2 text-xs lg:text-sm">
-                <Droplets className="w-4 h-4" />
-                <span className="hidden lg:inline">Irrigation</span>
-              </TabsTrigger>
-              <TabsTrigger value="sensors" className="flex items-center space-x-2 text-xs lg:text-sm">
-                <BarChart3 className="w-4 h-4" />
-                <span className="hidden lg:inline">Sensors</span>
-              </TabsTrigger>
-              <TabsTrigger value="marketplace" className="flex items-center space-x-2 text-xs lg:text-sm">
-                <ShoppingCart className="w-4 h-4" />
-                <span className="hidden lg:inline">Shop</span>
-              </TabsTrigger>
-              <TabsTrigger value="weather" className="flex items-center space-x-2 text-xs lg:text-sm">
-                <Cloud className="w-4 h-4" />
-                <span className="hidden lg:inline">Weather</span>
-              </TabsTrigger>
-              <TabsTrigger value="support" className="flex items-center space-x-2 text-xs lg:text-sm">
-                <MessageSquare className="w-4 h-4" />
-                <span className="hidden lg:inline">Support</span>
-              </TabsTrigger>
-              <TabsTrigger value="otp" className="flex items-center space-x-2 text-xs lg:text-sm">
-                <Phone className="w-4 h-4" />
-                <span className="hidden lg:inline">Reports</span>
-              </TabsTrigger>
-            </TabsList>
-
-            {isAdmin && (
-              <TabsContent value="admin" className="space-y-6">
-                <AdminDashboard />
-              </TabsContent>
-            )}
-
-            <TabsContent value="overview" className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2">
-                  <EnhancedIrrigationCycle user={user} />
-                </div>
-                <div>
-                  <WeatherWidget />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <SensorMonitoring user={user} />
-                <VendorMarketplace user={user} />
-              </div>
-            </TabsContent>
-
-            <TabsContent value="profile" className="space-y-6">
-              <ProfileManagement user={user} />
-            </TabsContent>
-
-            <TabsContent value="irrigation" className="space-y-6">
-              <EnhancedIrrigationCycle user={user} />
-            </TabsContent>
-
-            <TabsContent value="sensors" className="space-y-6">
-              <SensorMonitoring user={user} />
-            </TabsContent>
-
-            <TabsContent value="marketplace" className="space-y-6">
-              <VendorMarketplace user={user} />
-            </TabsContent>
-
-            <TabsContent value="weather" className="space-y-6">
-              <WeatherWidget />
-            </TabsContent>
-
-            <TabsContent value="support" className="space-y-6">
-              <CustomerSupport user={user} />
-            </TabsContent>
-
-            <TabsContent value="otp" className="space-y-6">
-              <OTPManager user={user} />
-            </TabsContent>
-          </Tabs>
         </div>
-
-        {/* Footer */}
-        <footer className="bg-green-800/90 dark:bg-green-900/90 backdrop-blur-sm text-white mt-16">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div>
-                <h3 className="text-lg font-semibold mb-4">🌱 AgriSmart</h3>
-                <p className="text-green-200">
-                  Empowering farmers with smart technology for sustainable agriculture and improved crop yields.
-                </p>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
-                <ul className="space-y-2 text-green-200">
-                  <li>• Irrigation Management</li>
-                  <li>• Sensor Monitoring</li>
-                  <li>• Weather Forecasting</li>
-                  <li>• Vendor Marketplace</li>
-                </ul>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold mb-4">Support</h3>
-                <ul className="space-y-2 text-green-200">
-                  <li>📞 +254 700 000 000</li>
-                  <li>📧 support@agrismart.co.ke</li>
-                  <li>🕐 24/7 Customer Support</li>
-                </ul>
-              </div>
-            </div>
-            <div className="border-t border-green-700 mt-8 pt-8 text-center text-green-200">
-              <p>&copy; 2024 AgriSmart. All rights reserved. Made with ❤️ for Kenyan farmers.</p>
-            </div>
-          </div>
-        </footer>
+        <div className="flex items-center space-x-3">
+          <Button 
+            onClick={toggleAIAssistant}
+            className={`${
+              showAIAssistant 
+                ? 'bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700' 
+                : 'bg-gray-600 hover:bg-gray-700'
+            }`}
+          >
+            <Bot className="w-4 h-4 mr-2" />
+            {showAIAssistant ? 'AI Active' : 'Activate AI'}
+          </Button>
+          <Badge variant="outline" className="bg-green-100 text-green-800">
+            Welcome, {user.email}
+          </Badge>
+          <Button 
+            onClick={handleLogout}
+            variant="outline"
+            className="flex items-center space-x-2"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>Logout</span>
+          </Button>
+        </div>
       </div>
+
+      {/* Dashboard Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <Card className="border-green-200 dark:border-green-800 bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900 dark:to-green-800">
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-3">
+              <Droplets className="w-8 h-8 text-green-600" />
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Irrigation Sessions</p>
+                <p className="text-2xl font-bold text-green-800 dark:text-green-400">{stats?.totalIrrigationLogs}</p>
+                <p className="text-xs text-green-600">Total completed</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-blue-200 dark:border-blue-800 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900 dark:to-blue-800">
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-3">
+              <Activity className="w-8 h-8 text-blue-600" />
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Sensor Readings</p>
+                <p className="text-2xl font-bold text-blue-800 dark:text-blue-400">{stats?.totalSensorData}</p>
+                <p className="text-xs text-blue-600">Data points</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-purple-200 dark:border-purple-800 bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900 dark:to-purple-800">
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-3">
+              <MessageSquare className="w-8 h-8 text-purple-600" />
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Support Tickets</p>
+                <p className="text-2xl font-bold text-purple-800 dark:text-purple-400">{stats?.totalSupportTickets}</p>
+                <p className="text-xs text-purple-600">Active requests</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-orange-200 dark:border-orange-800 bg-gradient-to-r from-orange-50 to-orange-100 dark:from-orange-900 dark:to-orange-800">
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-3">
+              <Wheat className="w-8 h-8 text-orange-600" />
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Farm Health</p>
+                <p className="text-2xl font-bold text-orange-800 dark:text-orange-400">95%</p>
+                <p className="text-xs text-orange-600">Overall score</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Main Dashboard Tabs */}
+      <Tabs defaultValue="irrigation" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-7 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
+          <TabsTrigger value="irrigation">Irrigation</TabsTrigger>
+          <TabsTrigger value="sensors">Sensors</TabsTrigger>
+          <TabsTrigger value="weather">Weather</TabsTrigger>
+          <TabsTrigger value="marketplace">Marketplace</TabsTrigger>
+          <TabsTrigger value="support">Support</TabsTrigger>
+          <TabsTrigger value="profile">Profile</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="irrigation" className="space-y-6">
+          <EnhancedIrrigationCycle />
+        </TabsContent>
+
+        <TabsContent value="sensors" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <SensorRegistration />
+            <RealSensorMonitoring />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="weather" className="space-y-6">
+          <WeatherDashboard />
+        </TabsContent>
+
+        <TabsContent value="marketplace" className="space-y-6">
+          <VendorMarketplace />
+        </TabsContent>
+
+        <TabsContent value="support" className="space-y-6">
+          <CustomerSupport />
+        </TabsContent>
+
+        <TabsContent value="profile" className="space-y-6">
+          <ProfileManagement />
+        </TabsContent>
+      </Tabs>
+
+      {/* AI Assistant */}
+      {showAIAssistant && <UserAIAssistant />}
     </div>
   );
 };
