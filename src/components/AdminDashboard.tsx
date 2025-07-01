@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, DialogTrigger as AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import AdminManagement from './AdminManagement';
 
 const AdminDashboard = () => {
@@ -75,33 +74,63 @@ const AdminDashboard = () => {
     }
   });
 
-  // Fetch recent activity logs
+  // Fetch recent activity logs - Updated to work without joins
   const { data: recentActivity } = useQuery({
     queryKey: ['recent-activity'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: logs, error } = await supabase
         .from('irrigation_logs')
-        .select('*, profiles(full_name, farm_name)')
+        .select('*')
         .order('created_at', { ascending: false })
         .limit(10);
       
       if (error) throw error;
-      return data;
+
+      // Get user profiles separately
+      const userIds = [...new Set(logs.map(log => log.user_id))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name, farm_name')
+        .in('id', userIds);
+
+      // Map profiles to logs
+      return logs.map(log => {
+        const profile = profiles?.find(p => p.id === log.user_id);
+        return {
+          ...log,
+          profiles: profile
+        };
+      });
     }
   });
 
-  // Fetch support tickets
+  // Fetch support tickets - Updated to work without joins
   const { data: supportTickets } = useQuery({
     queryKey: ['support-tickets'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: tickets, error } = await supabase
         .from('support_tickets')
-        .select('*, profiles(full_name, phone_number)')
+        .select('*')
         .order('created_at', { ascending: false })
         .limit(20);
       
       if (error) throw error;
-      return data;
+
+      // Get user profiles separately
+      const userIds = [...new Set(tickets.map(ticket => ticket.user_id))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name, phone_number')
+        .in('id', userIds);
+
+      // Map profiles to tickets
+      return tickets.map(ticket => {
+        const profile = profiles?.find(p => p.id === ticket.user_id);
+        return {
+          ...ticket,
+          profiles: profile
+        };
+      });
     }
   });
 
