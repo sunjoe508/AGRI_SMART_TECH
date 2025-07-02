@@ -35,6 +35,7 @@ const UserAIAssistant = () => {
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
+  const [currentRecognition, setCurrentRecognition] = useState<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -71,6 +72,14 @@ const UserAIAssistant = () => {
     scrollToBottom();
   }, [messages]);
 
+  // Stop speech recognition when AI starts speaking to prevent feedback
+  useEffect(() => {
+    if (isSpeaking && currentRecognition) {
+      currentRecognition.stop();
+      setIsListening(false);
+    }
+  }, [isSpeaking, currentRecognition]);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -98,13 +107,29 @@ const UserAIAssistant = () => {
       setMessages(prev => [...prev, message]);
       setIsTyping(false);
       
+      // Stop any ongoing speech recognition before speaking
+      if (currentRecognition) {
+        currentRecognition.stop();
+        setIsListening(false);
+      }
+      
       if ('speechSynthesis' in window) {
         const utterance = new SpeechSynthesisUtterance(content.replace(/[🌾🌱💧🚿☀️🌧️🌤️🥬🌽🚜📊]/g, ''));
         utterance.rate = 0.9;
         utterance.pitch = 1.0;
+        
+        utterance.onstart = () => setIsSpeaking(true);
+        utterance.onend = () => {
+          setIsSpeaking(false);
+          // Resume listening after AI finishes speaking if it was active
+          if (isListening) {
+            setTimeout(() => {
+              startVoiceRecognition();
+            }, 500);
+          }
+        };
+        
         speechSynthesis.speak(utterance);
-        setIsSpeaking(true);
-        utterance.onend = () => setIsSpeaking(false);
       }
     }, Math.random() * 1000 + 500);
   };
@@ -141,7 +166,7 @@ const UserAIAssistant = () => {
     }
   };
 
-  const toggleVoiceInput = () => {
+  const startVoiceRecognition = () => {
     if (!('webkitSpeechRecognition' in window)) {
       toast({
         title: "⚠️ Voice Recognition Unavailable",
@@ -151,15 +176,12 @@ const UserAIAssistant = () => {
       return;
     }
 
-    if (isListening) {
-      setIsListening(false);
-      return;
-    }
-
     const recognition = new (window as any).webkitSpeechRecognition();
-    recognition.continuous = false;
+    recognition.continuous = true;
     recognition.interimResults = false;
     recognition.lang = 'en-US';
+
+    setCurrentRecognition(recognition);
 
     recognition.onstart = () => {
       setIsListening(true);
@@ -170,25 +192,62 @@ const UserAIAssistant = () => {
     };
 
     recognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript;
-      setInputMessage(transcript);
-      setIsListening(false);
+      // Only process if AI is not currently speaking
+      if (!isSpeaking) {
+        const transcript = event.results[event.results.length - 1][0].transcript.trim();
+        if (transcript) {
+          setInputMessage(transcript);
+          // Auto-send the message after voice input
+          setTimeout(() => {
+            addUserMessage(transcript);
+            processUserInput(transcript);
+            setInputMessage('');
+          }, 500);
+        }
+      }
     };
 
-    recognition.onerror = () => {
+    recognition.onerror = (error: any) => {
+      console.log('Speech recognition error:', error);
       setIsListening(false);
-      toast({
-        title: "❌ Voice Input Error",
-        description: "Failed to recognize speech. Please try again.",
-        variant: "destructive"
-      });
+      setCurrentRecognition(null);
+      if (error.error !== 'aborted') {
+        toast({
+          title: "❌ Voice Input Error",
+          description: "Failed to recognize speech. Please try again.",
+          variant: "destructive"
+        });
+      }
     };
 
     recognition.onend = () => {
       setIsListening(false);
+      setCurrentRecognition(null);
     };
 
     recognition.start();
+  };
+
+  const toggleVoiceInput = () => {
+    if (isListening) {
+      if (currentRecognition) {
+        currentRecognition.stop();
+      }
+      setIsListening(false);
+      setCurrentRecognition(null);
+      return;
+    }
+
+    // Don't start listening if AI is speaking
+    if (isSpeaking) {
+      toast({
+        title: "🤖 AI Speaking",
+        description: "Please wait for the AI to finish speaking before using voice input.",
+      });
+      return;
+    }
+
+    startVoiceRecognition();
   };
 
   const toggleSpeech = () => {
@@ -291,15 +350,17 @@ const UserAIAssistant = () => {
                 onKeyPress={handleKeyPress}
                 placeholder="Ask about irrigation, crops, weather..."
                 className="flex-1 bg-white/80 dark:bg-gray-800/80 border-green-500/30"
+                disabled={isSpeaking}
               />
               <Button
                 onClick={toggleVoiceInput}
                 size="sm"
+                disabled={isSpeaking}
                 className={`${
                   isListening 
                     ? 'bg-red-600 hover:bg-red-700' 
                     : 'bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700'
-                }`}
+                } ${isSpeaking ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
               </Button>
@@ -313,7 +374,10 @@ const UserAIAssistant = () => {
               <Button
                 onClick={handleSendMessage}
                 size="sm"
-                className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700"
+                disabled={isSpeaking}
+                className={`bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 ${
+                  isSpeaking ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
               >
                 <Send className="w-4 h-4" />
               </Button>

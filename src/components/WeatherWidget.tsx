@@ -23,11 +23,13 @@ const WeatherWidget = () => {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     fetchWeatherData();
-    const interval = setInterval(fetchWeatherData, 30 * 60 * 1000);
+    // Update weather every 10 minutes for real-time reporting
+    const interval = setInterval(fetchWeatherData, 10 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 
@@ -35,6 +37,8 @@ const WeatherWidget = () => {
     try {
       setLoading(true);
       setError(null);
+      
+      console.log('Fetching real-time weather data...');
       
       // Get user's location or use Nairobi as default
       let latitude = -1.2921;
@@ -44,27 +48,29 @@ const WeatherWidget = () => {
         const position = await getCurrentPosition();
         latitude = position.coords.latitude;
         longitude = position.coords.longitude;
+        console.log('Using user location:', latitude, longitude);
       } catch (geoError) {
-        console.log('Using default location (Nairobi)');
+        console.log('Using default location (Nairobi, Kenya):', latitude, longitude);
       }
       
       const { data, error } = await supabase.functions.invoke('free-weather', {
         body: { lat: latitude, lon: longitude }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Weather API error:', error);
+        throw error;
+      }
+      
       setWeather(data);
+      setLastUpdate(new Date());
+      console.log('Weather data updated successfully:', data);
       
     } catch (error: any) {
       console.error('Weather fetch error:', error);
-      setError('Unable to fetch weather data');
-      toast({
-        title: "⚠️ Weather Service",
-        description: "Using default weather data",
-        variant: "default"
-      });
+      setError('Unable to fetch live weather data');
       
-      // Set default weather data
+      // Set Kenya-specific fallback weather data
       setWeather({
         temperature: 24,
         humidity: 65,
@@ -79,6 +85,7 @@ const WeatherWidget = () => {
           { day: 'Fri', high: 29, low: 21, condition: 'Clouds' }
         ]
       });
+      setLastUpdate(new Date());
       
     } finally {
       setLoading(false);
@@ -116,7 +123,10 @@ const WeatherWidget = () => {
     return (
       <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900 dark:to-cyan-900 border-2 border-blue-200 dark:border-blue-700">
         <CardContent className="p-6">
-          <div className="text-center">Loading weather data...</div>
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+            <p className="text-sm text-gray-600">Loading real-time weather...</p>
+          </div>
         </CardContent>
       </Card>
     );
@@ -125,9 +135,17 @@ const WeatherWidget = () => {
   return (
     <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900 dark:to-cyan-900 border-2 border-blue-200 dark:border-blue-700">
       <CardHeader>
-        <CardTitle className="flex items-center space-x-2">
-          {getWeatherIcon(weather?.condition || 'Clouds')}
-          <span>Live Weather</span>
+        <CardTitle className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            {getWeatherIcon(weather?.condition || 'Clouds')}
+            <span>Live Weather</span>
+          </div>
+          {lastUpdate && (
+            <div className="text-xs text-gray-500 flex items-center space-x-1">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <span>Updated: {lastUpdate.toLocaleTimeString()}</span>
+            </div>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -176,9 +194,24 @@ const WeatherWidget = () => {
           </div>
         )}
 
-        <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
-          Weather data from Open-Meteo
+        <div className="text-xs text-gray-500 dark:text-gray-400 text-center flex items-center justify-center space-x-2">
+          <span>Real-time weather from Open-Meteo</span>
+          <Button
+            onClick={fetchWeatherData}
+            size="sm"
+            variant="ghost"
+            className="h-6 px-2 text-xs"
+          >
+            Refresh
+          </Button>
         </div>
+        
+        {error && (
+          <div className="text-xs text-orange-600 text-center flex items-center justify-center space-x-1">
+            <AlertTriangle className="w-3 h-3" />
+            <span>Using fallback data</span>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

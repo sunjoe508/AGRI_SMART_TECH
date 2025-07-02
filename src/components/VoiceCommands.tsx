@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,9 +10,10 @@ const VoiceCommands = () => {
   const [isListening, setIsListening] = useState(false);
   const [lastCommand, setLastCommand] = useState('');
   const [confidence, setConfidence] = useState(0);
+  const [currentRecognition, setCurrentRecognition] = useState<any>(null);
   const { toast } = useToast();
 
-  const commands = {
+  const commands: Record<string, () => void> = {
     'show users': () => {
       const element = document.querySelector('[data-value="neural-users"]') as HTMLElement;
       element?.click();
@@ -49,9 +51,13 @@ const VoiceCommands = () => {
 
   const speak = (text: string) => {
     if ('speechSynthesis' in window) {
+      // Cancel any ongoing speech before starting new one
+      speechSynthesis.cancel();
+      
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.rate = 0.9;
       utterance.pitch = 1.2;
+      utterance.volume = 0.8;
       speechSynthesis.speak(utterance);
     }
   };
@@ -71,6 +77,8 @@ const VoiceCommands = () => {
     recognition.interimResults = true;
     recognition.lang = 'en-US';
 
+    setCurrentRecognition(recognition);
+
     recognition.onstart = () => {
       setIsListening(true);
       toast({
@@ -82,7 +90,7 @@ const VoiceCommands = () => {
     recognition.onresult = (event: any) => {
       const result = event.results[event.results.length - 1];
       const transcript = result[0].transcript.toLowerCase().trim();
-      const confidence = result[0].confidence;
+      const confidence = result[0].confidence || 0;
       
       setLastCommand(transcript);
       setConfidence(Math.round(confidence * 100));
@@ -93,35 +101,44 @@ const VoiceCommands = () => {
         );
 
         if (matchedCommand) {
-          commands[matchedCommand as keyof typeof commands]();
+          commands[matchedCommand]();
           toast({
             title: "✅ Command Executed",
             description: `Voice command "${matchedCommand}" processed successfully`,
           });
-        } else {
+        } else if (transcript.length > 3) { // Only respond to meaningful input
           speak("Command not recognized. Say 'help' for available commands.");
         }
       }
     };
 
-    recognition.onerror = () => {
+    recognition.onerror = (error: any) => {
+      console.log('Voice recognition error:', error);
       setIsListening(false);
-      toast({
-        title: "❌ Voice Error",
-        description: "Failed to process voice command. Please try again.",
-        variant: "destructive"
-      });
+      setCurrentRecognition(null);
+      if (error.error !== 'aborted') {
+        toast({
+          title: "❌ Voice Error",
+          description: "Failed to process voice command. Please try again.",
+          variant: "destructive"
+        });
+      }
     };
 
     recognition.onend = () => {
       setIsListening(false);
+      setCurrentRecognition(null);
     };
 
     recognition.start();
   };
 
   const stopListening = () => {
+    if (currentRecognition) {
+      currentRecognition.stop();
+    }
     setIsListening(false);
+    setCurrentRecognition(null);
   };
 
   return (
