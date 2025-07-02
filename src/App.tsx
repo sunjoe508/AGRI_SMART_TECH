@@ -11,6 +11,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import Index from "./pages/Index";
 import AuthPage from "./pages/AuthPage";
 import AdminLogin from "./pages/AdminLogin";
+import AdminAuth from "./pages/AdminAuth";
 import AdminDashboard from "./pages/AdminDashboard";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
@@ -72,6 +73,7 @@ const App = () => {
               
               {/* Separate Admin System Routes */}
               <Route path="/admin-login" element={<AdminLogin />} />
+              <Route path="/admin-auth" element={<AdminAuth />} />
               <Route path="/admin-dashboard" element={<AdminDashboard />} />
               
               <Route path="*" element={<NotFound />} />
