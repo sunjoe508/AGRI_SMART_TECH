@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Cloud, Sun, CloudRain, Wind, Thermometer, Droplets, AlertTriangle, MapPin, RefreshCw } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 interface WeatherData {
   temperature: number;
@@ -16,54 +17,91 @@ interface WeatherData {
     lat: number;
     lon: number;
   };
+  agriculturalAdvice: string[];
   forecast: Array<{
     day: string;
     high: number;
     low: number;
     condition: string;
+    agriculturalRecommendation: string;
   }>;
+  lastUpdated: string;
+  source: string;
+  isEstimated?: boolean;
 }
 
-const WeatherWidget = () => {
+interface WeatherWidgetProps {
+  user?: any;
+}
+
+const WeatherWidget = ({ user }: WeatherWidgetProps) => {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [userLocation, setUserLocation] = useState<string>('Kenya');
   const { toast } = useToast();
 
+  // Get user profile data for location
+  const { data: profile } = useQuery({
+    queryKey: ['user-profile', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+        
+      if (error) {
+        console.error('Profile fetch error:', error);
+        return null;
+      }
+      
+      return data;
+    },
+    enabled: !!user?.id,
+  });
+
   useEffect(() => {
+    if (profile) {
+      const location = `${profile.county || 'Kenya'}${profile.ward ? ', ' + profile.ward : ''}`;
+      setUserLocation(location);
+    }
     fetchWeatherData();
-    // Update weather every 5 minutes for real-time reporting
+    // Update weather every 5 minutes
     const interval = setInterval(fetchWeatherData, 5 * 60 * 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [profile]);
 
   const fetchWeatherData = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      console.log('🌤️ Fetching real-time weather data for AgriSmart...');
+      console.log('🌤️ Fetching weather data for AgriSmart...');
       
-      // Get user's location with better accuracy
+      // Default coordinates for Kenya regions
       let latitude = -1.2921; // Nairobi default
       let longitude = 36.8219;
-      let locationName = 'Nairobi, Kenya';
-      
+      let locationName = userLocation || 'Nairobi, Kenya';
+
+      // Map counties to approximate coordinates
+      if (profile?.county) {
+        const countyCoords = getCountyCoordinates(profile.county);
+        latitude = countyCoords.lat;
+        longitude = countyCoords.lon;
+        locationName = `${profile.county}, Kenya`;
+      }
+
       try {
+        // Try to get user's precise location
         const position = await getCurrentPosition();
         latitude = position.coords.latitude;
         longitude = position.coords.longitude;
-        
-        // Get location name from coordinates
-        locationName = await getLocationName(latitude, longitude);
-        setUserLocation(locationName);
-        
-        console.log('📍 Using user location:', latitude, longitude, locationName);
+        console.log('📍 Using user location:', latitude, longitude);
       } catch (geoError) {
-        console.log('📍 Using default location (Nairobi, Kenya)');
-        setUserLocation('Nairobi, Kenya');
+        console.log('📍 Using county/default location');
       }
       
       const { data, error } = await supabase.functions.invoke('free-weather', {
@@ -80,19 +118,12 @@ const WeatherWidget = () => {
       }
       
       if (data) {
-        const weatherData = {
-          ...data,
-          coordinates: { lat: latitude, lon: longitude },
-          location: locationName
-        };
-        
-        setWeather(weatherData);
-        setLastUpdate(new Date());
-        console.log('✅ Weather data updated successfully:', weatherData);
+        console.log('✅ Weather data received:', data);
+        setWeather(data);
         
         toast({
           title: "🌤️ Weather Updated",
-          description: `Live weather data for ${locationName} updated successfully`,
+          description: `Live weather data for ${data.location} updated successfully`,
         });
       }
       
@@ -103,7 +134,6 @@ const WeatherWidget = () => {
       // Enhanced fallback with location-specific data
       const fallbackWeather = generateLocationBasedFallback(userLocation);
       setWeather(fallbackWeather);
-      setLastUpdate(new Date());
       
       toast({
         title: "⚠️ Weather Fallback",
@@ -135,40 +165,81 @@ const WeatherWidget = () => {
     });
   };
 
-  const getLocationName = async (lat: number, lon: number): Promise<string> => {
-    try {
-      // Use a reverse geocoding service or return county-based location
-      const counties = [
-        'Nairobi', 'Kiambu', 'Nakuru', 'Meru', 'Kisumu', 'Eldoret', 
-        'Thika', 'Nyeri', 'Machakos', 'Mombasa'
-      ];
-      
-      // Simple location approximation based on coordinates
-      if (lat > -1 && lat < 0) return 'Nairobi, Kenya';
-      if (lat > 0 && lat < 1) return 'Meru, Kenya';
-      if (lat < -1 && lat > -2) return 'Kiambu, Kenya';
-      
-      return counties[Math.floor(Math.random() * counties.length)] + ', Kenya';
-    } catch {
-      return 'Kenya';
-    }
+  const getCountyCoordinates = (county: string) => {
+    const coordinates: { [key: string]: { lat: number; lon: number } } = {
+      'Nairobi': { lat: -1.2921, lon: 36.8219 },
+      'Kiambu': { lat: -1.1748, lon: 36.8356 },
+      'Nakuru': { lat: -0.3031, lon: 36.0800 },
+      'Meru': { lat: 0.0469, lon: 37.6556 },
+      'Kisumu': { lat: -0.0917, lon: 34.7680 },
+      'Uasin Gishu': { lat: 0.5143, lon: 35.2698 },
+      'Nyeri': { lat: -0.4167, lon: 36.9500 },
+      'Busia': { lat: 0.4604, lon: 34.1118 },
+      'Murang\'a': { lat: -0.7167, lon: 37.1500 },
+      'Kericho': { lat: -0.3691, lon: 35.2861 },
+      'Embu': { lat: -0.5312, lon: 37.4504 },
+      'Bungoma': { lat: 0.5635, lon: 34.5606 },
+      'Kirinyaga': { lat: -0.6633, lon: 37.3061 },
+      'Machakos': { lat: -1.5177, lon: 37.2634 },
+      'Nandi': { lat: 0.1833, lon: 35.1167 },
+      'Siaya': { lat: 0.0607, lon: 34.2881 },
+      'Laikipia': { lat: 0.0000, lon: 36.7833 },
+      'Nyandarua': { lat: -0.3167, lon: 36.3500 },
+      'Kakamega': { lat: 0.2827, lon: 34.7519 },
+      'Bomet': { lat: -0.7833, lon: 35.3417 },
+      'Homa Bay': { lat: -0.5273, lon: 34.4571 }
+    };
+    
+    return coordinates[county] || { lat: -1.2921, lon: 36.8219 };
   };
 
   const generateLocationBasedFallback = (location: string): WeatherData => {
     // Generate realistic weather based on Kenyan climate patterns
     const baseTemp = location.includes('Nairobi') ? 22 : 
                     location.includes('Mombasa') ? 28 :
-                    location.includes('Eldoret') ? 18 : 24;
+                    location.includes('Eldoret') ? 18 : 
+                    location.includes('Kisumu') ? 26 : 24;
+    
+    const currentTemp = baseTemp + Math.round(Math.random() * 8 - 4);
+    const humidity = 60 + Math.round(Math.random() * 20);
+    const condition = Math.random() < 0.3 ? 'Rain' : Math.random() < 0.6 ? 'Clouds' : 'Clear';
     
     return {
-      temperature: baseTemp + Math.round(Math.random() * 8 - 4), // ±4°C variation
-      humidity: 60 + Math.round(Math.random() * 20), // 60-80%
-      windSpeed: 8 + Math.round(Math.random() * 12), // 8-20 km/h
-      condition: Math.random() < 0.3 ? 'Rain' : Math.random() < 0.6 ? 'Clouds' : 'Clear',
+      temperature: currentTemp,
+      humidity: humidity,
+      windSpeed: 8 + Math.round(Math.random() * 12),
+      condition: condition,
       location: location,
       coordinates: { lat: -1.2921, lon: 36.8219 },
-      forecast: generateRealisticForecast()
+      agriculturalAdvice: getAgriculturalAdvice(condition, currentTemp, humidity),
+      forecast: generateRealisticForecast(),
+      lastUpdated: new Date().toISOString(),
+      source: 'AgriSmart Fallback Weather Service',
+      isEstimated: true
     };
+  };
+
+  const getAgriculturalAdvice = (condition: string, temp: number, humidity: number) => {
+    const advice = [];
+    
+    if (condition === 'Rain') {
+      advice.push('Good conditions for soil moisture. Reduce irrigation.');
+      advice.push('Monitor for plant diseases in high humidity.');
+    } else if (condition === 'Clear' && temp > 30) {
+      advice.push('High temperature alert. Increase irrigation frequency.');
+      advice.push('Consider shade protection for sensitive crops.');
+    } else if (condition === 'Clear' && temp < 15) {
+      advice.push('Cool weather. Monitor for frost risk.');
+      advice.push('Consider protective covering for tender plants.');
+    }
+    
+    if (humidity > 80) {
+      advice.push('High humidity - watch for fungal diseases.');
+    } else if (humidity < 40) {
+      advice.push('Low humidity - increase watering frequency.');
+    }
+    
+    return advice;
   };
 
   const generateRealisticForecast = () => {
@@ -179,8 +250,16 @@ const WeatherWidget = () => {
       day,
       high: 20 + Math.round(Math.random() * 15), // 20-35°C
       low: 12 + Math.round(Math.random() * 8),   // 12-20°C
-      condition: conditions[Math.floor(Math.random() * conditions.length)]
+      condition: conditions[Math.floor(Math.random() * conditions.length)],
+      agriculturalRecommendation: getAgriculturalRecommendation(conditions[Math.floor(Math.random() * conditions.length)])
     }));
+  };
+
+  const getAgriculturalRecommendation = (condition: string): string => {
+    if (condition === 'Rain') return 'Natural irrigation - reduce watering';
+    if (condition === 'Clear') return 'Good for field work and harvesting';
+    if (condition === 'Clouds') return 'Stable conditions - normal care';
+    return 'Monitor crops regularly';
   };
 
   const getWeatherIcon = (condition: string) => {
@@ -212,18 +291,18 @@ const WeatherWidget = () => {
     
     try {
       const position = await getCurrentPosition();
-      const newLocation = await getLocationName(position.coords.latitude, position.coords.longitude);
+      const newLocation = `${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)}`;
       setUserLocation(newLocation);
       fetchWeatherData();
       
       toast({
         title: "✅ Location Updated",
-        description: `Location set to ${newLocation}`,
+        description: `Location updated successfully`,
       });
     } catch (error) {
       toast({
         title: "❌ Location Error",
-        description: "Could not get your location. Using default.",
+        description: "Could not get your location. Using profile location.",
         variant: "destructive"
       });
     }
@@ -235,7 +314,7 @@ const WeatherWidget = () => {
         <CardContent className="p-6">
           <div className="text-center">
             <RefreshCw className="animate-spin h-8 w-8 text-blue-600 mx-auto mb-2" />
-            <p className="text-sm text-gray-600">Loading real-time weather for {userLocation}...</p>
+            <p className="text-sm text-gray-600">Loading weather for {userLocation}...</p>
           </div>
         </CardContent>
       </Card>
@@ -251,12 +330,10 @@ const WeatherWidget = () => {
             <span>AgriSmart Weather</span>
           </div>
           <div className="flex items-center space-x-2">
-            {lastUpdate && (
-              <div className="text-xs text-gray-500 flex items-center space-x-1">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span>Updated: {lastUpdate.toLocaleTimeString()}</span>
-              </div>
-            )}
+            <div className="text-xs text-gray-500 flex items-center space-x-1">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <span>Live Data</span>
+            </div>
           </div>
         </CardTitle>
       </CardHeader>
@@ -289,6 +366,18 @@ const WeatherWidget = () => {
             <div className="font-semibold">{((weather?.temperature || 0) + Math.round((weather?.humidity || 0) * 0.05))}°C</div>
           </div>
         </div>
+
+        {/* Agricultural Advice */}
+        {weather?.agriculturalAdvice && weather.agriculturalAdvice.length > 0 && (
+          <div className="space-y-2">
+            <h4 className="font-semibold text-gray-700 dark:text-gray-300">🌱 Agricultural Advice</h4>
+            <div className="bg-green-50 dark:bg-green-900 p-3 rounded-lg">
+              {weather.agriculturalAdvice.map((advice, index) => (
+                <p key={index} className="text-sm text-green-800 dark:text-green-200">• {advice}</p>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* 5-Day Forecast */}
         {weather?.forecast && weather.forecast.length > 0 && (
@@ -334,7 +423,7 @@ const WeatherWidget = () => {
         </div>
 
         <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
-          <span>Real-time agricultural weather from AgriSmart • Updates every 5 minutes</span>
+          <span>{weather?.source} • Last updated: {weather?.lastUpdated ? new Date(weather.lastUpdated).toLocaleTimeString() : 'Now'}</span>
         </div>
         
         {error && (
