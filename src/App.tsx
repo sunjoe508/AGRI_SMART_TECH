@@ -8,6 +8,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Session, User } from '@supabase/supabase-js';
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import ErrorBoundary from "@/components/ErrorBoundary";
+import LoadingSpinner from "@/components/LoadingSpinner";
 import Index from "./pages/Index";
 import AuthPage from "./pages/AuthPage";
 import AdminLogin from "./pages/AdminLogin";
@@ -16,72 +18,157 @@ import AdminDashboard from "./pages/AdminDashboard";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+// Configure React Query with optimized settings
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes
+      retry: (failureCount, error) => {
+        // Don't retry on 4xx errors
+        if (error && typeof error === 'object' && 'status' in error) {
+          const status = (error as any).status;
+          if (status >= 400 && status < 500) {
+            return false;
+          }
+        }
+        return failureCount < 3;
+      },
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    },
+    mutations: {
+      retry: 1,
+    },
+  },
+});
 
 const App = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Set up auth state listener for farmers system only
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
+    let mounted = true;
+
+    const initializeAuth = async () => {
+      try {
+        // Set up auth state listener
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          async (event, session) => {
+            if (!mounted) return;
+            
+            console.log('Auth state changed:', event, session?.user?.email);
+            
+            setSession(session);
+            setUser(session?.user ?? null);
+            
+            // Handle auth events
+            if (event === 'SIGNED_OUT') {
+              console.log('User signed out');
+            } else if (event === 'SIGNED_IN') {
+              console.log('User signed in:', session?.user?.email);
+            }
+          }
+        );
+
+        // Check for existing session
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Session error:', error);
+          setError('Authentication error. Please refresh the page.');
+        } else if (mounted) {
+          console.log('Initial session:', session?.user?.email || 'No session');
+          setSession(session);
+          setUser(session?.user ?? null);
+        }
+
+        return () => {
+          subscription.unsubscribe();
+        };
+      } catch (err) {
+        console.error('Auth initialization error:', err);
+        if (mounted) {
+          setError('Failed to initialize authentication.');
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
       }
-    );
+    };
 
-    // Check for existing session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    initializeAuth();
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+    };
   }, []);
+
+  if (error) {
+    return (
+      <ErrorBoundary>
+        <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950 dark:to-orange-950 flex items-center justify-center">
+          <div className="text-center max-w-md p-8">
+            <h2 className="text-2xl font-bold text-red-800 dark:text-red-200 mb-4">
+              Authentication Error
+            </h2>
+            <p className="text-red-600 dark:text-red-300 mb-6">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg transition-colors"
+            >
+              Reload Page
+            </button>
+          </div>
+        </div>
+      </ErrorBoundary>
+    );
+  }
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-100 via-emerald-50 to-blue-100 dark:from-green-900 dark:via-emerald-900 dark:to-blue-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-600 mx-auto mb-4"></div>
-          <p className="text-green-800 dark:text-green-200 font-semibold">Loading AgriSmart...</p>
-        </div>
+        <LoadingSpinner 
+          size="lg" 
+          message="Initializing AgriSmart..." 
+          variant="agricultural"
+        />
       </div>
     );
   }
 
   return (
-    <ThemeProvider>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              {/* Farmers System Routes */}
-              <Route 
-                path="/" 
-                element={
-                  !user ? <Index /> : <Dashboard user={user} />
-                } 
-              />
-              <Route path="/auth" element={<AuthPage />} />
-              
-              {/* Separate Admin System Routes */}
-              <Route path="/admin-login" element={<AdminLogin />} />
-              <Route path="/admin-auth" element={<AdminAuth />} />
-              <Route path="/admin-dashboard" element={<AdminDashboard />} />
-              
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </QueryClientProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                {/* Farmers System Routes */}
+                <Route 
+                  path="/" 
+                  element={
+                    !user ? <Index /> : <Dashboard user={user} />
+                  } 
+                />
+                <Route path="/auth" element={<AuthPage />} />
+                
+                {/* Separate Admin System Routes */}
+                <Route path="/admin-login" element={<AdminLogin />} />
+                <Route path="/admin-auth" element={<AdminAuth />} />
+                <Route path="/admin-dashboard" element={<AdminDashboard />} />
+                
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </QueryClientProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 };
 

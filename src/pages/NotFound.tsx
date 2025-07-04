@@ -1,50 +1,78 @@
+
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Home, Sprout } from 'lucide-react';
+import { Home, ArrowLeft, Sprout } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const NotFound = () => {
   const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-100 via-emerald-50 to-blue-100 dark:from-green-900 dark:via-emerald-900 dark:to-blue-900 flex items-center justify-center p-4">
-      <div className="text-center max-w-md mx-auto">
-        <div className="mb-8">
-          <Sprout className="w-24 h-24 text-green-600 mx-auto mb-4" />
-          <h1 className="text-6xl font-bold text-green-800 dark:text-green-300 mb-4">404</h1>
-          <h2 className="text-2xl font-semibold text-gray-700 dark:text-gray-300 mb-2">Page Not Found</h2>
-          <p className="text-gray-600 dark:text-gray-400 mb-8">
-            The page you're looking for doesn't exist or has been moved.
-          </p>
-        </div>
+      <Card className="max-w-lg w-full shadow-xl border-0 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm">
+        <CardHeader className="text-center pb-6">
+          <div className="flex justify-center mb-6">
+            <div className="relative">
+              <Sprout className="w-24 h-24 text-green-600" />
+              <div className="absolute -top-2 -right-2 text-6xl">🌱</div>
+            </div>
+          </div>
+          <CardTitle className="text-4xl font-bold text-green-800 dark:text-green-400 mb-2">
+            404
+          </CardTitle>
+          <CardTitle className="text-2xl text-gray-900 dark:text-white mb-4">
+            Page Not Found
+          </CardTitle>
+          <CardDescription className="text-lg text-gray-600 dark:text-gray-300">
+            Looks like this page got lost in the fields! The page you're looking for doesn't exist or has been moved.
+          </CardDescription>
+        </CardHeader>
         
-        <div className="space-y-4">
-          <Button 
-            onClick={() => navigate('/')}
-            className="w-full"
-          >
-            <Home className="w-4 h-4 mr-2" />
-            Back to Home
-          </Button>
+        <CardContent className="space-y-6">
+          <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
+            <h3 className="font-semibold text-green-800 dark:text-green-300 mb-2">
+              🌾 What you can do:
+            </h3>
+            <ul className="text-sm text-green-700 dark:text-green-200 space-y-1">
+              <li>• Check the URL for any typos</li>
+              <li>• Go back to the previous page</li>
+              <li>• Return to the AgriSmart homepage</li>
+              <li>• Contact our support team if you need help</li>
+            </ul>
+          </div>
           
-          <div className="grid grid-cols-2 gap-4">
+          <div className="flex flex-col sm:flex-row gap-3">
             <Button 
-              onClick={() => navigate('/auth')}
+              onClick={() => navigate(-1)}
               variant="outline"
+              className="flex-1 hover:bg-green-50 hover:border-green-300"
             >
-              Farmer Login
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Go Back
             </Button>
-            
             <Button 
-              onClick={() => navigate('/admin-login')}
-              variant="outline"
-              className="bg-purple-100 hover:bg-purple-200 text-purple-800 border-purple-300"
+              onClick={() => navigate('/')}
+              className="flex-1 bg-green-600 hover:bg-green-700"
             >
-              Admin Portal
+              <Home className="w-4 h-4 mr-2" />
+              Go Home
             </Button>
           </div>
-        </div>
-      </div>
+          
+          <div className="text-center pt-4 border-t border-gray-200 dark:border-gray-700">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Need help? Contact us at{' '}
+              <a 
+                href="mailto:support@agrismart.co.ke" 
+                className="text-green-600 hover:text-green-700 font-medium"
+              >
+                support@agrismart.co.ke
+              </a>
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
