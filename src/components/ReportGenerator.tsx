@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +7,7 @@ import { Download, FileText, Calendar, User, Building2, Droplets, Activity, Tren
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import jsPDF from 'jspdf';
 
 interface ReportGeneratorProps {
   user?: any;
@@ -65,140 +65,229 @@ const ReportGenerator = ({ user }: ReportGeneratorProps) => {
     enabled: !!user?.id
   });
 
-  const generateReportContent = (type: string) => {
-    const systemInfo = {
-      systemName: 'AgriSmart Precision Agriculture System',
-      version: '2.0.1',
-      generatedDate: new Date().toLocaleDateString(),
-      generatedTime: new Date().toLocaleTimeString(),
-      reportId: `ASR-${Date.now()}`
-    };
+  const generatePDFReport = (type: string) => {
+    const pdf = new jsPDF();
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    let yPosition = 20;
 
-    const ownerDetails = {
-      fullName: profile?.full_name || 'AgriSmart User',
-      farmName: profile?.farm_name || 'N/A',
-      location: `${profile?.county || 'Kenya'}, ${profile?.ward || ''}`.trim().replace(/,$/, ''),
-      phoneNumber: profile?.phone_number || 'N/A',
-      farmSize: profile?.farm_size_acres ? `${profile.farm_size_acres} acres` : 'N/A',
-      cropTypes: profile?.crop_types?.join(', ') || 'N/A'
-    };
+    // Header Design
+    pdf.setFillColor(34, 197, 94); // Green header
+    pdf.rect(0, 0, pageWidth, 40, 'F');
+    
+    // Logo placeholder (you can add actual logo later)
+    pdf.setFillColor(255, 255, 255);
+    pdf.circle(20, 20, 8, 'F');
+    
+    // Title
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(24);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('AgriSmart', 35, 20);
+    pdf.setFontSize(12);
+    pdf.text('Precision Agriculture System', 35, 28);
+    
+    // Report type badge
+    pdf.setFillColor(59, 130, 246);
+    pdf.roundedRect(pageWidth - 80, 10, 70, 20, 5, 5, 'F');
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(10);
+    pdf.text(type.toUpperCase() + ' REPORT', pageWidth - 75, 22);
+    
+    yPosition = 60;
 
-    let reportContent = `
-===========================================
-${systemInfo.systemName}
-AGRICULTURAL REPORT - ${type.toUpperCase()}
-===========================================
+    // Report Info Section
+    pdf.setTextColor(0, 0, 0);
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'normal');
+    
+    const reportInfo = [
+      ['Report ID:', `ASR-${Date.now()}`],
+      ['Generated:', new Date().toLocaleDateString()],
+      ['Time:', new Date().toLocaleTimeString()],
+      ['System Version:', '2.0.1']
+    ];
 
-Report ID: ${systemInfo.reportId}
-Generated: ${systemInfo.generatedDate} at ${systemInfo.generatedTime}
-System Version: ${systemInfo.version}
+    reportInfo.forEach(([label, value]) => {
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(label, 20, yPosition);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(value, 70, yPosition);
+      yPosition += 8;
+    });
 
--------------------------------------------
-FARM OWNER DETAILS
--------------------------------------------
-Name: ${ownerDetails.fullName}
-Farm: ${ownerDetails.farmName}
-Location: ${ownerDetails.location}
-Phone: ${ownerDetails.phoneNumber}
-Farm Size: ${ownerDetails.farmSize}
-Crop Types: ${ownerDetails.cropTypes}
+    yPosition += 10;
 
--------------------------------------------`;
+    // Farm Owner Section
+    pdf.setFillColor(243, 244, 246);
+    pdf.rect(15, yPosition - 5, pageWidth - 30, 50, 'F');
+    
+    pdf.setTextColor(59, 130, 246);
+    pdf.setFontSize(14);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Farm Owner Details', 20, yPosition + 5);
+    
+    yPosition += 15;
+    pdf.setTextColor(0, 0, 0);
+    pdf.setFontSize(10);
+    
+    const ownerDetails = [
+      ['Name:', profile?.full_name || 'AgriSmart User'],
+      ['Farm:', profile?.farm_name || 'N/A'],
+      ['Location:', `${profile?.county || 'Kenya'}, ${profile?.ward || ''}`.trim().replace(/,$/, '')],
+      ['Phone:', profile?.phone_number || 'N/A'],
+      ['Farm Size:', profile?.farm_size_acres ? `${profile.farm_size_acres} acres` : 'N/A'],
+      ['Crops:', profile?.crop_types?.join(', ') || 'N/A']
+    ];
 
+    ownerDetails.forEach(([label, value]) => {
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(label, 20, yPosition);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(value, 60, yPosition);
+      yPosition += 8;
+    });
+
+    yPosition += 20;
+
+    // Report Content Based on Type
     switch (type) {
       case 'irrigation':
-        const totalWater = irrigationData?.reduce((sum, log) => sum + (log.water_amount_liters || 0), 0) || 0;
-        const avgDuration = irrigationData?.length ? 
-          Math.round(irrigationData.reduce((sum, log) => sum + (log.duration_minutes || 0), 0) / irrigationData.length) : 0;
-        
-        reportContent += `
-IRRIGATION SUMMARY REPORT
--------------------------------------------
-Total Irrigation Sessions: ${irrigationData?.length || 0}
-Total Water Used: ${totalWater.toFixed(2)} liters
-Average Session Duration: ${avgDuration} minutes
-Most Active Zone: ${getMostActiveZone()}
-
-RECENT IRRIGATION ACTIVITIES:
-`;
-        irrigationData?.slice(0, 10).forEach((log, index) => {
-          reportContent += `
-${index + 1}. Date: ${new Date(log.created_at).toLocaleDateString()}
-   Zone: ${log.zone}
-   Water: ${log.water_amount_liters}L
-   Duration: ${log.duration_minutes} min
-   Soil Moisture Before: ${log.soil_moisture_before || 'N/A'}%
-   Soil Moisture After: ${log.soil_moisture_after || 'N/A'}%`;
-        });
+        generateIrrigationContent(pdf, yPosition);
         break;
-
       case 'sensor':
-        const sensorSummary = getSensorSummary();
-        reportContent += `
-SENSOR DATA ANALYSIS REPORT
--------------------------------------------
-Total Sensor Readings: ${sensorData?.length || 0}
-Active Sensor Types: ${Object.keys(sensorSummary).length}
-
-SENSOR AVERAGES:
-`;
-        Object.entries(sensorSummary).forEach(([type, data]: [string, any]) => {
-          reportContent += `
-${type.toUpperCase()}:
-   Average: ${data.average.toFixed(2)} ${data.unit}
-   Latest: ${data.latest.toFixed(2)} ${data.unit}
-   Readings: ${data.count}`;
-        });
-
-        reportContent += `
-
-RECENT SENSOR READINGS:
-`;
-        sensorData?.slice(0, 15).forEach((reading, index) => {
-          reportContent += `
-${index + 1}. ${new Date(reading.created_at).toLocaleDateString()} - ${reading.sensor_type}: ${reading.value}${reading.unit} (${reading.location_zone || 'Unknown Zone'})`;
-        });
+        generateSensorContent(pdf, yPosition);
         break;
-
       case 'comprehensive':
-        reportContent += `
-COMPREHENSIVE FARM REPORT
--------------------------------------------
-
-IRRIGATION OVERVIEW:
-- Total Sessions: ${irrigationData?.length || 0}
-- Water Used: ${(irrigationData?.reduce((sum, log) => sum + (log.water_amount_liters || 0), 0) || 0).toFixed(2)}L
-- Most Active Zone: ${getMostActiveZone()}
-
-SENSOR MONITORING:
-- Total Readings: ${sensorData?.length || 0}
-- Sensor Types: ${Object.keys(getSensorSummary()).join(', ')}
-
-RECOMMENDATIONS:
-- Monitor soil moisture levels regularly
-- Optimize irrigation timing based on sensor data
-- Consider crop rotation for soil health
-- Implement precision agriculture techniques
-
-SYSTEM HEALTH:
-- Database: Connected ✓
-- Sensors: ${sensorData?.length ? 'Active' : 'Check Connection'} 
-- Weather Integration: Active ✓
-- Real-time Monitoring: Enabled ✓`;
+        generateComprehensiveContent(pdf, yPosition);
         break;
     }
 
-    reportContent += `
+    // Footer
+    const footerY = pageHeight - 30;
+    pdf.setFillColor(75, 85, 99);
+    pdf.rect(0, footerY, pageWidth, 30, 'F');
+    
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(8);
+    pdf.text('© AgriSmart Technologies - Precision Agriculture Solutions', 20, footerY + 10);
+    pdf.text('Support: support@agrismart.co.ke | +254-700-AGRI-TECH', 20, footerY + 18);
+    pdf.text(`Generated on ${new Date().toLocaleString()}`, pageWidth - 100, footerY + 10);
 
--------------------------------------------
-END OF REPORT
--------------------------------------------
-Generated by ${systemInfo.systemName}
-© AgriSmart Technologies - Precision Agriculture Solutions
-Support: support@agrismart.co.ke | +254-700-AGRI-TECH
-    `;
+    return pdf;
+  };
 
-    return reportContent;
+  const generateIrrigationContent = (pdf: jsPDF, startY: number) => {
+    let yPos = startY;
+    
+    // Section Header
+    pdf.setFillColor(59, 130, 246);
+    pdf.rect(15, yPos - 5, pdf.internal.pageSize.getWidth() - 30, 20, 'F');
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(12);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Irrigation Summary Report', 20, yPos + 7);
+    
+    yPos += 25;
+    pdf.setTextColor(0, 0, 0);
+    pdf.setFontSize(10);
+
+    const totalWater = irrigationData?.reduce((sum, log) => sum + (log.water_amount_liters || 0), 0) || 0;
+    const avgDuration = irrigationData?.length ? 
+      Math.round(irrigationData.reduce((sum, log) => sum + (log.duration_minutes || 0), 0) / irrigationData.length) : 0;
+
+    // Statistics boxes
+    const stats = [
+      ['Total Sessions', irrigationData?.length || 0],
+      ['Total Water Used', `${totalWater.toFixed(2)}L`],
+      ['Avg Duration', `${avgDuration} min`],
+      ['Most Active Zone', getMostActiveZone()]
+    ];
+
+    stats.forEach(([label, value], index) => {
+      const xPos = 20 + (index % 2) * 90;
+      const boxY = yPos + Math.floor(index / 2) * 25;
+      
+      pdf.setFillColor(220, 252, 231);
+      pdf.rect(xPos, boxY, 80, 20, 'F');
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(label, xPos + 5, boxY + 8);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(String(value), xPos + 5, boxY + 15);
+    });
+
+    yPos += 60;
+
+    // Recent Activities
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Recent Irrigation Activities:', 20, yPos);
+    yPos += 10;
+
+    irrigationData?.slice(0, 5).forEach((log, index) => {
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`${index + 1}. ${new Date(log.created_at).toLocaleDateString()} - Zone: ${log.zone}`, 25, yPos);
+      yPos += 6;
+      pdf.text(`   Water: ${log.water_amount_liters}L, Duration: ${log.duration_minutes} min`, 25, yPos);
+      yPos += 8;
+    });
+  };
+
+  const generateSensorContent = (pdf: jsPDF, startY: number) => {
+    let yPos = startY;
+    
+    // Section Header
+    pdf.setFillColor(16, 185, 129);
+    pdf.rect(15, yPos - 5, pdf.internal.pageSize.getWidth() - 30, 20, 'F');
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(12);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Sensor Data Analysis Report', 20, yPos + 7);
+    
+    yPos += 25;
+    pdf.setTextColor(0, 0, 0);
+    pdf.setFontSize(10);
+
+    const sensorSummary = getSensorSummary();
+
+    // Sensor Overview
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(`Total Sensor Readings: ${sensorData?.length || 0}`, 20, yPos);
+    yPos += 8;
+    pdf.text(`Active Sensor Types: ${Object.keys(sensorSummary).length}`, 20, yPos);
+    yPos += 15;
+
+    // Sensor Averages
+    Object.entries(sensorSummary).forEach(([type, data]: [string, any]) => {
+      pdf.setFillColor(243, 244, 246);
+      pdf.rect(20, yPos - 3, 150, 15, 'F');
+      
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(type.toUpperCase(), 25, yPos + 5);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`Avg: ${data.average.toFixed(2)}${data.unit} | Latest: ${data.latest.toFixed(2)}${data.unit}`, 25, yPos + 10);
+      yPos += 20;
+    });
+  };
+
+  const generateComprehensiveContent = (pdf: jsPDF, startY: number) => {
+    let yPos = startY;
+    
+    // Multiple sections with different colors
+    const sections = [
+      { title: 'Irrigation Overview', color: [59, 130, 246] },
+      { title: 'Sensor Monitoring', color: [16, 185, 129] },
+      { title: 'Recommendations', color: [245, 158, 11] }
+    ];
+
+    sections.forEach((section) => {
+      pdf.setFillColor(...section.color);
+      pdf.rect(15, yPos - 5, pdf.internal.pageSize.getWidth() - 30, 15, 'F');
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(11);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(section.title, 20, yPos + 5);
+      yPos += 20;
+    });
   };
 
   const getMostActiveZone = () => {
@@ -253,29 +342,22 @@ Support: support@agrismart.co.ke | +254-700-AGRI-TECH
     setGenerating(true);
     
     try {
-      const reportContent = generateReportContent(selectedReport);
+      const pdf = generatePDFReport(selectedReport);
       
-      // Create and download the report
-      const blob = new Blob([reportContent], { type: 'text/plain' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `AgriSmart_${selectedReport}_Report_${new Date().toISOString().split('T')[0]}.txt`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      // Save the PDF
+      const fileName = `AgriSmart_${selectedReport}_Report_${new Date().toISOString().split('T')[0]}.pdf`;
+      pdf.save(fileName);
 
       toast({
-        title: "📋 Report Generated Successfully",
-        description: `${selectedReport.charAt(0).toUpperCase() + selectedReport.slice(1)} report downloaded with owner details`,
+        title: "📋 PDF Report Generated Successfully",
+        description: `${selectedReport.charAt(0).toUpperCase() + selectedReport.slice(1)} report downloaded as PDF`,
       });
 
     } catch (error) {
-      console.error('Report generation error:', error);
+      console.error('PDF generation error:', error);
       toast({
         title: "❌ Report Generation Failed",
-        description: "Failed to generate report. Please try again.",
+        description: "Failed to generate PDF report. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -294,7 +376,7 @@ Support: support@agrismart.co.ke | +254-700-AGRI-TECH
       <CardHeader>
         <CardTitle className="flex items-center space-x-2 text-green-700 dark:text-green-300">
           <FileText className="w-6 h-6" />
-          <span>AgriSmart Report Generator</span>
+          <span>AgriSmart PDF Report Generator</span>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -365,18 +447,18 @@ Support: support@agrismart.co.ke | +254-700-AGRI-TECH
           {generating ? (
             <>
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-              Generating Report...
+              Generating PDF Report...
             </>
           ) : (
             <>
               <Download className="w-4 h-4 mr-2" />
-              Generate & Download Report
+              Generate & Download PDF Report
             </>
           )}
         </Button>
 
         <div className="text-xs text-gray-500 text-center">
-          Reports include owner details, system information, and comprehensive farm data from AgriSmart database
+          Reports are generated as professional PDF documents with aesthetic design and comprehensive farm data
         </div>
       </CardContent>
     </Card>
