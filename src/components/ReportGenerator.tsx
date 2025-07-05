@@ -112,7 +112,7 @@ const ReportGenerator = ({ user }: ReportGeneratorProps) => {
       pdf.setFont('helvetica', 'bold');
       pdf.text(label, 20, yPosition);
       pdf.setFont('helvetica', 'normal');
-      pdf.text(value, 70, yPosition);
+      pdf.text(String(value), 70, yPosition);
       yPosition += 8;
     });
 
@@ -144,7 +144,7 @@ const ReportGenerator = ({ user }: ReportGeneratorProps) => {
       pdf.setFont('helvetica', 'bold');
       pdf.text(label, 20, yPosition);
       pdf.setFont('helvetica', 'normal');
-      pdf.text(value, 60, yPosition);
+      pdf.text(String(value), 60, yPosition);
       yPosition += 8;
     });
 
@@ -198,7 +198,7 @@ const ReportGenerator = ({ user }: ReportGeneratorProps) => {
 
     // Statistics boxes
     const stats = [
-      ['Total Sessions', irrigationData?.length || 0],
+      ['Total Sessions', String(irrigationData?.length || 0)],
       ['Total Water Used', `${totalWater.toFixed(2)}L`],
       ['Avg Duration', `${avgDuration} min`],
       ['Most Active Zone', getMostActiveZone()]
@@ -213,7 +213,7 @@ const ReportGenerator = ({ user }: ReportGeneratorProps) => {
       pdf.setFont('helvetica', 'bold');
       pdf.text(label, xPos + 5, boxY + 8);
       pdf.setFont('helvetica', 'normal');
-      pdf.text(String(value), xPos + 5, boxY + 15);
+      pdf.text(value, xPos + 5, boxY + 15);
     });
 
     yPos += 60;
@@ -274,13 +274,13 @@ const ReportGenerator = ({ user }: ReportGeneratorProps) => {
     
     // Multiple sections with different colors
     const sections = [
-      { title: 'Irrigation Overview', color: [59, 130, 246] },
-      { title: 'Sensor Monitoring', color: [16, 185, 129] },
-      { title: 'Recommendations', color: [245, 158, 11] }
+      { title: 'Irrigation Overview', color: [59, 130, 246] as [number, number, number] },
+      { title: 'Sensor Monitoring', color: [16, 185, 129] as [number, number, number] },
+      { title: 'Recommendations', color: [245, 158, 11] as [number, number, number] }
     ];
 
     sections.forEach((section) => {
-      pdf.setFillColor(...section.color);
+      pdf.setFillColor(section.color[0], section.color[1], section.color[2]);
       pdf.rect(15, yPos - 5, pdf.internal.pageSize.getWidth() - 30, 15, 'F');
       pdf.setTextColor(255, 255, 255);
       pdf.setFontSize(11);
