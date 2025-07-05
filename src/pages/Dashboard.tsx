@@ -1,212 +1,122 @@
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { 
-  Users, 
-  MapPin, 
-  Droplets, 
-  TrendingUp, 
-  Globe, 
-  AlertTriangle,
-  CheckCircle,
-  Activity,
-  Database,
-  Settings,
-  Download,
-  Mail,
-  MessageSquare,
-  BarChart3,
-  Wheat,
-  Tractor,
-  LogOut,
-  Shield,
-  Bot,
-  Leaf,
-  Bell
-} from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
-import { useNavigate } from 'react-router-dom';
-import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import IrrigationCycle from '../components/IrrigationCycle';
-import EnhancedIrrigationCycle from '../components/EnhancedIrrigationCycle';
-import SensorMonitoring from '../components/SensorMonitoring';
-import RealSensorMonitoring from '../components/RealSensorMonitoring';
-import SensorRegistration from '../components/SensorRegistration';
-import WeatherDashboard from '../components/WeatherDashboard';
-import WeatherWidget from '../components/WeatherWidget';
-import VendorMarketplace from '../components/VendorMarketplace';
-import PayPalCheckout from '../components/PayPalCheckout';
-import CustomerSupport from '../components/CustomerSupport';
-import ProfileManagement from '../components/ProfileManagement';
-import UserAIAssistant from '../components/UserAIAssistant';
-import ReportGenerator from '../components/ReportGenerator';
-import EnhancedFarmDashboard from '../components/EnhancedFarmDashboard';
-import LoadingSpinner from '../components/LoadingSpinner';
-import NotificationCenter from '../components/NotificationCenter';
-import ErrorBoundary from '../components/ErrorBoundary';
-import { User } from '@supabase/supabase-js';
+import { useQuery } from "@tanstack/react-query";
+import {
+  BarChart3,
+  Droplets,
+  Thermometer,
+  User,
+  LogOut,
+  Bell,
+  Settings,
+  Activity,
+  FileText,
+  Smartphone,
+  TestTube
+} from 'lucide-react';
+
+// Import components
+import ProfileManagement from "@/components/ProfileManagement";
+import SensorMonitoring from "@/components/SensorMonitoring";
+import RealSensorMonitoring from "@/components/RealSensorMonitoring";
+import SensorRegistration from "@/components/SensorRegistration";
+import IrrigationCycle from "@/components/IrrigationCycle";
+import WeatherWidget from "@/components/WeatherWidget";
+import ReportGenerator from "@/components/ReportGenerator";
+import NotificationCenter from "@/components/NotificationCenter";
+import MobileAppGuide from "@/components/MobileAppGuide";
+import SensorTestingPanel from "@/components/SensorTestingPanel";
 
 interface DashboardProps {
-  user: User;
+  user: any;
 }
 
 const Dashboard = ({ user }: DashboardProps) => {
-  const [showAIAssistant, setShowAIAssistant] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview');
   const { toast } = useToast();
-  const navigate = useNavigate();
 
-  const { data: stats, isLoading: statsLoading, error: statsError } = useQuery({
-    queryKey: ['dashboard-stats', user?.id],
+  // Fetch user profile
+  const { data: profile, isLoading: profileLoading } = useQuery({
+    queryKey: ['user-profile', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
       
-      try {
-        const [
-          { count: totalIrrigationLogs },
-          { count: totalSensorData },
-          { count: totalSupportTickets },
-          { data: recentLogs }
-        ] = await Promise.all([
-          supabase.from('irrigation_logs').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
-          supabase.from('sensor_data').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
-          supabase.from('support_tickets').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
-          supabase.from('irrigation_logs').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(5)
-        ]);
-
-        return {
-          totalIrrigationLogs: totalIrrigationLogs || 0,
-          totalSensorData: totalSensorData || 0,
-          totalSupportTickets: totalSupportTickets || 0,
-          recentLogs: recentLogs || []
-        };
-      } catch (error) {
-        console.error('Dashboard stats error:', error);
-        throw error;
+      if (error) {
+        console.error('Profile fetch error:', error);
+        return null;
       }
+      return data;
     },
-    enabled: !!user?.id,
-    refetchInterval: 30000,
-    retry: 3,
-    retryDelay: 1000
+    enabled: !!user?.id
   });
 
+  // Handle logout
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
       toast({
-        title: "👋 Logged Out Successfully",
-        description: "Thank you for using AgriSmart. See you soon!",
+        title: "👋 Logged out successfully",
+        description: "See you soon!",
       });
-      navigate('/');
     } catch (error) {
       console.error('Logout error:', error);
       toast({
-        title: "❌ Logout Error",
-        description: "There was an error logging out. Please try again.",
+        title: "❌ Logout failed",
+        description: "Please try again",
         variant: "destructive"
       });
     }
   };
 
-  const toggleAIAssistant = () => {
-    setShowAIAssistant(!showAIAssistant);
-    toast({
-      title: showAIAssistant ? "🤖 AI Assistant Disabled" : "🌱 AI Assistant Activated",
-      description: showAIAssistant ? "AI assistant is now hidden" : "Your farming AI assistant is ready to help!",
-    });
-  };
-
-  const handleSensorUpdate = () => {
-    // This will trigger re-fetch in RealSensorMonitoring
-    window.location.reload();
-  };
-
-  if (statsError) {
+  if (profileLoading) {
     return (
-      <ErrorBoundary>
-        <div className="flex items-center justify-center min-h-screen">
-          <Card className="max-w-md">
-            <CardContent className="text-center p-8">
-              <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Dashboard Error</h3>
-              <p className="text-gray-600 mb-4">
-                Unable to load dashboard data. Please check your connection and try again.
-              </p>
-              <Button onClick={() => window.location.reload()} className="bg-green-600 hover:bg-green-700">
-                Reload Dashboard
-              </Button>
-            </CardContent>
-          </Card>
+      <div className="min-h-screen bg-gradient-to-br from-green-100 via-emerald-50 to-blue-100 dark:from-green-900 dark:via-emerald-900 dark:to-blue-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <p className="text-green-700 dark:text-green-300">Loading your dashboard...</p>
         </div>
-      </ErrorBoundary>
-    );
-  }
-
-  if (!user || statsLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-green-50 to-blue-50 dark:from-green-950 dark:to-blue-950">
-        <LoadingSpinner 
-          size="lg" 
-          message="Loading your AgriSmart dashboard..." 
-          variant="agricultural"
-        />
       </div>
     );
   }
 
   return (
-    <ErrorBoundary>
-      <div className="space-y-6 pb-20 bg-gradient-to-br from-green-50/30 to-blue-50/30 dark:from-green-950/30 dark:to-blue-950/30 min-h-screen">
-        {/* Enhanced Header with AI Assistant Toggle */}
-        <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-green-200 dark:border-green-800 sticky top-0 z-40">
-          <div className="flex items-center justify-between p-6">
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <Leaf className="w-10 h-10 text-green-600" />
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+    <div className="min-h-screen bg-gradient-to-br from-green-100 via-emerald-50 to-blue-100 dark:from-green-900 dark:via-emerald-900 dark:to-blue-900">
+      {/* Header */}
+      <header className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm border-b border-green-200 dark:border-gray-700 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center space-x-3">
+              <div className="bg-green-600 p-2 rounded-lg">
+                <Droplets className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h2 className="text-3xl font-bold text-green-800 dark:text-green-400">AgriSmart Dashboard</h2>
-                <p className="text-gray-600 dark:text-gray-300">Smart Farming Made Simple</p>
+                <h1 className="text-xl font-bold text-green-800 dark:text-green-200">
+                  AgriSmart Dashboard
+                </h1>
+                <p className="text-sm text-green-600 dark:text-green-400">
+                  Welcome back, {profile?.full_name || 'Farmer'}!
+                </p>
               </div>
             </div>
+            
             <div className="flex items-center space-x-4">
               <NotificationCenter user={user} />
-              
-              <Button 
-                onClick={toggleAIAssistant}
-                className={`${
-                  showAIAssistant 
-                    ? 'bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700' 
-                    : 'bg-gray-600 hover:bg-gray-700'
-                } transition-all duration-300`}
-              >
-                <Bot className="w-4 h-4 mr-2" />
-                {showAIAssistant ? 'AI Active' : 'Activate AI'}
-              </Button>
-              
-              <div className="flex items-center space-x-2">
-                <div className="text-right">
-                  <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">
-                    Welcome, {user.email?.split('@')[0]}
-                  </Badge>
-                  <div className="text-xs text-gray-500 mt-1">
-                    Online • Last active: now
-                  </div>
-                </div>
-              </div>
-              
-              <Button 
+              <Button
                 onClick={handleLogout}
                 variant="outline"
-                className="flex items-center space-x-2 hover:bg-red-50 hover:border-red-300 hover:text-red-700 transition-colors"
+                size="sm"
+                className="flex items-center space-x-2"
               >
                 <LogOut className="w-4 h-4" />
                 <span>Logout</span>
@@ -214,128 +124,162 @@ const Dashboard = ({ user }: DashboardProps) => {
             </div>
           </div>
         </div>
+      </header>
 
-        <div className="max-w-7xl mx-auto px-6">
-          {/* Enhanced Farm Dashboard */}
-          <div className="mb-8">
-            <EnhancedFarmDashboard user={user} />
-          </div>
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-8 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm">
+            <TabsTrigger value="overview" className="flex items-center space-x-2">
+              <BarChart3 className="w-4 h-4" />
+              <span className="hidden sm:inline">Overview</span>
+            </TabsTrigger>
+            <TabsTrigger value="sensors" className="flex items-center space-x-2">
+              <Activity className="w-4 h-4" />
+              <span className="hidden sm:inline">Sensors</span>
+            </TabsTrigger>
+            <TabsTrigger value="irrigation" className="flex items-center space-x-2">
+              <Droplets className="w-4 h-4" />
+              <span className="hidden sm:inline">Irrigation</span>
+            </TabsTrigger>
+            <TabsTrigger value="reports" className="flex items-center space-x-2">
+              <FileText className="w-4 h-4" />
+              <span className="hidden sm:inline">Reports</span>
+            </TabsTrigger>
+            <TabsTrigger value="profile" className="flex items-center space-x-2">
+              <User className="w-4 h-4" />
+              <span className="hidden sm:inline">Profile</span>
+            </TabsTrigger>
+            <TabsTrigger value="mobile" className="flex items-center space-x-2">
+              <Smartphone className="w-4 h-4" />
+              <span className="hidden sm:inline">Mobile App</span>
+            </TabsTrigger>
+            <TabsTrigger value="testing" className="flex items-center space-x-2">
+              <TestTube className="w-4 h-4" />
+              <span className="hidden sm:inline">Testing</span>
+            </TabsTrigger>
+            <TabsTrigger value="weather" className="flex items-center space-x-2">
+              <Thermometer className="w-4 h-4" />
+              <span className="hidden sm:inline">Weather</span>
+            </TabsTrigger>
+          </TabsList>
 
-          {/* Weather Widget */}
-          <div className="mb-8">
-            <WeatherWidget user={user} />
-          </div>
-
-          {/* Main Dashboard Tabs */}
-          <Tabs defaultValue="irrigation" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-7 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm border border-green-200 dark:border-green-800 p-1">
-              <TabsTrigger value="irrigation" className="data-[state=active]:bg-green-100 data-[state=active]:text-green-800">
-                <Droplets className="w-4 h-4 mr-2" />
-                Irrigation
-              </TabsTrigger>
-              <TabsTrigger value="sensors" className="data-[state=active]:bg-blue-100 data-[state=active]:text-blue-800">
-                <Activity className="w-4 h-4 mr-2" />
-                Sensors
-              </TabsTrigger>
-              <TabsTrigger value="weather" className="data-[state=active]:bg-purple-100 data-[state=active]:text-purple-800">
-                <Globe className="w-4 h-4 mr-2" />
-                Weather
-              </TabsTrigger>
-              <TabsTrigger value="reports" className="data-[state=active]:bg-orange-100 data-[state=active]:text-orange-800">
-                <BarChart3 className="w-4 h-4 mr-2" />
-                Reports
-              </TabsTrigger>
-              <TabsTrigger value="marketplace" className="data-[state=active]:bg-yellow-100 data-[state=active]:text-yellow-800">
-                <Wheat className="w-4 h-4 mr-2" />
-                Marketplace
-              </TabsTrigger>
-              <TabsTrigger value="support" className="data-[state=active]:bg-red-100 data-[state=active]:text-red-800">
-                <MessageSquare className="w-4 h-4 mr-2" />
-                Support
-              </TabsTrigger>
-              <TabsTrigger value="profile" className="data-[state=active]:bg-gray-100 data-[state=active]:text-gray-800">
-                <Users className="w-4 h-4 mr-2" />
-                Profile
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="irrigation" className="space-y-6">
-              <div className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm rounded-lg p-6 border border-green-200 dark:border-green-800">
-                <EnhancedIrrigationCycle user={user} />
+          {/* Overview Tab */}
+          <TabsContent value="overview" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 space-y-6">
+                <SensorMonitoring user={user} />
+                <IrrigationCycle user={user} />
               </div>
-            </TabsContent>
-
-            <TabsContent value="sensors" className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm rounded-lg p-6 border border-blue-200 dark:border-blue-800">
-                  <SensorRegistration user={user} onSensorUpdate={handleSensorUpdate} />
-                </div>
-                <div className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm rounded-lg p-6 border border-blue-200 dark:border-blue-800">
-                  <RealSensorMonitoring user={user} />
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="weather" className="space-y-6">
-              <div className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm rounded-lg p-6 border border-purple-200 dark:border-purple-800">
-                <WeatherDashboard />
-              </div>
-            </TabsContent>
-
-            <TabsContent value="reports" className="space-y-6">
-              <div className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm rounded-lg p-6 border border-orange-200 dark:border-orange-800">
-                <ReportGenerator user={user} />
-              </div>
-            </TabsContent>
-
-            <TabsContent value="marketplace" className="space-y-6">
-              <div className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm rounded-lg p-6 border border-yellow-200 dark:border-yellow-800">
-                <VendorMarketplace user={user} />
-              </div>
-            </TabsContent>
-
-            <TabsContent value="support" className="space-y-6">
-              <div className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm rounded-lg p-6 border border-red-200 dark:border-red-800">
-                <CustomerSupport user={user} />
-              </div>
-            </TabsContent>
-
-            <TabsContent value="profile" className="space-y-6">
-              <div className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm rounded-lg p-6 border border-gray-200 dark:border-gray-800">
-                <ProfileManagement user={user} />
-              </div>
-            </TabsContent>
-          </Tabs>
-        </div>
-
-        {/* Enhanced AI Assistant */}
-        {showAIAssistant && (
-          <div className="fixed bottom-4 right-4 z-50">
-            <div className="bg-white dark:bg-gray-900 rounded-lg shadow-2xl border-2 border-green-300 dark:border-green-700 max-w-sm">
-              <div className="p-4 border-b border-green-200 dark:border-green-800">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <Bot className="w-5 h-5 text-green-600" />
-                    <span className="font-semibold text-green-800 dark:text-green-300">AI Assistant</span>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={toggleAIAssistant}
-                    className="h-8 w-8 p-0"
-                  >
-                    ×
-                  </Button>
-                </div>
-              </div>
-              <div className="max-h-96 overflow-hidden">
-                <UserAIAssistant />
+              <div className="space-y-6">
+                <WeatherWidget />
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center space-x-2">
+                      <User className="w-5 h-5" />
+                      <span>Quick Stats</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Farm Size:</span>
+                        <Badge variant="secondary">
+                          {profile?.farm_size_acres || 0} acres
+                        </Badge>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Location:</span>
+                        <span className="text-sm font-medium">
+                          {profile?.county || 'Kenya'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Crops:</span>
+                        <span className="text-sm font-medium">
+                          {profile?.crop_types?.length || 0} types
+                        </span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             </div>
-          </div>
-        )}
-      </div>
-    </ErrorBoundary>
+          </TabsContent>
+
+          {/* Sensors Tab */}
+          <TabsContent value="sensors">
+            <Tabs defaultValue="monitoring" className="space-y-6">
+              <TabsList className="bg-white/70 dark:bg-gray-800/70">
+                <TabsTrigger value="monitoring">Live Monitoring</TabsTrigger>
+                <TabsTrigger value="registration">Registration</TabsTrigger>
+                <TabsTrigger value="testing">Testing Panel</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="monitoring">
+                <RealSensorMonitoring user={user} />
+              </TabsContent>
+              
+              <TabsContent value="registration">
+                <SensorRegistration user={user} />
+              </TabsContent>
+              
+              <TabsContent value="testing">
+                <SensorTestingPanel user={user} />
+              </TabsContent>
+            </Tabs>
+          </TabsContent>
+
+          {/* Irrigation Tab */}
+          <TabsContent value="irrigation">
+            <IrrigationCycle user={user} />
+          </TabsContent>
+
+          {/* Reports Tab */}
+          <TabsContent value="reports">
+            <ReportGenerator user={user} />
+          </TabsContent>
+
+          {/* Profile Tab */}
+          <TabsContent value="profile">
+            <ProfileManagement user={user} />
+          </TabsContent>
+
+          {/* Mobile App Tab */}
+          <TabsContent value="mobile">
+            <MobileAppGuide />
+          </TabsContent>
+
+          {/* Testing Tab */}
+          <TabsContent value="testing">
+            <SensorTestingPanel user={user} />
+          </TabsContent>
+
+          {/* Weather Tab */}
+          <TabsContent value="weather">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <WeatherWidget />
+              <Card>
+                <CardHeader>
+                  <CardTitle>Weather Integration</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-600 mb-4">
+                    Weather data helps optimize your irrigation and farming decisions.
+                  </p>
+                  <div className="space-y-2 text-sm">
+                    <div>• Real-time weather conditions</div>
+                    <div>• 5-day weather forecast</div>
+                    <div>• Rainfall predictions</div>
+                    <div>• Temperature monitoring</div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </main>
+    </div>
   );
 };
 

@@ -66,115 +66,120 @@ const ReportGenerator = ({ user }: ReportGeneratorProps) => {
   });
 
   const generatePDFReport = (type: string) => {
-    const pdf = new jsPDF();
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-    let yPosition = 20;
+    try {
+      const pdf = new jsPDF();
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      let yPosition = 20;
 
-    // Header Design
-    pdf.setFillColor(34, 197, 94); // Green header
-    pdf.rect(0, 0, pageWidth, 40, 'F');
-    
-    // Logo placeholder (you can add actual logo later)
-    pdf.setFillColor(255, 255, 255);
-    pdf.circle(20, 20, 8, 'F');
-    
-    // Title
-    pdf.setTextColor(255, 255, 255);
-    pdf.setFontSize(24);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('AgriSmart', 35, 20);
-    pdf.setFontSize(12);
-    pdf.text('Precision Agriculture System', 35, 28);
-    
-    // Report type badge
-    pdf.setFillColor(59, 130, 246);
-    pdf.roundedRect(pageWidth - 80, 10, 70, 20, 5, 5, 'F');
-    pdf.setTextColor(255, 255, 255);
-    pdf.setFontSize(10);
-    pdf.text(type.toUpperCase() + ' REPORT', pageWidth - 75, 22);
-    
-    yPosition = 60;
-
-    // Report Info Section
-    pdf.setTextColor(0, 0, 0);
-    pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'normal');
-    
-    const reportInfo = [
-      ['Report ID:', `ASR-${Date.now()}`],
-      ['Generated:', new Date().toLocaleDateString()],
-      ['Time:', new Date().toLocaleTimeString()],
-      ['System Version:', '2.0.1']
-    ];
-
-    reportInfo.forEach(([label, value]) => {
+      // Header Design
+      pdf.setFillColor(34, 197, 94); // Green header
+      pdf.rect(0, 0, pageWidth, 40, 'F');
+      
+      // Logo placeholder
+      pdf.setFillColor(255, 255, 255);
+      pdf.circle(20, 20, 8, 'F');
+      
+      // Title
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(24);
       pdf.setFont('helvetica', 'bold');
-      pdf.text(label, 20, yPosition);
+      pdf.text('AgriSmart', 35, 20);
+      pdf.setFontSize(12);
+      pdf.text('Precision Agriculture System', 35, 28);
+      
+      // Report type badge
+      pdf.setFillColor(59, 130, 246);
+      pdf.roundedRect(pageWidth - 80, 10, 70, 20, 5, 5, 'F');
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(10);
+      pdf.text(type.toUpperCase() + ' REPORT', pageWidth - 75, 22);
+      
+      yPosition = 60;
+
+      // Report Info Section with stable data handling
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFontSize(10);
       pdf.setFont('helvetica', 'normal');
-      pdf.text(String(value), 70, yPosition);
-      yPosition += 8;
-    });
+      
+      const reportInfo: [string, string][] = [
+        ['Report ID:', `ASR-${Date.now()}`],
+        ['Generated:', new Date().toLocaleDateString()],
+        ['Time:', new Date().toLocaleTimeString()],
+        ['System Version:', '2.0.1']
+      ];
 
-    yPosition += 10;
+      reportInfo.forEach(([label, value]) => {
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(label, 20, yPosition);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(value, 70, yPosition);
+        yPosition += 8;
+      });
 
-    // Farm Owner Section
-    pdf.setFillColor(243, 244, 246);
-    pdf.rect(15, yPosition - 5, pageWidth - 30, 50, 'F');
-    
-    pdf.setTextColor(59, 130, 246);
-    pdf.setFontSize(14);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('Farm Owner Details', 20, yPosition + 5);
-    
-    yPosition += 15;
-    pdf.setTextColor(0, 0, 0);
-    pdf.setFontSize(10);
-    
-    const ownerDetails = [
-      ['Name:', profile?.full_name || 'AgriSmart User'],
-      ['Farm:', profile?.farm_name || 'N/A'],
-      ['Location:', `${profile?.county || 'Kenya'}, ${profile?.ward || ''}`.trim().replace(/,$/, '')],
-      ['Phone:', profile?.phone_number || 'N/A'],
-      ['Farm Size:', profile?.farm_size_acres ? `${profile.farm_size_acres} acres` : 'N/A'],
-      ['Crops:', profile?.crop_types?.join(', ') || 'N/A']
-    ];
+      yPosition += 10;
 
-    ownerDetails.forEach(([label, value]) => {
+      // Farm Owner Section with null safety
+      pdf.setFillColor(243, 244, 246);
+      pdf.rect(15, yPosition - 5, pageWidth - 30, 50, 'F');
+      
+      pdf.setTextColor(59, 130, 246);
+      pdf.setFontSize(14);
       pdf.setFont('helvetica', 'bold');
-      pdf.text(label, 20, yPosition);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(String(value), 60, yPosition);
-      yPosition += 8;
-    });
+      pdf.text('Farm Owner Details', 20, yPosition + 5);
+      
+      yPosition += 15;
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFontSize(10);
+      
+      const ownerDetails: [string, string][] = [
+        ['Name:', profile?.full_name || 'AgriSmart User'],
+        ['Farm:', profile?.farm_name || 'N/A'],
+        ['Location:', `${profile?.county || 'Kenya'}, ${profile?.ward || ''}`.trim().replace(/,$/, '')],
+        ['Phone:', profile?.phone_number || 'N/A'],
+        ['Farm Size:', profile?.farm_size_acres ? `${profile.farm_size_acres} acres` : 'N/A'],
+        ['Crops:', profile?.crop_types?.join(', ') || 'N/A']
+      ];
 
-    yPosition += 20;
+      ownerDetails.forEach(([label, value]) => {
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(label, 20, yPosition);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(value, 60, yPosition);
+        yPosition += 8;
+      });
 
-    // Report Content Based on Type
-    switch (type) {
-      case 'irrigation':
-        generateIrrigationContent(pdf, yPosition);
-        break;
-      case 'sensor':
-        generateSensorContent(pdf, yPosition);
-        break;
-      case 'comprehensive':
-        generateComprehensiveContent(pdf, yPosition);
-        break;
+      yPosition += 20;
+
+      // Report Content Based on Type with stable data handling
+      switch (type) {
+        case 'irrigation':
+          generateIrrigationContent(pdf, yPosition);
+          break;
+        case 'sensor':
+          generateSensorContent(pdf, yPosition);
+          break;
+        case 'comprehensive':
+          generateComprehensiveContent(pdf, yPosition);
+          break;
+      }
+
+      // Footer
+      const footerY = pageHeight - 30;
+      pdf.setFillColor(75, 85, 99);
+      pdf.rect(0, footerY, pageWidth, 30, 'F');
+      
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(8);
+      pdf.text('© AgriSmart Technologies - Precision Agriculture Solutions', 20, footerY + 10);
+      pdf.text('Support: support@agrismart.co.ke | +254-700-AGRI-TECH', 20, footerY + 18);
+      pdf.text(`Generated on ${new Date().toLocaleString()}`, pageWidth - 100, footerY + 10);
+
+      return pdf;
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      throw new Error('Failed to generate PDF report');
     }
-
-    // Footer
-    const footerY = pageHeight - 30;
-    pdf.setFillColor(75, 85, 99);
-    pdf.rect(0, footerY, pageWidth, 30, 'F');
-    
-    pdf.setTextColor(255, 255, 255);
-    pdf.setFontSize(8);
-    pdf.text('© AgriSmart Technologies - Precision Agriculture Solutions', 20, footerY + 10);
-    pdf.text('Support: support@agrismart.co.ke | +254-700-AGRI-TECH', 20, footerY + 18);
-    pdf.text(`Generated on ${new Date().toLocaleString()}`, pageWidth - 100, footerY + 10);
-
-    return pdf;
   };
 
   const generateIrrigationContent = (pdf: jsPDF, startY: number) => {
@@ -192,12 +197,13 @@ const ReportGenerator = ({ user }: ReportGeneratorProps) => {
     pdf.setTextColor(0, 0, 0);
     pdf.setFontSize(10);
 
-    const totalWater = irrigationData?.reduce((sum, log) => sum + (log.water_amount_liters || 0), 0) || 0;
+    // Safe data calculations
+    const totalWater = irrigationData?.reduce((sum, log) => sum + (Number(log.water_amount_liters) || 0), 0) || 0;
     const avgDuration = irrigationData?.length ? 
-      Math.round(irrigationData.reduce((sum, log) => sum + (log.duration_minutes || 0), 0) / irrigationData.length) : 0;
+      Math.round(irrigationData.reduce((sum, log) => sum + (Number(log.duration_minutes) || 0), 0) / irrigationData.length) : 0;
 
-    // Statistics boxes
-    const stats = [
+    // Statistics boxes with safe data handling
+    const stats: [string, string][] = [
       ['Total Sessions', String(irrigationData?.length || 0)],
       ['Total Water Used', `${totalWater.toFixed(2)}L`],
       ['Avg Duration', `${avgDuration} min`],
@@ -218,17 +224,26 @@ const ReportGenerator = ({ user }: ReportGeneratorProps) => {
 
     yPos += 60;
 
-    // Recent Activities
+    // Recent Activities with safe data handling
     pdf.setFont('helvetica', 'bold');
     pdf.text('Recent Irrigation Activities:', 20, yPos);
     yPos += 10;
 
-    irrigationData?.slice(0, 5).forEach((log, index) => {
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(`${index + 1}. ${new Date(log.created_at).toLocaleDateString()} - Zone: ${log.zone}`, 25, yPos);
-      yPos += 6;
-      pdf.text(`   Water: ${log.water_amount_liters}L, Duration: ${log.duration_minutes} min`, 25, yPos);
-      yPos += 8;
+    const recentLogs = irrigationData?.slice(0, 5) || [];
+    recentLogs.forEach((log, index) => {
+      try {
+        pdf.setFont('helvetica', 'normal');
+        const dateText = `${index + 1}. ${new Date(log.created_at).toLocaleDateString()} - Zone: ${log.zone || 'N/A'}`;
+        pdf.text(dateText, 25, yPos);
+        yPos += 6;
+        const detailText = `   Water: ${log.water_amount_liters || 0}L, Duration: ${log.duration_minutes || 0} min`;
+        pdf.text(detailText, 25, yPos);
+        yPos += 8;
+      } catch (error) {
+        console.error('Error rendering irrigation log:', error);
+        pdf.text(`   Error rendering log ${index + 1}`, 25, yPos);
+        yPos += 8;
+      }
     });
   };
 
@@ -248,24 +263,33 @@ const ReportGenerator = ({ user }: ReportGeneratorProps) => {
     pdf.setFontSize(10);
 
     const sensorSummary = getSensorSummary();
+    const sensorCount = sensorData?.length || 0;
+    const sensorTypeCount = Object.keys(sensorSummary).length;
 
-    // Sensor Overview
+    // Sensor Overview with safe data handling
     pdf.setFont('helvetica', 'bold');
-    pdf.text(`Total Sensor Readings: ${sensorData?.length || 0}`, 20, yPos);
+    pdf.text(`Total Sensor Readings: ${sensorCount}`, 20, yPos);
     yPos += 8;
-    pdf.text(`Active Sensor Types: ${Object.keys(sensorSummary).length}`, 20, yPos);
+    pdf.text(`Active Sensor Types: ${sensorTypeCount}`, 20, yPos);
     yPos += 15;
 
-    // Sensor Averages
+    // Sensor Averages with error handling
     Object.entries(sensorSummary).forEach(([type, data]: [string, any]) => {
-      pdf.setFillColor(243, 244, 246);
-      pdf.rect(20, yPos - 3, 150, 15, 'F');
-      
-      pdf.setFont('helvetica', 'bold');
-      pdf.text(type.toUpperCase(), 25, yPos + 5);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(`Avg: ${data.average.toFixed(2)}${data.unit} | Latest: ${data.latest.toFixed(2)}${data.unit}`, 25, yPos + 10);
-      yPos += 20;
+      try {
+        pdf.setFillColor(243, 244, 246);
+        pdf.rect(20, yPos - 3, 150, 15, 'F');
+        
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(type.toUpperCase(), 25, yPos + 5);
+        pdf.setFont('helvetica', 'normal');
+        const avgText = `Avg: ${(data.average || 0).toFixed(2)}${data.unit || ''} | Latest: ${(data.latest || 0).toFixed(2)}${data.unit || ''}`;
+        pdf.text(avgText, 25, yPos + 10);
+        yPos += 20;
+      } catch (error) {
+        console.error('Error rendering sensor data:', error);
+        pdf.text(`Error rendering ${type} data`, 25, yPos);
+        yPos += 15;
+      }
     });
   };
 
@@ -290,43 +314,62 @@ const ReportGenerator = ({ user }: ReportGeneratorProps) => {
     });
   };
 
-  const getMostActiveZone = () => {
-    if (!irrigationData?.length) return 'N/A';
-    
-    const zoneCounts = irrigationData.reduce((acc: any, log) => {
-      acc[log.zone] = (acc[log.zone] || 0) + 1;
-      return acc;
-    }, {});
-    
-    return Object.entries(zoneCounts).reduce((a: any, b: any) => 
-      zoneCounts[a[0]] > zoneCounts[b[0]] ? a : b
-    )[0] || 'N/A';
+  const getMostActiveZone = (): string => {
+    try {
+      if (!irrigationData?.length) return 'N/A';
+      
+      const zoneCounts = irrigationData.reduce((acc: Record<string, number>, log) => {
+        const zone = log.zone || 'Unknown';
+        acc[zone] = (acc[zone] || 0) + 1;
+        return acc;
+      }, {});
+      
+      const entries = Object.entries(zoneCounts);
+      if (entries.length === 0) return 'N/A';
+      
+      return entries.reduce((a, b) => zoneCounts[a[0]] > zoneCounts[b[0]] ? a : b)[0];
+    } catch (error) {
+      console.error('Error calculating most active zone:', error);
+      return 'N/A';
+    }
   };
 
   const getSensorSummary = () => {
-    if (!sensorData?.length) return {};
-    
-    const summary: any = {};
-    
-    sensorData.forEach(reading => {
-      if (!summary[reading.sensor_type]) {
-        summary[reading.sensor_type] = {
-          values: [],
-          unit: reading.unit,
-          count: 0
-        };
-      }
-      summary[reading.sensor_type].values.push(reading.value);
-      summary[reading.sensor_type].count++;
-    });
-    
-    Object.keys(summary).forEach(type => {
-      const values = summary[type].values;
-      summary[type].average = values.reduce((a: number, b: number) => a + b, 0) / values.length;
-      summary[type].latest = values[0];
-    });
-    
-    return summary;
+    try {
+      if (!sensorData?.length) return {};
+      
+      const summary: Record<string, any> = {};
+      
+      sensorData.forEach(reading => {
+        const type = reading.sensor_type || 'unknown';
+        if (!summary[type]) {
+          summary[type] = {
+            values: [],
+            unit: reading.unit || '',
+            count: 0
+          };
+        }
+        const value = Number(reading.value) || 0;
+        summary[type].values.push(value);
+        summary[type].count++;
+      });
+      
+      Object.keys(summary).forEach(type => {
+        const values = summary[type].values;
+        if (values.length > 0) {
+          summary[type].average = values.reduce((a: number, b: number) => a + b, 0) / values.length;
+          summary[type].latest = values[0] || 0;
+        } else {
+          summary[type].average = 0;
+          summary[type].latest = 0;
+        }
+      });
+      
+      return summary;
+    } catch (error) {
+      console.error('Error processing sensor summary:', error);
+      return {};
+    }
   };
 
   const handleGenerateReport = async () => {
@@ -344,9 +387,23 @@ const ReportGenerator = ({ user }: ReportGeneratorProps) => {
     try {
       const pdf = generatePDFReport(selectedReport);
       
-      // Save the PDF
+      // Save the PDF with error handling
       const fileName = `AgriSmart_${selectedReport}_Report_${new Date().toISOString().split('T')[0]}.pdf`;
       pdf.save(fileName);
+
+      // Record report generation in database for tracking
+      await supabase
+        .from('daily_reports')
+        .insert({
+          user_id: user?.id,
+          report_date: new Date().toISOString().split('T')[0],
+          irrigation_summary: selectedReport === 'irrigation' || selectedReport === 'comprehensive' ? 
+            { total_sessions: irrigationData?.length || 0, total_water: irrigationData?.reduce((sum, log) => sum + (Number(log.water_amount_liters) || 0), 0) || 0 } : null,
+          sensor_summary: selectedReport === 'sensor' || selectedReport === 'comprehensive' ? 
+            { total_readings: sensorData?.length || 0, sensor_types: Object.keys(getSensorSummary()).length } : null,
+          recommendations: ['Report generated successfully via PDF export'],
+          sent_at: new Date().toISOString()
+        });
 
       toast({
         title: "📋 PDF Report Generated Successfully",
@@ -404,7 +461,11 @@ const ReportGenerator = ({ user }: ReportGeneratorProps) => {
               <SelectValue placeholder="Choose report type..." />
             </SelectTrigger>
             <SelectContent>
-              {reportTypes.map((type) => (
+              {[
+                { value: 'irrigation', label: 'Irrigation Report', icon: Droplets, description: 'Water usage and irrigation data' },
+                { value: 'sensor', label: 'Sensor Data Report', icon: Activity, description: 'Environmental monitoring data' },
+                { value: 'comprehensive', label: 'Comprehensive Report', icon: TrendingUp, description: 'Complete farm analysis' }
+              ].map((type) => (
                 <SelectItem key={type.value} value={type.value}>
                   <div className="flex items-center space-x-2">
                     <type.icon className="w-4 h-4" />
