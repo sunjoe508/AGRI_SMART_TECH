@@ -189,7 +189,7 @@ const Dashboard = ({ user }: DashboardProps) => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2 space-y-6">
                 <SensorMonitoring user={user} />
-                <IrrigationCycle user={user} />
+                <IrrigationCycle />
               </div>
               <div className="space-y-6">
                 <WeatherWidget />
@@ -252,7 +252,7 @@ const Dashboard = ({ user }: DashboardProps) => {
 
           {/* Irrigation Tab */}
           <TabsContent value="irrigation">
-            <IrrigationCycle user={user} />
+            <IrrigationCycle />
           </TabsContent>
 
           {/* Reports Tab */}
