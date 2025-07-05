@@ -42,7 +42,7 @@ const Dashboard = ({ user }: DashboardProps) => {
   const { toast } = useToast();
 
   // Fetch user profile
-  const { data: profile, isLoading: profileLoading } = useQuery({
+  const { data: profile, isLoading: profileLoading, refetch: refetchProfile } = useQuery({
     queryKey: ['user-profile', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
@@ -60,6 +60,26 @@ const Dashboard = ({ user }: DashboardProps) => {
     },
     enabled: !!user?.id
   });
+
+  // Handle sensor updates - this will refresh data across components
+  const handleSensorUpdate = () => {
+    // Trigger data refresh for sensor-related components
+    refetchProfile();
+    // Force a page refresh if needed for real-time updates
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000);
+  };
+
+  // Handle data generation from testing panel
+  const handleDataGenerated = () => {
+    // Refresh all sensor data when test data is generated
+    handleSensorUpdate();
+    toast({
+      title: "📊 Data Updated",
+      description: "Sensor data has been refreshed across all components",
+    });
+  };
 
   // Handle logout
   const handleLogout = async () => {
@@ -221,11 +241,11 @@ const Dashboard = ({ user }: DashboardProps) => {
               </TabsContent>
               
               <TabsContent value="registration">
-                <SensorRegistration user={user} />
+                <SensorRegistration user={user} onSensorUpdate={handleSensorUpdate} />
               </TabsContent>
               
               <TabsContent value="testing">
-                <SensorTestingPanel user={user} />
+                <SensorTestingPanel user={user} onDataGenerated={handleDataGenerated} />
               </TabsContent>
             </Tabs>
           </TabsContent>
@@ -252,7 +272,7 @@ const Dashboard = ({ user }: DashboardProps) => {
 
           {/* Testing Tab */}
           <TabsContent value="testing">
-            <SensorTestingPanel user={user} />
+            <SensorTestingPanel user={user} onDataGenerated={handleDataGenerated} />
           </TabsContent>
 
           {/* Weather Tab */}
