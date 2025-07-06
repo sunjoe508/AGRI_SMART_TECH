@@ -18,64 +18,20 @@
       "type": "image/x-icon"
     },
     {
-      "src": "/lovable-uploads/8c8e53b2-ad17-4dd7-87c3-2bb6c6b85b07.png",
+      "src": "/lovable-uploads/faa2b9c5-2be6-4b90-8c9b-ca59e3e7a6d8.png",
       "type": "image/png",
       "sizes": "192x192",
       "purpose": "any maskable"
     },
     {
-      "src": "/lovable-uploads/8c8e53b2-ad17-4dd7-87c3-2bb6c6b85b07.png",
+      "src": "/lovable-uploads/faa2b9c5-2be6-4b90-8c9b-ca59e3e7a6d8.png",
       "type": "image/png", 
       "sizes": "512x512",
       "purpose": "any maskable"
     }
   ],
-  "screenshots": [
-    {
-      "src": "/placeholder.svg",
-      "type": "image/svg+xml",
-      "sizes": "540x720",
-      "form_factor": "narrow"
-    },
-    {
-      "src": "/placeholder.svg", 
-      "type": "image/svg+xml",
-      "sizes": "1024x768",
-      "form_factor": "wide"
-    }
-  ],
-  "shortcuts": [
-    {
-      "name": "Dashboard",
-      "short_name": "Dashboard",
-      "description": "Open the main dashboard",
-      "url": "/",
-      "icons": [
-        {
-          "src": "/lovable-uploads/8c8e53b2-ad17-4dd7-87c3-2bb6c6b85b07.png",
-          "sizes": "96x96"
-        }
-      ]
-    },
-    {
-      "name": "Sensors",
-      "short_name": "Sensors", 
-      "description": "Monitor sensor data",
-      "url": "/?tab=sensors",
-      "icons": [
-        {
-          "src": "/lovable-uploads/8c8e53b2-ad17-4dd7-87c3-2bb6c6b85b07.png",
-          "sizes": "96x96"
-        }
-      ]
-    }
-  ],
-  "related_applications": [],
+  "display_override": ["standalone", "minimal-ui"],
   "prefer_related_applications": false,
-  "display_override": ["window-controls-overlay", "standalone"],
-  "edge_side_panel": {
-    "preferred_width": 400
-  },
   "launch_handler": {
     "client_mode": "navigate-new"
   }

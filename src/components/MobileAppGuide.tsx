@@ -20,8 +20,6 @@ const MobileAppGuide = () => {
   const [isInstalled, setIsInstalled] = useState(false);
   const [browserType, setBrowserType] = useState('');
   const [isIOS, setIsIOS] = useState(false);
-  const [showAutoInstall, setShowAutoInstall] = useState(false);
-  const [autoInstallAttempted, setAutoInstallAttempted] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -40,45 +38,36 @@ const MobileAppGuide = () => {
       setBrowserType('other');
     }
 
-    // Check if app is already installed
-    if (window.matchMedia('(display-mode: standalone)').matches) {
+    // Check if app is already installed as standalone
+    if (window.matchMedia('(display-mode: standalone)').matches || 
+        (window.navigator as any).standalone) {
       setIsInstalled(true);
       return;
     }
 
     // Listen for PWA install prompt
     const handleBeforeInstallPrompt = (e: Event) => {
-      console.log('beforeinstallprompt fired');
+      console.log('PWA install prompt available');
       e.preventDefault();
       setDeferredPrompt(e);
       setCanInstall(true);
-      setShowAutoInstall(true);
       
-      // Show immediate notification
       toast({
-        title: "🎉 AgriSmart App Ready for Install!",
-        description: "Your app is ready to be installed. Installing automatically...",
-        duration: 6000,
+        title: "🚀 AgriSmart App Ready!",
+        description: "Install AgriSmart as a standalone app on your device!",
+        duration: 8000,
       });
-
-      // Auto-trigger after a short delay
-      setTimeout(() => {
-        if (!autoInstallAttempted) {
-          handleAutoInstall(e);
-          setAutoInstallAttempted(true);
-        }
-      }, 2000);
     };
 
     // Listen for successful installation
     const handleAppInstalled = () => {
-      console.log('App installed successfully');
+      console.log('AgriSmart installed as standalone app');
       setIsInstalled(true);
       setCanInstall(false);
       setDeferredPrompt(null);
       toast({
-        title: "✅ AgriSmart Installed Successfully!",
-        description: "App is now on your home screen. Enjoy farming smarter!",
+        title: "✅ AgriSmart Installed!",
+        description: "AgriSmart is now installed as a standalone app!",
         duration: 8000,
       });
     };
@@ -86,89 +75,59 @@ const MobileAppGuide = () => {
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('appinstalled', handleAppInstalled);
 
-    // For browsers that support it but don't fire beforeinstallprompt immediately
-    setTimeout(() => {
-      if (!canInstall && !isInstalled && !isIOSDevice) {
-        setShowAutoInstall(true);
-        toast({
-          title: "📱 Install AgriSmart App",
-          description: "Add AgriSmart to your home screen for the best experience!",
-          duration: 10000,
-        });
-      }
-    }, 3000);
-
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
     };
-  }, [toast, autoInstallAttempted]);
+  }, [toast]);
 
-  const handleAutoInstall = async (promptEvent?: any) => {
-    const prompt = promptEvent || deferredPrompt;
-    
-    if (prompt) {
+  const handleInstallApp = async () => {
+    if (deferredPrompt) {
       try {
-        console.log('Attempting auto-install...');
-        const result = await prompt.prompt();
-        console.log('Prompt result:', result);
+        const result = await deferredPrompt.prompt();
+        console.log('Install prompt result:', result);
         
-        const { outcome } = await prompt.userChoice;
+        const { outcome } = await deferredPrompt.userChoice;
         console.log('User choice:', outcome);
         
         if (outcome === 'accepted') {
           toast({
             title: "🎉 Installing AgriSmart...",
-            description: "App will appear on your home screen shortly!",
+            description: "AgriSmart will appear as a standalone app on your device!",
             duration: 5000,
-          });
-        } else {
-          toast({
-            title: "📱 Install Available",
-            description: "You can install AgriSmart anytime using the button below",
-            duration: 8000,
           });
         }
         
         setDeferredPrompt(null);
         setCanInstall(false);
       } catch (error) {
-        console.log('Auto-install failed:', error);
-        handleManualInstall();
+        console.log('Install failed:', error);
+        showManualInstructions();
       }
     } else {
-      console.log('No install prompt available, showing manual instructions');
-      handleManualInstall();
+      showManualInstructions();
     }
   };
 
-  const handleManualInstall = () => {
+  const showManualInstructions = () => {
     if (isIOS || browserType === 'safari') {
       toast({
         title: "🍎 Install on iPhone/iPad",
-        description: "1. Tap Share button (□↑)\n2. Scroll and tap 'Add to Home Screen'\n3. Tap 'Add' to install",
+        description: "1. Tap Share button (□↑)\n2. Scroll and tap 'Add to Home Screen'\n3. Tap 'Add' - This creates a STANDALONE app!",
         duration: 15000,
       });
     } else if (browserType === 'chrome') {
       toast({
-        title: "🤖 Install on Android/Chrome", 
-        description: "1. Tap menu (⋮) in top right\n2. Select 'Add to Home Screen'\n3. Tap 'Add' to install",
+        title: "🤖 Install Standalone App", 
+        description: "1. Tap menu (⋮) in top right\n2. Select 'Install app' or 'Add to Home Screen'\n3. Tap 'Install' - This creates a STANDALONE app!",
         duration: 15000,
       });
     } else {
       toast({
-        title: "📱 Install Instructions",
-        description: "Look for 'Add to Home Screen' or 'Install' in your browser menu",
+        title: "📱 Install Standalone App",
+        description: "Look for 'Install app' or 'Add to Home Screen' in your browser menu to install as standalone app",
         duration: 12000,
       });
-    }
-  };
-
-  const handleForceInstall = () => {
-    if (deferredPrompt) {
-      handleAutoInstall();
-    } else {
-      handleManualInstall();
     }
   };
 
@@ -178,10 +137,10 @@ const MobileAppGuide = () => {
         <CardContent className="text-center py-12">
           <CheckCircle className="w-20 h-20 mx-auto mb-4 text-green-600" />
           <h3 className="text-2xl font-bold text-green-800 dark:text-green-200 mb-2">
-            ✅ AgriSmart App Installed!
+            ✅ AgriSmart Standalone App Installed!
           </h3>
           <p className="text-green-600 dark:text-green-400">
-            You're using the full app experience. Check your home screen!
+            You're using AgriSmart as a standalone app - completely independent from your browser!
           </p>
         </CardContent>
       </Card>
@@ -190,49 +149,49 @@ const MobileAppGuide = () => {
 
   return (
     <div className="space-y-6">
-      {/* Main Auto-Install Button */}
+      {/* Main Install Button */}
       <Card className="bg-gradient-to-br from-blue-50 to-green-50 dark:from-blue-900 dark:to-green-900 border-2 border-blue-300 shadow-2xl">
         <CardContent className="text-center py-10">
           <Zap className="w-20 h-20 mx-auto mb-4 text-blue-600 animate-pulse" />
-          <h2 className="text-3xl font-bold text-blue-800 dark:text-blue-200 mb-6">
-            🚀 Install AgriSmart App
+          <h2 className="text-3xl font-bold text-blue-800 dark:text-blue-200 mb-4">
+            🚀 Install AgriSmart as Standalone App
           </h2>
+          <p className="text-lg text-blue-700 dark:text-blue-300 mb-6">
+            Get AgriSmart as a completely independent app - not just a Chrome bookmark!
+          </p>
           
           <Button 
-            onClick={handleForceInstall}
+            onClick={handleInstallApp}
             size="lg"
-            className="bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white px-16 py-8 text-2xl font-bold shadow-2xl hover:shadow-3xl transform hover:scale-110 transition-all duration-300 animate-bounce"
+            className="bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white px-16 py-8 text-2xl font-bold shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300"
           >
             <Download className="w-10 h-10 mr-4" />
-            INSTALL NOW
+            INSTALL STANDALONE APP
           </Button>
           
           <div className="mt-6 space-y-2">
             <p className="text-lg text-blue-700 dark:text-blue-300 font-semibold">
-              ⚡ One-Click Install • 🆓 Completely Free • 📱 Works Offline
+              📱 Standalone App • 🆓 Completely Free • ⚡ Works Offline
             </p>
             <p className="text-sm text-blue-600 dark:text-blue-400">
-              {canInstall ? "✅ Ready for automatic installation!" : "Setting up installation..."}
+              {canInstall ? "✅ Ready for standalone installation!" : "Setting up standalone app installation..."}
             </p>
           </div>
         </CardContent>
       </Card>
 
-      {/* Auto Install Status */}
-      {(showAutoInstall || canInstall) && (
+      {/* Installation Status */}
+      {canInstall && (
         <Card className="bg-green-50 dark:bg-green-900 border-green-200 animate-pulse">
           <CardContent className="p-6">
             <div className="flex items-center space-x-3">
               <Zap className="w-6 h-6 text-green-600" />
               <div>
                 <h4 className="font-bold text-green-800 dark:text-green-200">
-                  🤖 Auto-Install Ready
+                  🎯 Standalone App Ready
                 </h4>
                 <p className="text-sm text-green-600 dark:text-green-400">
-                  {canInstall 
-                    ? "Click the INSTALL NOW button above for instant installation!"
-                    : "AgriSmart is being prepared for installation. Please wait..."
-                  }
+                  Click the button above to install AgriSmart as a standalone app that runs independently!
                 </p>
               </div>
             </div>
@@ -246,26 +205,26 @@ const MobileAppGuide = () => {
           <CardHeader>
             <CardTitle className="flex items-center space-x-2 text-green-700 dark:text-green-300">
               <PlayCircle className="w-5 h-5" />
-              <span>Android Install</span>
+              <span>Android Standalone App</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3 text-sm mb-4">
               <div className="bg-green-100 dark:bg-green-800 p-3 rounded-lg">
                 <p className="font-semibold text-green-800 dark:text-green-200">
-                  🤖 Best on Chrome browser:
+                  🤖 Chrome Browser:
                 </p>
                 <p className="text-green-700 dark:text-green-300">
-                  Use Chrome for automatic installation
+                  Look for "Install app" option in menu - this creates a standalone app!
                 </p>
               </div>
             </div>
             <Button 
-              onClick={handleManualInstall}
+              onClick={showManualInstructions}
               className="w-full bg-green-600 hover:bg-green-700"
             >
               <Chrome className="w-4 h-4 mr-2" />
-              Show Android Steps
+              Show Android Instructions
             </Button>
           </CardContent>
         </Card>
@@ -274,53 +233,53 @@ const MobileAppGuide = () => {
           <CardHeader>
             <CardTitle className="flex items-center space-x-2 text-blue-700 dark:text-blue-300">
               <Apple className="w-5 h-5" />
-              <span>iPhone Install</span>
+              <span>iPhone Standalone App</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3 text-sm mb-4">
               <div className="bg-blue-100 dark:bg-blue-800 p-3 rounded-lg">
                 <p className="font-semibold text-blue-800 dark:text-blue-200">
-                  🍎 Best on Safari browser:
+                  🍎 Safari Browser:
                 </p>
                 <p className="text-blue-700 dark:text-blue-300">
-                  Use Safari for best iPhone experience
+                  "Add to Home Screen" creates a standalone app that runs independently!
                 </p>
               </div>
             </div>
             <Button 
-              onClick={handleManualInstall}
+              onClick={showManualInstructions}
               className="w-full bg-blue-600 hover:bg-blue-700"
             >
               <Apple className="w-4 h-4 mr-2" />
-              Show iPhone Steps
+              Show iPhone Instructions
             </Button>
           </CardContent>
         </Card>
       </div>
 
-      {/* Troubleshooting */}
-      {showAutoInstall && !canInstall && (
-        <Card className="bg-yellow-50 dark:bg-yellow-900 border-yellow-200">
-          <CardContent className="p-6">
-            <div className="flex items-start space-x-3">
-              <AlertTriangle className="w-6 h-6 text-yellow-600 mt-1" />
-              <div>
-                <h4 className="font-bold text-yellow-800 dark:text-yellow-200 mb-2">
-                  🔧 Installation Not Working?
-                </h4>
-                <div className="text-sm text-yellow-700 dark:text-yellow-300 space-y-2">
-                  <p>• Refresh the page and try again</p>
-                  <p>• Make sure you're using Chrome (Android) or Safari (iPhone)</p>
-                  <p>• Allow popups and notifications in browser settings</p>
-                  <p>• Clear browser cache and try again</p>
-                  <p>• Use the manual install buttons above as backup</p>
-                </div>
-              </div>
+      {/* Standalone App Benefits */}
+      <Card className="bg-purple-50 dark:bg-purple-900 border-purple-200">
+        <CardHeader>
+          <CardTitle className="text-purple-700 dark:text-purple-300">
+            🎯 Why Install as Standalone App?
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div className="space-y-2">
+              <p className="flex items-center"><CheckCircle className="w-4 h-4 mr-2 text-green-600" />Runs independently from browser</p>
+              <p className="flex items-center"><CheckCircle className="w-4 h-4 mr-2 text-green-600" />Own app icon on home screen</p>
+              <p className="flex items-center"><CheckCircle className="w-4 h-4 mr-2 text-green-600" />Faster startup and performance</p>
             </div>
-          </CardContent>
-        </Card>
-      )}
+            <div className="space-y-2">
+              <p className="flex items-center"><CheckCircle className="w-4 h-4 mr-2 text-green-600" />Works offline completely</p>
+              <p className="flex items-center"><CheckCircle className="w-4 h-4 mr-2 text-green-600" />Full screen experience</p>
+              <p className="flex items-center"><CheckCircle className="w-4 h-4 mr-2 text-green-600" />No browser address bar</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
