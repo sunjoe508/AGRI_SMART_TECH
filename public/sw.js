@@ -1,12 +1,13 @@
 
-const CACHE_NAME = 'agrismart-v2.0.0';
+const CACHE_NAME = 'agrismart-v2.0.1';
 const urlsToCache = [
   '/',
   '/static/js/bundle.js',
   '/static/css/main.css',
   '/manifest.json',
   '/favicon.ico',
-  '/placeholder.svg'
+  '/placeholder.svg',
+  '/lovable-uploads/8c8e53b2-ad17-4dd7-87c3-2bb6c6b85b07.png'
 ];
 
 // Install service worker and cache resources

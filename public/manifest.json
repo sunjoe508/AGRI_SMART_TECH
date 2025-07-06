@@ -18,14 +18,14 @@
       "type": "image/x-icon"
     },
     {
-      "src": "/placeholder.svg",
-      "type": "image/svg+xml",
+      "src": "/lovable-uploads/8c8e53b2-ad17-4dd7-87c3-2bb6c6b85b07.png",
+      "type": "image/png",
       "sizes": "192x192",
       "purpose": "any maskable"
     },
     {
-      "src": "/placeholder.svg",
-      "type": "image/svg+xml", 
+      "src": "/lovable-uploads/8c8e53b2-ad17-4dd7-87c3-2bb6c6b85b07.png",
+      "type": "image/png", 
       "sizes": "512x512",
       "purpose": "any maskable"
     }
@@ -52,7 +52,7 @@
       "url": "/",
       "icons": [
         {
-          "src": "/placeholder.svg",
+          "src": "/lovable-uploads/8c8e53b2-ad17-4dd7-87c3-2bb6c6b85b07.png",
           "sizes": "96x96"
         }
       ]
@@ -64,7 +64,7 @@
       "url": "/?tab=sensors",
       "icons": [
         {
-          "src": "/placeholder.svg",
+          "src": "/lovable-uploads/8c8e53b2-ad17-4dd7-87c3-2bb6c6b85b07.png",
           "sizes": "96x96"
         }
       ]

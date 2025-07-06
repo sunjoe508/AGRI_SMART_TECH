@@ -3,7 +3,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
+    <link rel="icon" href="/lovable-uploads/8c8e53b2-ad17-4dd7-87c3-2bb6c6b85b07.png" type="image/png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AgriSmart - Smart Farming App</title>
     
@@ -19,9 +19,15 @@
     <meta name="apple-mobile-web-app-title" content="AgriSmart" />
     <meta name="application-name" content="AgriSmart" />
     
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="/lovable-uploads/8c8e53b2-ad17-4dd7-87c3-2bb6c6b85b07.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/lovable-uploads/8c8e53b2-ad17-4dd7-87c3-2bb6c6b85b07.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/lovable-uploads/8c8e53b2-ad17-4dd7-87c3-2bb6c6b85b07.png" />
+    <link rel="apple-touch-icon" sizes="167x167" href="/lovable-uploads/8c8e53b2-ad17-4dd7-87c3-2bb6c6b85b07.png" />
+    
     <!-- Microsoft Tiles -->
     <meta name="msapplication-TileColor" content="#22c55e" />
-    <meta name="msapplication-TileImage" content="/placeholder.svg" />
+    <meta name="msapplication-TileImage" content="/lovable-uploads/8c8e53b2-ad17-4dd7-87c3-2bb6c6b85b07.png" />
     <meta name="msapplication-starturl" content="/" />
     
     <!-- Social Media Meta Tags -->
@@ -29,13 +35,13 @@
     <meta property="og:description" content="Complete smart farming and precision agriculture management system" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://82b9e680-33b2-4cf9-8b11-b9a3998ea0e7.lovableproject.com" />
-    <meta property="og:image" content="/placeholder.svg" />
+    <meta property="og:image" content="/lovable-uploads/8c8e53b2-ad17-4dd7-87c3-2bb6c6b85b07.png" />
     
     <!-- Twitter Meta Tags -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="AgriSmart - Smart Farming App" />
     <meta name="twitter:description" content="Complete smart farming and precision agriculture management system" />
-    <meta name="twitter:image" content="/placeholder.svg" />
+    <meta name="twitter:image" content="/lovable-uploads/8c8e53b2-ad17-4dd7-87c3-2bb6c6b85b07.png" />
     
     <!-- Preload critical resources -->
     <link rel="dns-prefetch" href="https://82b9e680-33b2-4cf9-8b11-b9a3998ea0e7.lovableproject.com" />
@@ -44,13 +50,105 @@
     <!-- Add to Home Screen prompts -->
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-touch-fullscreen" content="yes" />
+    
+    <!-- Loading Screen Styles -->
+    <style>
+      #loading-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        opacity: 1;
+        transition: opacity 0.5s ease-out;
+      }
+      
+      #loading-screen.fade-out {
+        opacity: 0;
+        pointer-events: none;
+      }
+      
+      .loading-logo {
+        width: 120px;
+        height: 120px;
+        background-image: url('https://images.unsplash.com/photo-1498050108023-c5249f4df085');
+        background-size: cover;
+        background-position: center;
+        border-radius: 20px;
+        margin-bottom: 24px;
+        animation: pulse 2s infinite;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      }
+      
+      .loading-text {
+        color: white;
+        font-size: 24px;
+        font-weight: bold;
+        margin-bottom: 16px;
+        text-align: center;
+      }
+      
+      .loading-subtitle {
+        color: rgba(255,255,255,0.8);
+        font-size: 16px;
+        text-align: center;
+        max-width: 300px;
+      }
+      
+      .loading-spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid rgba(255,255,255,0.3);
+        border-top: 4px solid white;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-top: 24px;
+      }
+      
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+      }
+      
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    </style>
   </head>
   <body>
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+      <div class="loading-logo"></div>
+      <div class="loading-text">AgriSmart</div>
+      <div class="loading-subtitle">Smart Farming & Precision Agriculture</div>
+      <div class="loading-spinner"></div>
+    </div>
+    
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     
     <!-- Enhanced Service Worker Registration -->
     <script>
+      // Hide loading screen after app loads
+      window.addEventListener('load', () => {
+        setTimeout(() => {
+          const loadingScreen = document.getElementById('loading-screen');
+          if (loadingScreen) {
+            loadingScreen.classList.add('fade-out');
+            setTimeout(() => {
+              loadingScreen.style.display = 'none';
+            }, 500);
+          }
+        }, 1500); // Show loading screen for at least 1.5 seconds
+      });
+
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/sw.js')
