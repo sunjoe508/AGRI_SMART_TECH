@@ -1,8 +1,8 @@
 
 {
-  "name": "AgriSmart - Precision Agriculture",
+  "name": "AgriSmart - Smart Farming App",
   "short_name": "AgriSmart",
-  "description": "Smart farming and precision agriculture management system",
+  "description": "Complete smart farming and precision agriculture management system",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -10,7 +10,7 @@
   "orientation": "portrait-primary",
   "scope": "/",
   "lang": "en",
-  "categories": ["agriculture", "productivity", "business"],
+  "categories": ["agriculture", "productivity", "business", "utilities"],
   "icons": [
     {
       "src": "/favicon.ico",
@@ -71,5 +71,12 @@
     }
   ],
   "related_applications": [],
-  "prefer_related_applications": false
+  "prefer_related_applications": false,
+  "display_override": ["window-controls-overlay", "standalone"],
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "launch_handler": {
+    "client_mode": "navigate-new"
+  }
 }

@@ -5,52 +5,98 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AgriSmart - Precision Agriculture System</title>
+    <title>AgriSmart - Smart Farming App</title>
     
     <!-- PWA Meta Tags -->
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#22c55e" />
-    <meta name="description" content="Smart farming and precision agriculture management system for modern farmers" />
+    <meta name="description" content="Complete smart farming and precision agriculture management system for modern farmers" />
     
-    <!-- Mobile PWA Meta Tags -->
+    <!-- Enhanced Mobile PWA Meta Tags -->
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="AgriSmart" />
+    <meta name="application-name" content="AgriSmart" />
     
     <!-- Microsoft Tiles -->
     <meta name="msapplication-TileColor" content="#22c55e" />
     <meta name="msapplication-TileImage" content="/placeholder.svg" />
+    <meta name="msapplication-starturl" content="/" />
     
     <!-- Social Media Meta Tags -->
-    <meta property="og:title" content="AgriSmart - Precision Agriculture System" />
-    <meta property="og:description" content="Smart farming and precision agriculture management system" />
+    <meta property="og:title" content="AgriSmart - Smart Farming App" />
+    <meta property="og:description" content="Complete smart farming and precision agriculture management system" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://82b9e680-33b2-4cf9-8b11-b9a3998ea0e7.lovableproject.com" />
     <meta property="og:image" content="/placeholder.svg" />
     
     <!-- Twitter Meta Tags -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="AgriSmart - Precision Agriculture System" />
-    <meta name="twitter:description" content="Smart farming and precision agriculture management system" />
+    <meta name="twitter:title" content="AgriSmart - Smart Farming App" />
+    <meta name="twitter:description" content="Complete smart farming and precision agriculture management system" />
     <meta name="twitter:image" content="/placeholder.svg" />
+    
+    <!-- Preload critical resources -->
+    <link rel="dns-prefetch" href="https://82b9e680-33b2-4cf9-8b11-b9a3998ea0e7.lovableproject.com" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    
+    <!-- Add to Home Screen prompts -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-touch-fullscreen" content="yes" />
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     
-    <!-- Service Worker Registration -->
+    <!-- Enhanced Service Worker Registration -->
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/sw.js')
             .then((registration) => {
-              console.log('SW registered: ', registration);
+              console.log('AgriSmart SW registered: ', registration);
+              
+              // Check for updates every 60 seconds
+              setInterval(() => {
+                registration.update();
+              }, 60000);
             })
             .catch((registrationError) => {
-              console.log('SW registration failed: ', registrationError);
+              console.log('AgriSmart SW registration failed: ', registrationError);
             });
         });
+      }
+
+      // Enhanced PWA install detection
+      let deferredPrompt;
+      
+      window.addEventListener('beforeinstallprompt', (e) => {
+        console.log('AgriSmart: beforeinstallprompt fired');
+        e.preventDefault();
+        deferredPrompt = e;
+        
+        // Auto-trigger install prompt after short delay
+        setTimeout(() => {
+          if (deferredPrompt) {
+            console.log('AgriSmart: Auto-triggering install prompt');
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then((choiceResult) => {
+              console.log('AgriSmart: User choice:', choiceResult.outcome);
+              deferredPrompt = null;
+            });
+          }
+        }, 3000);
+      });
+
+      window.addEventListener('appinstalled', (evt) => {
+        console.log('AgriSmart: App installed successfully');
+      });
+
+      // Detect if running as installed app
+      if (window.matchMedia('(display-mode: standalone)').matches) {
+        console.log('AgriSmart: Running as installed app');
+        document.body.classList.add('installed-app');
       }
     </script>
   </body>
