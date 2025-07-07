@@ -4,7 +4,7 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" href="/lovable-uploads/faa2b9c5-2be6-4b90-8c9b-ca59e3e7a6d8.png" type="image/png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
     <title>AgriSmart - Smart Farming App</title>
     
     <!-- PWA Meta Tags -->
@@ -12,12 +12,15 @@
     <meta name="theme-color" content="#22c55e" />
     <meta name="description" content="Complete smart farming and precision agriculture management system for modern farmers" />
     
-    <!-- Enhanced Mobile PWA Meta Tags -->
+    <!-- Enhanced Mobile Native App Meta Tags -->
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="AgriSmart" />
     <meta name="application-name" content="AgriSmart" />
+    
+    <!-- Prevent zoom and enable native app feel -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     
     <!-- Apple Touch Icons -->
     <link rel="apple-touch-icon" href="/lovable-uploads/faa2b9c5-2be6-4b90-8c9b-ca59e3e7a6d8.png" />
@@ -47,9 +50,9 @@
     <link rel="dns-prefetch" href="https://82b9e680-33b2-4cf9-8b11-b9a3998ea0e7.lovableproject.com" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     
-    <!-- Add to Home Screen prompts -->
-    <meta name="mobile-web-app-capable" content="yes" />
+    <!-- Native App Support -->
     <meta name="apple-touch-fullscreen" content="yes" />
+    <meta name="format-detection" content="telephone=no" />
     
     <!-- Loading Screen Styles -->
     <style>
@@ -120,6 +123,13 @@
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
       }
+      
+      /* Native app specific styles */
+      body.native-app {
+        -webkit-user-select: none;
+        -webkit-touch-callout: none;
+        -webkit-tap-highlight-color: transparent;
+      }
     </style>
   </head>
   <body>
@@ -134,11 +144,20 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     
-    <!-- Enhanced Service Worker Registration -->
+    <!-- Enhanced Service Worker Registration for Native App -->
     <script>
-      // Global variable to store install prompt
+      // Global variables for native app support
       let deferredPrompt = null;
       let installPromptFired = false;
+
+      // Detect if running as native app
+      const isNativeApp = window.matchMedia('(display-mode: standalone)').matches || 
+                          window.navigator.standalone === true;
+      
+      if (isNativeApp) {
+        console.log('AgriSmart: Running as native app');
+        document.body.classList.add('native-app');
+      }
 
       // Hide loading screen after app loads
       window.addEventListener('load', () => {
@@ -153,74 +172,61 @@
         }, 1500);
       });
 
-      // Register service worker immediately
+      // Register service worker for native app support
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/sw.js')
           .then((registration) => {
-            console.log('AgriSmart SW registered: ', registration);
+            console.log('AgriSmart SW registered for native app: ', registration);
             
-            // Check for updates more frequently
+            // Check for updates frequently for native app
             setInterval(() => {
               registration.update();
-            }, 30000); // Check every 30 seconds
+            }, 60000); // Check every minute
           })
           .catch((registrationError) => {
             console.log('AgriSmart SW registration failed: ', registrationError);
           });
       }
 
-      // Enhanced PWA install detection
-      window.addEventListener('beforeinstallprompt', (e) => {
-        console.log('beforeinstallprompt event fired');
-        e.preventDefault();
-        deferredPrompt = e;
-        installPromptFired = true;
-        
-        // Dispatch custom event that React components can listen to
-        window.dispatchEvent(new CustomEvent('pwaInstallAvailable', { 
-          detail: { prompt: e } 
-        }));
-        
-        // Show immediate notification
-        console.log('PWA install prompt is now available');
-      });
-
-      window.addEventListener('appinstalled', (evt) => {
-        console.log('AgriSmart: App installed successfully');
-        deferredPrompt = null;
-        
-        // Dispatch custom event
-        window.dispatchEvent(new CustomEvent('pwaInstalled'));
-      });
-
-      // Detect if running as installed app
-      if (window.matchMedia('(display-mode: standalone)').matches) {
-        console.log('AgriSmart: Running as installed app');
-        document.body.classList.add('installed-app');
-      }
-
-      // For iOS devices, show install instructions after delay
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-      if (isIOS && !window.matchMedia('(display-mode: standalone)').matches) {
-        setTimeout(() => {
-          if (!installPromptFired) {
-            console.log('iOS device detected, install prompt available');
-            window.dispatchEvent(new CustomEvent('pwaInstallAvailable', { 
-              detail: { isIOS: true } 
-            }));
-          }
-        }, 2000);
-      }
-
-      // Fallback for browsers that don't fire beforeinstallprompt
-      setTimeout(() => {
-        if (!installPromptFired && !window.matchMedia('(display-mode: standalone)').matches) {
-          console.log('Fallback install prompt trigger');
+      // PWA install detection (only for web version)
+      if (!isNativeApp) {
+        window.addEventListener('beforeinstallprompt', (e) => {
+          console.log('beforeinstallprompt event fired');
+          e.preventDefault();
+          deferredPrompt = e;
+          installPromptFired = true;
+          
           window.dispatchEvent(new CustomEvent('pwaInstallAvailable', { 
-            detail: { fallback: true } 
+            detail: { prompt: e } 
           }));
+        });
+
+        window.addEventListener('appinstalled', (evt) => {
+          console.log('AgriSmart: App installed successfully');
+          deferredPrompt = null;
+          window.dispatchEvent(new CustomEvent('pwaInstalled'));
+        });
+
+        // For iOS devices
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        if (isIOS && !isNativeApp) {
+          setTimeout(() => {
+            if (!installPromptFired) {
+              console.log('iOS device detected, install prompt available');
+              window.dispatchEvent(new CustomEvent('pwaInstallAvailable', { 
+                detail: { isIOS: true } 
+              }));
+            }
+          }, 2000);
         }
-      }, 5000);
+      }
+
+      // Prevent context menu on native app
+      if (isNativeApp) {
+        document.addEventListener('contextmenu', (e) => {
+          e.preventDefault();
+        });
+      }
     </script>
   </body>
 </html>

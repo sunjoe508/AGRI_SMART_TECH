@@ -1,5 +1,5 @@
 
-const CACHE_NAME = 'agrismart-v2.0.1';
+const CACHE_NAME = 'agrismart-v2.0.2';
 const urlsToCache = [
   '/',
   '/static/js/bundle.js',
@@ -7,7 +7,7 @@ const urlsToCache = [
   '/manifest.json',
   '/favicon.ico',
   '/placeholder.svg',
-  '/lovable-uploads/8c8e53b2-ad17-4dd7-87c3-2bb6c6b85b07.png'
+  '/lovable-uploads/faa2b9c5-2be6-4b90-8c9b-ca59e3e7a6d8.png'
 ];
 
 // Install service worker and cache resources
@@ -20,7 +20,6 @@ self.addEventListener('install', (event) => {
         return cache.addAll(urlsToCache);
       })
       .then(() => {
-        // Force activation of new service worker
         return self.skipWaiting();
       })
   );
@@ -40,35 +39,55 @@ self.addEventListener('activate', (event) => {
         })
       );
     }).then(() => {
-      // Take control of all pages
       return self.clients.claim();
     })
   );
 });
 
-// Fetch event with network-first strategy for dynamic content
+// Enhanced fetch strategy for native app
 self.addEventListener('fetch', (event) => {
+  // Skip non-GET requests
+  if (event.request.method !== 'GET') {
+    return;
+  }
+  
   event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        // If we got a response, clone it and store in cache
-        if (response.status === 200) {
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME)
-            .then((cache) => {
-              cache.put(event.request, responseClone);
+    caches.match(event.request)
+      .then((cachedResponse) => {
+        // Return cached version if available
+        if (cachedResponse) {
+          // Update cache in background
+          fetch(event.request)
+            .then((response) => {
+              if (response.status === 200) {
+                const responseClone = response.clone();
+                caches.open(CACHE_NAME)
+                  .then((cache) => {
+                    cache.put(event.request, responseClone);
+                  });
+              }
+            })
+            .catch(() => {
+              // Network failed, but we have cached version
             });
+          
+          return cachedResponse;
         }
-        return response;
-      })
-      .catch(() => {
-        // Network failed, try cache
-        return caches.match(event.request)
+        
+        // Try network first for new requests
+        return fetch(event.request)
           .then((response) => {
-            if (response) {
-              return response;
+            if (response.status === 200) {
+              const responseClone = response.clone();
+              caches.open(CACHE_NAME)
+                .then((cache) => {
+                  cache.put(event.request, responseClone);
+                });
             }
-            // If not in cache, return offline page or error
+            return response;
+          })
+          .catch(() => {
+            // Network failed and no cache
             return new Response('App is offline. Please check your connection.', {
               status: 503,
               statusText: 'Service Unavailable',
@@ -81,24 +100,23 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// Handle background sync for offline functionality
+// Handle background sync for native app
 self.addEventListener('sync', (event) => {
   if (event.tag === 'background-sync') {
-    console.log('AgriSmart SW: Background sync');
+    console.log('AgriSmart SW: Background sync for native app');
     event.waitUntil(
-      // Add background sync logic here
       Promise.resolve()
     );
   }
 });
 
-// Handle push notifications
+// Handle push notifications for native app
 self.addEventListener('push', (event) => {
   console.log('AgriSmart SW: Push notification received');
   
   const options = {
     body: event.data ? event.data.text() : 'New update from AgriSmart!',
-    icon: '/placeholder.svg',
+    icon: '/lovable-uploads/faa2b9c5-2be6-4b90-8c9b-ca59e3e7a6d8.png',
     badge: '/favicon.ico',
     vibrate: [200, 100, 200],
     data: {
