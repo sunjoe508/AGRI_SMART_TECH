@@ -1,8 +1,8 @@
 
 {
-  "name": "AgriSmart - Smart Farming App",
+  "name": "AgriSmart - Precision Agriculture",
   "short_name": "AgriSmart",
-  "description": "Complete smart farming and precision agriculture management system",
+  "description": "Smart farming and precision agriculture management system",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -10,7 +10,7 @@
   "orientation": "portrait-primary",
   "scope": "/",
   "lang": "en",
-  "categories": ["agriculture", "productivity", "business", "utilities"],
+  "categories": ["agriculture", "productivity", "business"],
   "icons": [
     {
       "src": "/favicon.ico",
@@ -18,21 +18,58 @@
       "type": "image/x-icon"
     },
     {
-      "src": "/lovable-uploads/faa2b9c5-2be6-4b90-8c9b-ca59e3e7a6d8.png",
-      "type": "image/png",
+      "src": "/placeholder.svg",
+      "type": "image/svg+xml",
       "sizes": "192x192",
       "purpose": "any maskable"
     },
     {
-      "src": "/lovable-uploads/faa2b9c5-2be6-4b90-8c9b-ca59e3e7a6d8.png",
-      "type": "image/png", 
+      "src": "/placeholder.svg",
+      "type": "image/svg+xml", 
       "sizes": "512x512",
       "purpose": "any maskable"
     }
   ],
-  "display_override": ["standalone", "minimal-ui"],
-  "prefer_related_applications": false,
-  "launch_handler": {
-    "client_mode": "navigate-new"
-  }
+  "screenshots": [
+    {
+      "src": "/placeholder.svg",
+      "type": "image/svg+xml",
+      "sizes": "540x720",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "/placeholder.svg", 
+      "type": "image/svg+xml",
+      "sizes": "1024x768",
+      "form_factor": "wide"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Open the main dashboard",
+      "url": "/",
+      "icons": [
+        {
+          "src": "/placeholder.svg",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Sensors",
+      "short_name": "Sensors", 
+      "description": "Monitor sensor data",
+      "url": "/?tab=sensors",
+      "icons": [
+        {
+          "src": "/placeholder.svg",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
 }
