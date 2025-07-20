@@ -1,73 +1,116 @@
-# Welcome to your Lovable project
+# Smart Irrigation System 🌱
 
-## Project info
+A sustainable, ML-powered web app that intelligently determines whether your garden needs watering—based on soil moisture and ambient temperature.
 
-**URL**: https://lovable.dev/projects/82b9e680-33b2-4cf9-8b11-b9a3998ea0e7
+**Live Demo:** [smart-irrigation-system.onrender.com](https://smart-irrigation-system.onrender.com/)
 
-## How can I edit this code?
+---
 
-There are several ways of editing your application.
+## 🧰 Built With
 
-**Use Lovable**
+- **Python** & **Flask** (backend web framework)  
+- **scikit-learn** – Random Forest model  
+- **HTML/CSS/Jinja2** – Frontend templating  
+- **pandas / numpy** – Data preprocessing  
+- **Render** – Live hosting
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/82b9e680-33b2-4cf9-8b11-b9a3998ea0e7) and start prompting.
+---
 
-Changes made via Lovable will be committed automatically to this repo.
+## ⚙️ Features
 
-**Use your preferred IDE**
+- Predicts watering needs using a pre-trained Random Forest model  
+- Interactive web form for soil moisture & temperature input  
+- Instant “Water” / “No Water” output  
+- 100% accuracy on existing dataset (based on evaluation metrics)
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+---
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## 🚀 Getting Started
 
-Follow these steps:
+### Prerequisites
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+- Python 3.8+ on your system  
+- Git command-line interface
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### Installation
 
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```bash
+git clone https://github.com/sunjoe508/Smart-Irrigation-System.git
+cd Smart-Irrigation-System
+python3 -m venv venv
+source venv/bin/activate  # macOS/Linux
+# .\venv\Scripts\activate  # Windows
+pip install -r requirements.txt
 ```
 
-**Edit a file directly in GitHub**
+### Running Locally
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```bash
+flask run              # for development
+# or using Gunicorn
+gunicorn app:app
+```
 
-**Use GitHub Codespaces**
+Visit `http://127.0.0.1:5000/` in your browser.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+---
 
-## What technologies are used for this project?
+## 🧠 Model Details
 
-This project is built with:
+- **Algorithm:** Random Forest classifier  
+- **Dataset:** `data.csv` – moisture & temperature readings  
+- **Model file:** `smartirrigation.pkl`  
+- **Notebook:** `smart_irrigation.ipynb` (training & evaluation)  
+- **Performance:** 100% accuracy based on the dataset
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+---
 
-## How can I deploy this project?
+## 📦 Deployment
 
-Simply open [Lovable](https://lovable.dev/projects/82b9e680-33b2-4cf9-8b11-b9a3998ea0e7) and click on Share -> Publish.
+- Hosted on **Render**—configured via `requirements.txt` and `Procfile`
+- Fully deployed and live at: https://smart-irrigation-system.onrender.com/
 
-## Can I connect a custom domain to my Lovable project?
+---
 
-Yes, you can!
+## 💾 Usage
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+1. Open the web interface  
+2. Enter current soil moisture and temperature  
+3. Click **Submit**  
+4. View predicted result (“Water” or “No Water”)
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+---
+
+## ✅ Contributing
+
+Contributions are welcome! Please:
+
+1. Fork the repo  
+2. Create a feature branch (`git checkout -b feat/YourFeature`)  
+3. Commit your changes (`git commit -m "Add feature: xyz"`)  
+4. Push (`git push origin feat/YourFeature`)  
+5. Open a Pull Request
+
+---
+
+## 📄 License
+
+This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
+
+---
+
+## 👤 Author
+
+**Joe Mungai** – Passionate about sustainable tech & automated gardening  
+- GitHub: [@sunjoe508](https://github.com/sunjoe508)  
+- Email: [joemunga329@gmail.com](mailto:joemunga329@gmail.com)
+
+Feel free to reach out!
+
+---
+
+## 🔮 Next Steps
+
+- Integrate real-time sensor data via IoT (ESP32, sensor API)  
+- Improve model using live data feedback  
+- Add dashboard charts & history
