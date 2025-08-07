@@ -41,7 +41,9 @@ import {
   Star,
   Layers,
   Target,
-  Award
+  Award,
+  Monitor,
+  UserCheck
 } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from 'react-router-dom';
@@ -54,6 +56,8 @@ import VoiceCommands from './VoiceCommands';
 import DataVisualization3D from './DataVisualization3D';
 import FuturisticUserCard from './FuturisticUserCard';
 import EnhancedAdminFunctionalities from './EnhancedAdminFunctionalities';
+import RealTimeUserMonitoring from './RealTimeUserMonitoring';
+import SystemAnalytics from './SystemAnalytics';
 
 const FuturisticAdminDashboard = () => {
   const [adminSession, setAdminSession] = useState<any>(null);
@@ -551,45 +555,33 @@ const FuturisticAdminDashboard = () => {
           </Button>
         </div>
 
-        {/* Enhanced Tabs with Real Database Integration */}
-        <Tabs defaultValue="neural-users" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 bg-black/40 backdrop-blur-xl border border-cyan-500/30">
-            <TabsTrigger 
-              value="neural-users" 
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-600 data-[state=active]:to-blue-600 text-white"
-            >
-              <Users className="w-4 h-4 mr-2" />
-              NEURAL USERS ({users?.length || 0})
-            </TabsTrigger>
-            <TabsTrigger 
-              value="quantum-analytics" 
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 text-white"
-            >
-              <BarChart3 className="w-4 h-4 mr-2" />
-              QUANTUM ANALYTICS
-            </TabsTrigger>
-            <TabsTrigger 
-              value="ai-insights" 
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-600 data-[state=active]:to-teal-600 text-white"
-            >
-              <Brain className="w-4 h-4 mr-2" />
-              AI INSIGHTS
-            </TabsTrigger>
-            <TabsTrigger 
-              value="admin-functions" 
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-600 data-[state=active]:to-red-600 text-white"
-            >
-              <Settings className="w-4 h-4 mr-2" />
-              ADMIN FUNCTIONS
-            </TabsTrigger>
-            <TabsTrigger 
-              value="command-center" 
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-red-600 data-[state=active]:to-pink-600 text-white"
-            >
-              <Command className="w-4 h-4 mr-2" />
-              COMMAND CENTER
-            </TabsTrigger>
-          </TabsList>
+          <Tabs defaultValue="overview" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-6 bg-black/20 backdrop-blur-xl border border-cyan-500/30">
+              <TabsTrigger value="overview" className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400">
+                <Activity className="w-4 h-4 mr-2" />
+                OVERVIEW
+              </TabsTrigger>
+              <TabsTrigger value="users" className="data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-400">
+                <Users className="w-4 h-4 mr-2" />
+                USER MONITORING
+              </TabsTrigger>
+              <TabsTrigger value="analytics" className="data-[state=active]:bg-blue-500/20 data-[state=active]:text-blue-400">
+                <BarChart3 className="w-4 h-4 mr-2" />
+                ANALYTICS
+              </TabsTrigger>
+              <TabsTrigger value="system" className="data-[state=active]:bg-green-500/20 data-[state=active]:text-green-400">
+                <Monitor className="w-4 h-4 mr-2" />
+                SYSTEM
+              </TabsTrigger>
+              <TabsTrigger value="ai" className="data-[state=active]:bg-pink-500/20 data-[state=active]:text-pink-400">
+                <Brain className="w-4 h-4 mr-2" />
+                AI NEXUS
+              </TabsTrigger>
+              <TabsTrigger value="quantum" className="data-[state=active]:bg-yellow-500/20 data-[state=active]:text-yellow-400">
+                <Rocket className="w-4 h-4 mr-2" />
+                QUANTUM OPS
+              </TabsTrigger>
+            </TabsList>
 
           <TabsContent value="neural-users" className="space-y-6">
             <Card className="bg-black/40 backdrop-blur-xl border border-cyan-500/30">
