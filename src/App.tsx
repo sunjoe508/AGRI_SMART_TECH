@@ -18,26 +18,34 @@ import AdminDashboard from "./pages/AdminDashboard";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 
-// Configure React Query with optimized settings
+// Configure React Query with optimized settings for consistent database access
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000, // 10 minutes
+      staleTime: 2 * 60 * 1000, // 2 minutes for fresher data
+      gcTime: 5 * 60 * 1000, // 5 minutes cache
+      refetchOnWindowFocus: true,
+      refetchOnMount: true,
       retry: (failureCount, error) => {
-        // Don't retry on 4xx errors
-        if (error && typeof error === 'object' && 'status' in error) {
-          const status = (error as any).status;
-          if (status >= 400 && status < 500) {
+        // Enhanced error handling for database connections
+        if (error && typeof error === 'object') {
+          const errorObj = error as any;
+          // Don't retry on 4xx errors or authentication errors
+          if ((errorObj.status >= 400 && errorObj.status < 500) || 
+              errorObj.code === 'PGRST301' || 
+              errorObj.message?.includes('JWT')) {
             return false;
           }
         }
-        return failureCount < 3;
+        return failureCount < 2; // Reduced retries for faster feedback
       },
-      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
     },
     mutations: {
       retry: 1,
+      onError: (error) => {
+        console.error('Database mutation error:', error);
+      },
     },
   },
 });

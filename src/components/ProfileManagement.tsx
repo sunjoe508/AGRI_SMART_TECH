@@ -59,29 +59,38 @@ const ProfileManagement = ({ user }: ProfileManagementProps) => {
         .from('profiles')
         .select('*')
         .eq('id', user.id)
-        .single();
+        .maybeSingle(); // Use maybeSingle for better error handling
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
+        console.error('Profile fetch error:', error);
         throw error;
       }
 
-      if (data) {
-        setProfile({
-          full_name: data.full_name || '',
-          phone_number: data.phone_number || '',
-          county: data.county || '',
-          sub_county: data.sub_county || '',
-          ward: data.ward || '',
-          farm_name: data.farm_name || '',
-          farm_size_acres: data.farm_size_acres ? String(data.farm_size_acres) : '',
-          crop_types: data.crop_types || [],
-          profile_picture_url: data.profile_picture_url || ''
+      // Set profile data or default values if no profile exists
+      setProfile({
+        full_name: data?.full_name || '',
+        phone_number: data?.phone_number || '',
+        county: data?.county || '',
+        sub_county: data?.sub_county || '',
+        ward: data?.ward || '',
+        farm_name: data?.farm_name || '',
+        farm_size_acres: data?.farm_size_acres ? String(data.farm_size_acres) : '',
+        crop_types: data?.crop_types || [],
+        profile_picture_url: data?.profile_picture_url || ''
+      });
+
+      // If no profile exists, show helpful message
+      if (!data) {
+        toast({
+          title: "👋 Welcome!",
+          description: "Please complete your profile to get started",
         });
       }
     } catch (error: any) {
+      console.error('Profile fetch failed:', error);
       toast({
-        title: "❌ Error",
-        description: "Failed to load profile",
+        title: "❌ Database Connection Error",
+        description: `Failed to load profile: ${error.message}`,
         variant: "destructive"
       });
     }
@@ -90,31 +99,53 @@ const ProfileManagement = ({ user }: ProfileManagementProps) => {
   const updateProfile = async () => {
     setLoading(true);
     try {
-      const { error } = await supabase
+      // Validate required fields
+      if (!profile.full_name.trim()) {
+        throw new Error('Full name is required');
+      }
+
+      const profileData = {
+        id: user.id,
+        full_name: profile.full_name.trim(),
+        phone_number: profile.phone_number.trim(),
+        county: profile.county,
+        sub_county: profile.sub_county.trim(),
+        ward: profile.ward.trim(),
+        farm_name: profile.farm_name.trim(),
+        farm_size_acres: profile.farm_size_acres ? parseFloat(profile.farm_size_acres) : null,
+        crop_types: profile.crop_types,
+        profile_picture_url: profile.profile_picture_url,
+        updated_at: new Date().toISOString()
+      };
+
+      const { data, error } = await supabase
         .from('profiles')
-        .upsert({
-          id: user.id,
-          full_name: profile.full_name,
-          phone_number: profile.phone_number,
-          county: profile.county,
-          sub_county: profile.sub_county,
-          ward: profile.ward,
-          farm_name: profile.farm_name,
-          farm_size_acres: profile.farm_size_acres ? parseFloat(profile.farm_size_acres) : null,
-          crop_types: profile.crop_types,
-          profile_picture_url: profile.profile_picture_url
+        .upsert(profileData, { 
+          onConflict: 'id',
+          ignoreDuplicates: false 
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Profile update error:', error);
+        throw error;
+      }
+
+      // Verify the update was successful
+      if (data) {
+        toast({
+          title: "✅ Profile Updated Successfully",
+          description: "Your profile has been saved to the database",
         });
-
-      if (error) throw error;
-
-      toast({
-        title: "✅ Profile Updated",
-        description: "Your profile has been successfully updated",
-      });
+      } else {
+        throw new Error('Profile update verification failed');
+      }
     } catch (error: any) {
+      console.error('Profile update failed:', error);
       toast({
-        title: "❌ Update Failed",
-        description: error.message,
+        title: "❌ Database Update Failed",
+        description: `Error: ${error.message}`,
         variant: "destructive"
       });
     } finally {

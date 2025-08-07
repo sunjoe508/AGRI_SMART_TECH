@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   BarChart3,
   Droplets,
@@ -40,45 +40,88 @@ interface DashboardProps {
 const Dashboard = ({ user }: DashboardProps) => {
   const [activeTab, setActiveTab] = useState('overview');
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  // Fetch user profile
-  const { data: profile, isLoading: profileLoading, refetch: refetchProfile } = useQuery({
+  // Fetch user profile with proper error handling
+  const { data: profile, isLoading: profileLoading, refetch: refetchProfile, error: profileError } = useQuery({
     queryKey: ['user-profile', user?.id],
     queryFn: async () => {
-      if (!user?.id) return null;
+      if (!user?.id) throw new Error('User ID not available');
+      
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
-        .single();
+        .maybeSingle(); // Use maybeSingle to handle no data gracefully
       
       if (error) {
         console.error('Profile fetch error:', error);
-        return null;
+        throw error;
       }
+      
       return data;
     },
-    enabled: !!user?.id
+    enabled: !!user?.id,
+    retry: 2,
+    staleTime: 1 * 60 * 1000, // 1 minute for profile data
   });
 
-  // Handle sensor updates - this will refresh data across components
-  const handleSensorUpdate = () => {
-    // Trigger data refresh for sensor-related components
-    refetchProfile();
-    // Force a page refresh if needed for real-time updates
-    setTimeout(() => {
-      window.location.reload();
-    }, 1000);
+  // Handle sensor updates with proper data synchronization
+  const handleSensorUpdate = async () => {
+    try {
+      // Invalidate relevant queries to refresh data
+      await queryClient.invalidateQueries({ queryKey: ['sensor-data'] });
+      await queryClient.invalidateQueries({ queryKey: ['registered-sensors'] });
+      await queryClient.invalidateQueries({ queryKey: ['irrigation-logs'] });
+      refetchProfile();
+      
+      toast({
+        title: "🔄 Data Synchronized",
+        description: "All systems updated with latest data",
+      });
+    } catch (error) {
+      console.error('Data sync error:', error);
+      toast({
+        title: "⚠️ Sync Warning",
+        description: "Some data may not be up to date",
+        variant: "destructive"
+      });
+    }
   };
 
-  // Handle data generation from testing panel
-  const handleDataGenerated = () => {
-    // Refresh all sensor data when test data is generated
-    handleSensorUpdate();
-    toast({
-      title: "📊 Data Updated",
-      description: "Sensor data has been refreshed across all components",
-    });
+  // Handle data generation from testing panel with database verification
+  const handleDataGenerated = async () => {
+    try {
+      await handleSensorUpdate();
+      
+      // Verify data was actually written to database
+      const { data: recentData } = await supabase
+        .from('sensor_data')
+        .select('created_at')
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      if (recentData && recentData.length > 0) {
+        toast({
+          title: "✅ Data Generated Successfully",
+          description: "Test data has been written to database and synchronized",
+        });
+      } else {
+        toast({
+          title: "⚠️ Data Generation Warning",
+          description: "Data may not have been saved properly",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Data generation verification failed:', error);
+      toast({
+        title: "❌ Data Generation Failed",
+        description: "Failed to generate or verify test data",
+        variant: "destructive"
+      });
+    }
   };
 
   // Handle logout
