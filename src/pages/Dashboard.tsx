@@ -32,6 +32,7 @@ import ReportGenerator from "@/components/ReportGenerator";
 import NotificationCenter from "@/components/NotificationCenter";
 import MobileAppGuide from "@/components/MobileAppGuide";
 import SensorTestingPanel from "@/components/SensorTestingPanel";
+import DemoDataGenerator from "@/components/DemoDataGenerator";
 
 interface DashboardProps {
   user: any;
@@ -288,7 +289,10 @@ const Dashboard = ({ user }: DashboardProps) => {
               </TabsContent>
               
               <TabsContent value="testing">
-                <SensorTestingPanel user={user} onDataGenerated={handleDataGenerated} />
+                <div className="space-y-6">
+                  <DemoDataGenerator user={user} onDataGenerated={handleDataGenerated} />
+                  <SensorTestingPanel user={user} onDataGenerated={handleDataGenerated} />
+                </div>
               </TabsContent>
             </Tabs>
           </TabsContent>
@@ -315,7 +319,10 @@ const Dashboard = ({ user }: DashboardProps) => {
 
           {/* Testing Tab */}
           <TabsContent value="testing">
-            <SensorTestingPanel user={user} onDataGenerated={handleDataGenerated} />
+            <div className="space-y-6">
+              <DemoDataGenerator user={user} onDataGenerated={handleDataGenerated} />
+              <SensorTestingPanel user={user} onDataGenerated={handleDataGenerated} />
+            </div>
           </TabsContent>
 
           {/* Weather Tab */}
