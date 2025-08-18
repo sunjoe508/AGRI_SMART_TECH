@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import jsPDF from 'jspdf';
+import agriSmartLogo from '@/assets/agrismart-logo.png';
 
 interface ReportGeneratorProps {
   user?: any;
@@ -76,9 +77,16 @@ const ReportGenerator = ({ user }: ReportGeneratorProps) => {
       pdf.setFillColor(34, 197, 94); // Green header
       pdf.rect(0, 0, pageWidth, 40, 'F');
       
-      // Logo placeholder
-      pdf.setFillColor(255, 255, 255);
-      pdf.circle(20, 20, 8, 'F');
+      // Add professional logo
+      try {
+        const img = new Image();
+        img.src = agriSmartLogo;
+        pdf.addImage(img, 'PNG', 10, 8, 24, 24);
+      } catch (error) {
+        // Fallback to text logo if image fails
+        pdf.setFillColor(255, 255, 255);
+        pdf.circle(20, 20, 8, 'F');
+      }
       
       // Title
       pdf.setTextColor(255, 255, 255);
