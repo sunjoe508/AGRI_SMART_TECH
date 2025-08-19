@@ -18,7 +18,9 @@ import {
   Activity,
   FileText,
   Smartphone,
-  TestTube
+  TestTube,
+  BookOpen,
+  DollarSign
 } from 'lucide-react';
 
 // Import components
@@ -33,6 +35,8 @@ import NotificationCenter from "@/components/NotificationCenter";
 import MobileAppGuide from "@/components/MobileAppGuide";
 import SensorTestingPanel from "@/components/SensorTestingPanel";
 import DemoDataGenerator from "@/components/DemoDataGenerator";
+import FarmRecords from "@/components/FarmRecords";
+import FinancialManagement from "@/components/FinancialManagement";
 
 interface DashboardProps {
   user: any;
@@ -193,7 +197,7 @@ const Dashboard = ({ user }: DashboardProps) => {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-8 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm">
+          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-10 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm">
             <TabsTrigger value="overview" className="flex items-center space-x-2">
               <BarChart3 className="w-4 h-4" />
               <span className="hidden sm:inline">Overview</span>
@@ -225,6 +229,14 @@ const Dashboard = ({ user }: DashboardProps) => {
             <TabsTrigger value="weather" className="flex items-center space-x-2">
               <Thermometer className="w-4 h-4" />
               <span className="hidden sm:inline">Weather</span>
+            </TabsTrigger>
+            <TabsTrigger value="records" className="flex items-center space-x-2">
+              <BookOpen className="w-4 h-4" />
+              <span className="hidden sm:inline">Records</span>
+            </TabsTrigger>
+            <TabsTrigger value="finances" className="flex items-center space-x-2">
+              <DollarSign className="w-4 h-4" />
+              <span className="hidden sm:inline">Finances</span>
             </TabsTrigger>
           </TabsList>
 
@@ -346,6 +358,16 @@ const Dashboard = ({ user }: DashboardProps) => {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          {/* Farm Records Tab */}
+          <TabsContent value="records">
+            <FarmRecords user={user} />
+          </TabsContent>
+
+          {/* Financial Management Tab */}
+          <TabsContent value="finances">
+            <FinancialManagement user={user} />
           </TabsContent>
         </Tabs>
       </main>

@@ -10,7 +10,9 @@ import {
   MessageSquare,
   Droplets,
   BarChart3,
-  CheckCircle
+  CheckCircle,
+  BookOpen,
+  DollarSign
 } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -330,6 +332,169 @@ const DemoDataGenerator = ({ user, onDataGenerated }: DemoDataGeneratorProps) =>
     }
   };
 
+  const generateFarmRecords = async () => {
+    try {
+      const recordTypes = ['planting', 'harvesting', 'fertilizing', 'pest_control', 'irrigation', 'maintenance'];
+      const cropTypes = ['Maize', 'Beans', 'Tomatoes', 'Onions', 'Carrots', 'Lettuce'];
+      const zones = ['Field A', 'Field B', 'Greenhouse 1', 'Zone A', 'Zone B', 'Main Field'];
+      const now = new Date();
+
+      for (let i = 0; i < 15; i++) {
+        const recordDate = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000); // Weekly records
+        const recordType = recordTypes[Math.floor(Math.random() * recordTypes.length)];
+        const cropType = cropTypes[Math.floor(Math.random() * cropTypes.length)];
+        const zone = zones[Math.floor(Math.random() * zones.length)];
+
+        let cost = 0;
+        let quantity = null;
+        let unit = null;
+        let area_size = Math.random() * 5 + 1; // 1-6 acres
+
+        switch (recordType) {
+          case 'planting':
+            cost = Math.random() * 5000 + 2000; // Seeds cost
+            quantity = Math.random() * 50 + 10;
+            unit = 'kg';
+            break;
+          case 'harvesting':
+            quantity = Math.random() * 500 + 100;
+            unit = 'kg';
+            break;
+          case 'fertilizing':
+            cost = Math.random() * 8000 + 3000;
+            quantity = Math.random() * 20 + 5;
+            unit = 'bags';
+            break;
+          case 'pest_control':
+            cost = Math.random() * 3000 + 1000;
+            quantity = Math.random() * 5 + 1;
+            unit = 'liters';
+            break;
+          case 'irrigation':
+            cost = Math.random() * 1000 + 500;
+            break;
+          case 'maintenance':
+            cost = Math.random() * 2000 + 800;
+            break;
+        }
+
+        await supabase
+          .from('farm_records')
+          .insert({
+            user_id: user.id,
+            record_type: recordType,
+            crop_type: cropType,
+            area_size: Number(area_size.toFixed(1)),
+            quantity: quantity ? Number(quantity.toFixed(1)) : null,
+            unit: unit,
+            notes: `${recordType} activity for ${cropType} in ${zone}`,
+            record_date: recordDate.toISOString().split('T')[0],
+            location_zone: zone,
+            cost: Number(cost.toFixed(2))
+          });
+      }
+      setGeneratedData(prev => [...prev, '✅ Farm Records']);
+    } catch (error) {
+      console.error('Farm records error:', error);
+    }
+  };
+
+  const generateFinancialData = async () => {
+    try {
+      const now = new Date();
+      
+      // Generate transactions
+      const incomeCategories = ['Crop Sales', 'Subsidies', 'Grants', 'Equipment Rental'];
+      const expenseCategories = ['Seeds', 'Fertilizers', 'Labor', 'Equipment', 'Fuel', 'Water'];
+      const paymentMethods = ['Cash', 'Bank Transfer', 'Mobile Money', 'Cheque'];
+
+      // Generate income transactions
+      for (let i = 0; i < 8; i++) {
+        const transactionDate = new Date(now.getTime() - i * 15 * 24 * 60 * 60 * 1000); // Every 15 days
+        const category = incomeCategories[Math.floor(Math.random() * incomeCategories.length)];
+        const amount = Math.random() * 50000 + 10000; // 10k - 60k income
+
+        await supabase
+          .from('financial_transactions')
+          .insert({
+            user_id: user.id,
+            transaction_type: 'income',
+            category: category,
+            amount: Number(amount.toFixed(2)),
+            description: `${category} - ${transactionDate.toLocaleDateString()}`,
+            transaction_date: transactionDate.toISOString().split('T')[0],
+            payment_method: paymentMethods[Math.floor(Math.random() * paymentMethods.length)]
+          });
+      }
+
+      // Generate expense transactions
+      for (let i = 0; i < 12; i++) {
+        const transactionDate = new Date(now.getTime() - i * 10 * 24 * 60 * 60 * 1000); // Every 10 days
+        const category = expenseCategories[Math.floor(Math.random() * expenseCategories.length)];
+        let amount: number;
+
+        // Different expense ranges by category
+        switch (category) {
+          case 'Seeds':
+          case 'Fertilizers':
+            amount = Math.random() * 8000 + 2000;
+            break;
+          case 'Labor':
+            amount = Math.random() * 15000 + 5000;
+            break;
+          case 'Equipment':
+            amount = Math.random() * 25000 + 5000;
+            break;
+          default:
+            amount = Math.random() * 3000 + 500;
+        }
+
+        await supabase
+          .from('financial_transactions')
+          .insert({
+            user_id: user.id,
+            transaction_type: 'expense',
+            category: category,
+            amount: Number(amount.toFixed(2)),
+            description: `${category} purchase - ${transactionDate.toLocaleDateString()}`,
+            transaction_date: transactionDate.toISOString().split('T')[0],
+            payment_method: paymentMethods[Math.floor(Math.random() * paymentMethods.length)]
+          });
+      }
+
+      // Generate budgets
+      const budgetCategories = ['Seeds', 'Fertilizers', 'Labor', 'Equipment'];
+      const budgetPeriods = ['monthly', 'seasonal', 'yearly'];
+
+      for (let i = 0; i < 4; i++) {
+        const category = budgetCategories[i];
+        const period = budgetPeriods[Math.floor(Math.random() * budgetPeriods.length)];
+        const allocatedAmount = Math.random() * 30000 + 10000;
+        const spentAmount = allocatedAmount * (0.3 + Math.random() * 0.5); // 30-80% spent
+
+        const startDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 3, 0); // 3 months budget
+
+        await supabase
+          .from('budgets')
+          .insert({
+            user_id: user.id,
+            name: `${category} Budget ${startDate.getFullYear()}`,
+            category: category,
+            allocated_amount: Number(allocatedAmount.toFixed(2)),
+            spent_amount: Number(spentAmount.toFixed(2)),
+            budget_period: period,
+            start_date: startDate.toISOString().split('T')[0],
+            end_date: endDate.toISOString().split('T')[0]
+          });
+      }
+
+      setGeneratedData(prev => [...prev, '✅ Financial Data']);
+    } catch (error) {
+      console.error('Financial data error:', error);
+    }
+  };
+
   const generateAllDemoData = async () => {
     setIsGenerating(true);
     setGeneratedData([]);
@@ -342,6 +507,8 @@ const DemoDataGenerator = ({ user, onDataGenerated }: DemoDataGeneratorProps) =>
       await generateVendorsAndProducts();
       await generateSupportTickets();
       await generateDailyReports();
+      await generateFarmRecords();
+      await generateFinancialData();
 
       toast({
         title: "🎉 Demo Data Generated!",
@@ -403,6 +570,14 @@ const DemoDataGenerator = ({ user, onDataGenerated }: DemoDataGeneratorProps) =>
             <span>Reports</span>
           </div>
           <div className="flex items-center space-x-2 p-2 bg-white rounded border">
+            <BookOpen className="w-4 h-4 text-yellow-600" />
+            <span>Records</span>
+          </div>
+          <div className="flex items-center space-x-2 p-2 bg-white rounded border">
+            <DollarSign className="w-4 h-4 text-green-600" />
+            <span>Finances</span>
+          </div>
+          <div className="flex items-center space-x-2 p-2 bg-white rounded border">
             <CheckCircle className="w-4 h-4 text-emerald-600" />
             <span>Complete</span>
           </div>
@@ -446,6 +621,8 @@ const DemoDataGenerator = ({ user, onDataGenerated }: DemoDataGeneratorProps) =>
             <li>Irrigation logs and water usage data</li>
             <li>Vendor marketplace with products</li>
             <li>Support tickets and daily reports</li>
+            <li>Farm activity records and crop tracking</li>
+            <li>Financial transactions and budget management</li>
           </ul>
         </div>
       </CardContent>
