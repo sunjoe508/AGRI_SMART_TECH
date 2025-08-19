@@ -65,6 +65,48 @@ export type Database = {
         }
         Relationships: []
       }
+      budgets: {
+        Row: {
+          allocated_amount: number
+          budget_period: string
+          category: string
+          created_at: string
+          end_date: string
+          id: string
+          name: string
+          spent_amount: number | null
+          start_date: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          allocated_amount: number
+          budget_period: string
+          category: string
+          created_at?: string
+          end_date: string
+          id?: string
+          name: string
+          spent_amount?: number | null
+          start_date: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          allocated_amount?: number
+          budget_period?: string
+          category?: string
+          created_at?: string
+          end_date?: string
+          id?: string
+          name?: string
+          spent_amount?: number | null
+          start_date?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       daily_reports: {
         Row: {
           created_at: string
@@ -101,6 +143,102 @@ export type Database = {
           sent_at?: string | null
           user_id?: string
           weather_summary?: Json | null
+        }
+        Relationships: []
+      }
+      farm_records: {
+        Row: {
+          area_size: number | null
+          cost: number | null
+          created_at: string
+          crop_type: string | null
+          id: string
+          location_zone: string | null
+          notes: string | null
+          quantity: number | null
+          record_date: string
+          record_type: string
+          unit: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          area_size?: number | null
+          cost?: number | null
+          created_at?: string
+          crop_type?: string | null
+          id?: string
+          location_zone?: string | null
+          notes?: string | null
+          quantity?: number | null
+          record_date: string
+          record_type: string
+          unit?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          area_size?: number | null
+          cost?: number | null
+          created_at?: string
+          crop_type?: string | null
+          id?: string
+          location_zone?: string | null
+          notes?: string | null
+          quantity?: number | null
+          record_date?: string
+          record_type?: string
+          unit?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      financial_transactions: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          currency: string | null
+          description: string
+          id: string
+          payment_method: string | null
+          receipt_url: string | null
+          related_record_id: string | null
+          transaction_date: string
+          transaction_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          category: string
+          created_at?: string
+          currency?: string | null
+          description: string
+          id?: string
+          payment_method?: string | null
+          receipt_url?: string | null
+          related_record_id?: string | null
+          transaction_date: string
+          transaction_type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          currency?: string | null
+          description?: string
+          id?: string
+          payment_method?: string | null
+          receipt_url?: string | null
+          related_record_id?: string | null
+          transaction_date?: string
+          transaction_type?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
