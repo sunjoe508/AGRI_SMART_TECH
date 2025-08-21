@@ -36,7 +36,7 @@ import MobileAppGuide from "@/components/MobileAppGuide";
 import SensorTestingPanel from "@/components/SensorTestingPanel";
 import DemoDataGenerator from "@/components/DemoDataGenerator";
 import FarmRecords from "@/components/FarmRecords";
-import FinancialManagement from "@/components/FinancialManagement";
+import EnhancedFinancialManagement from "@/components/EnhancedFinancialManagement";
 
 interface DashboardProps {
   user: any;
@@ -367,7 +367,7 @@ const Dashboard = ({ user }: DashboardProps) => {
 
           {/* Financial Management Tab */}
           <TabsContent value="finances">
-            <FinancialManagement user={user} />
+            <EnhancedFinancialManagement user={user} />
           </TabsContent>
         </Tabs>
       </main>
