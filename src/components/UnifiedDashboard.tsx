@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from './AppSidebar';
 import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 // Import user components
@@ -28,9 +29,99 @@ interface UnifiedDashboardProps {
 export function UnifiedDashboard({ user, profile }: UnifiedDashboardProps) {
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   const currentTab = searchParams.get('tab') || 'overview';
   const currentSubTab = searchParams.get('subtab') || '';
+
+  // Set up real-time subscriptions for live data updates
+  useEffect(() => {
+    if (!user?.id) return;
+
+    console.log('Setting up real-time subscriptions for user dashboard...');
+    
+    // Subscribe to sensor data changes
+    const sensorChannel = supabase
+      .channel('user-sensor-changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'sensor_data',
+        filter: `user_id=eq.${user.id}`
+      }, (payload) => {
+        console.log('Sensor data change detected:', payload);
+        queryClient.invalidateQueries({ queryKey: ['sensor-data'] });
+        queryClient.invalidateQueries({ queryKey: ['user-profile', user.id] });
+        toast({
+          title: "📡 Sensor Update",
+          description: "New sensor data received",
+        });
+      })
+      .subscribe();
+
+    // Subscribe to irrigation logs changes
+    const irrigationChannel = supabase
+      .channel('user-irrigation-changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'irrigation_logs',
+        filter: `user_id=eq.${user.id}`
+      }, (payload) => {
+        console.log('Irrigation logs change detected:', payload);
+        queryClient.invalidateQueries({ queryKey: ['irrigation-logs'] });
+        toast({
+          title: "🌊 Irrigation Update",
+          description: "New irrigation activity logged",
+        });
+      })
+      .subscribe();
+
+    // Subscribe to financial transactions changes
+    const financialChannel = supabase
+      .channel('user-financial-changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'financial_transactions',
+        filter: `user_id=eq.${user.id}`
+      }, (payload) => {
+        console.log('Financial transaction change detected:', payload);
+        queryClient.invalidateQueries({ queryKey: ['financial-transactions'] });
+        queryClient.invalidateQueries({ queryKey: ['budgets'] });
+        toast({
+          title: "💰 Financial Update",
+          description: "New transaction recorded",
+        });
+      })
+      .subscribe();
+
+    // Subscribe to farm records changes
+    const farmRecordsChannel = supabase
+      .channel('user-farm-records-changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'farm_records',
+        filter: `user_id=eq.${user.id}`
+      }, (payload) => {
+        console.log('Farm records change detected:', payload);
+        queryClient.invalidateQueries({ queryKey: ['farm-records'] });
+        toast({
+          title: "📋 Records Update",
+          description: "Farm records updated",
+        });
+      })
+      .subscribe();
+
+    return () => {
+      console.log('Cleaning up user real-time subscriptions...');
+      supabase.removeChannel(sensorChannel);
+      supabase.removeChannel(irrigationChannel);
+      supabase.removeChannel(financialChannel);
+      supabase.removeChannel(farmRecordsChannel);
+    };
+  }, [user?.id, queryClient, toast]);
 
   const handleLogout = async () => {
     try {
@@ -50,17 +141,59 @@ export function UnifiedDashboard({ user, profile }: UnifiedDashboardProps) {
   };
 
   const handleSensorUpdate = async () => {
-    toast({
-      title: "🔄 Data Synchronized",
-      description: "All systems updated with latest data",
-    });
+    try {
+      // Invalidate relevant queries to refresh data
+      await queryClient.invalidateQueries({ queryKey: ['sensor-data'] });
+      await queryClient.invalidateQueries({ queryKey: ['registered-sensors'] });
+      await queryClient.invalidateQueries({ queryKey: ['irrigation-logs'] });
+      await queryClient.invalidateQueries({ queryKey: ['user-profile', user?.id] });
+      
+      toast({
+        title: "🔄 Data Synchronized",
+        description: "All systems updated with latest data",
+      });
+    } catch (error) {
+      console.error('Data sync error:', error);
+      toast({
+        title: "⚠️ Sync Warning",
+        description: "Some data may not be up to date",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleDataGenerated = async () => {
-    toast({
-      title: "✅ Data Generated Successfully",
-      description: "Test data has been written to database and synchronized",
-    });
+    try {
+      await handleSensorUpdate();
+      
+      // Verify data was actually written to database
+      const { data: recentData } = await supabase
+        .from('sensor_data')
+        .select('created_at')
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      if (recentData && recentData.length > 0) {
+        toast({
+          title: "✅ Data Generated Successfully",
+          description: "Test data has been written to database and synchronized",
+        });
+      } else {
+        toast({
+          title: "⚠️ Data Generation Warning",
+          description: "Data may not have been saved properly",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Data generation verification failed:', error);
+      toast({
+        title: "❌ Data Generation Failed",
+        description: "Failed to generate or verify test data",
+        variant: "destructive"
+      });
+    }
   };
 
   const renderContent = () => {

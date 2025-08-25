@@ -30,7 +30,6 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
@@ -47,8 +46,6 @@ export function AppSidebar({ userType, onLogout, userName }: AppSidebarProps) {
   const collapsed = state === "collapsed";
   const location = useLocation();
   const currentPath = location.pathname;
-
-  const isActive = (path: string) => currentPath === path;
 
   const userNavItems = [
     { title: "Overview", url: "/?tab=overview", icon: BarChart3 },
@@ -83,6 +80,27 @@ export function AppSidebar({ userType, onLogout, userName }: AppSidebarProps) {
     isActiveItem 
       ? "bg-primary text-primary-foreground font-medium" 
       : "hover:bg-accent hover:text-accent-foreground";
+
+  const isActiveNavItem = (url: string) => {
+    if (userType === 'admin') {
+      const urlParams = new URLSearchParams(url.split('?')[1] || '');
+      const tabFromUrl = urlParams.get('tab');
+      return currentPath.includes('admin-dashboard') && 
+             new URLSearchParams(window.location.search).get('tab') === tabFromUrl;
+    } else {
+      const urlParams = new URLSearchParams(url.split('?')[1] || '');
+      const tabFromUrl = urlParams.get('tab');
+      const subtabFromUrl = urlParams.get('subtab');
+      const currentParams = new URLSearchParams(window.location.search);
+      const currentTab = currentParams.get('tab');
+      const currentSubtab = currentParams.get('subtab');
+      
+      if (subtabFromUrl) {
+        return currentTab === tabFromUrl && currentSubtab === subtabFromUrl;
+      }
+      return currentTab === tabFromUrl;
+    }
+  };
 
   return (
     <Sidebar
@@ -121,9 +139,7 @@ export function AppSidebar({ userType, onLogout, userName }: AppSidebarProps) {
                   <SidebarMenuButton asChild>
                     <NavLink 
                       to={item.url} 
-                      className={({ isActive: isActiveLink }) => 
-                        getNavClassName(isActiveLink || isActive(item.url))
-                      }
+                      className={getNavClassName(isActiveNavItem(item.url))}
                     >
                       <item.icon className="w-4 h-4" />
                       {!collapsed && <span>{item.title}</span>}

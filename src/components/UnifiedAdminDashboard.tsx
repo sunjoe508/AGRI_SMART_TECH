@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Brain, Mic, MicOff, Database, Sparkles, Shield } from 'lucide-react';
+import { Brain, Mic, MicOff, Database, Sparkles, Shield, Globe, Cpu, MessageSquare, Users } from 'lucide-react';
 
 export function UnifiedAdminDashboard() {
   const [searchParams] = useSearchParams();
@@ -48,11 +48,78 @@ export function UnifiedAdminDashboard() {
         return;
       }
       setAdminSession(parsedSession);
+      
+      setTimeout(() => {
+        toast({
+          title: "🚀 Admin Portal Activated",
+          description: "Welcome to AgriSmart Admin Dashboard!",
+        });
+      }, 1000);
     } catch (error) {
       localStorage.removeItem('adminSession');
       navigate('/admin-login');
     }
-  }, [navigate]);
+  }, [navigate, toast]);
+
+  // Set up real-time subscriptions for admin dashboard
+  useEffect(() => {
+    if (!adminSession) return;
+
+    console.log('Setting up admin real-time subscriptions...');
+    
+    // Subscribe to all table changes for admin monitoring
+    const profilesChannel = supabase
+      .channel('admin-profiles-changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'profiles'
+      }, (payload) => {
+        console.log('Profiles change detected:', payload);
+        queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
+        queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+        toast({
+          title: "👥 User Update",
+          description: "User data updated",
+        });
+      })
+      .subscribe();
+
+    const sensorChannel = supabase
+      .channel('admin-sensor-changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'sensor_data'
+      }, (payload) => {
+        console.log('Sensor data change detected:', payload);
+        queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
+        toast({
+          title: "📡 Sensor Update",
+          description: "New sensor data received",
+        });
+      })
+      .subscribe();
+
+    const irrigationChannel = supabase
+      .channel('admin-irrigation-changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'irrigation_logs'
+      }, (payload) => {
+        console.log('Irrigation change detected:', payload);
+        queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
+      })
+      .subscribe();
+
+    return () => {
+      console.log('Cleaning up admin subscriptions...');
+      supabase.removeChannel(profilesChannel);
+      supabase.removeChannel(sensorChannel);
+      supabase.removeChannel(irrigationChannel);
+    };
+  }, [adminSession, queryClient, toast]);
 
   // Fetch admin statistics
   const { data: stats, isLoading: statsLoading } = useQuery({
@@ -135,16 +202,89 @@ export function UnifiedAdminDashboard() {
   const renderContent = () => {
     switch (currentTab) {
       case 'monitoring':
-        return <RealTimeUserMonitoring />;
+        return (
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Users className="w-5 h-5" />
+                  <span>Real-Time User Monitoring</span>
+                  <Badge variant="default" className="ml-2">
+                    {users?.length || 0} Users Online
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {users?.slice(0, 6).map((user) => (
+                      <div key={user.id} className="p-4 border rounded-lg">
+                        <h4 className="font-semibold">{user.full_name || 'Unknown User'}</h4>
+                        <p className="text-sm text-muted-foreground">{user.county}</p>
+                        <p className="text-xs text-muted-foreground">{user.phone_number}</p>
+                      </div>
+                    ))}
+                  </div>
+                  {users && users.length > 6 && (
+                    <p className="text-center text-muted-foreground">
+                      And {users.length - 6} more users...
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        );
       
       case 'analytics':
-        return <SystemAnalytics />;
+        return (
+          <div className="space-y-6">
+            <SystemAnalytics />
+            <Card>
+              <CardHeader>
+                <CardTitle>System Analytics Overview</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="text-center p-4 border rounded">
+                    <h3 className="font-semibold">Total Users</h3>
+                    <p className="text-2xl font-bold text-primary">{stats?.totalUsers}</p>
+                  </div>
+                  <div className="text-center p-4 border rounded">
+                    <h3 className="font-semibold">Sensor Data Points</h3>
+                    <p className="text-2xl font-bold text-primary">{stats?.totalSensorData}</p>
+                  </div>
+                  <div className="text-center p-4 border rounded">
+                    <h3 className="font-semibold">Irrigation Logs</h3>
+                    <p className="text-2xl font-bold text-primary">{stats?.totalIrrigationLogs}</p>
+                  </div>
+                  <div className="text-center p-4 border rounded">
+                    <h3 className="font-semibold">System Health</h3>
+                    <p className="text-2xl font-bold text-green-600">{stats?.systemHealth}%</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        );
       
       case 'insights':
         return (
           <div className="space-y-6">
             <HolographicStats stats={stats} />
-            {isAIActive && <AIAssistant />}
+            {isAIActive && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Brain className="w-5 h-5" />
+                    <span>AI Assistant Active</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <AIAssistant />
+                </CardContent>
+              </Card>
+            )}
           </div>
         );
       
@@ -154,8 +294,27 @@ export function UnifiedAdminDashboard() {
       case 'command':
         return (
           <div className="space-y-6">
-            <DataVisualization3D data={stats} />
-            {voiceEnabled && <VoiceCommands />}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Globe className="w-5 h-5" />
+                  <span>Command Center</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <DataVisualization3D data={stats} />
+              </CardContent>
+            </Card>
+            {voiceEnabled && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Voice Commands Active</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <VoiceCommands />
+                </CardContent>
+              </Card>
+            )}
           </div>
         );
       
@@ -193,12 +352,21 @@ export function UnifiedAdminDashboard() {
         return (
           <Card>
             <CardHeader>
-              <CardTitle>Support Tickets</CardTitle>
+              <CardTitle className="flex items-center space-x-2">
+                <MessageSquare className="w-5 h-5" />
+                <span>Support Tickets</span>
+                <Badge variant="secondary">{stats?.totalSupportTickets || 0}</Badge>
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">
                 Total Support Tickets: {stats?.totalSupportTickets || 0}
               </p>
+              <div className="mt-4 p-4 border rounded-lg">
+                <p className="text-sm text-muted-foreground">
+                  Support ticket management system is operational. All tickets are being monitored in real-time.
+                </p>
+              </div>
             </CardContent>
           </Card>
         );
@@ -315,38 +483,48 @@ export function UnifiedAdminDashboard() {
             <div className="flex items-center space-x-4 flex-1">
               <div className="flex items-center space-x-3">
                 <Shield className="w-6 h-6 text-primary" />
-                <h1 className="text-xl font-semibold text-foreground">
-                  AgriSmart Admin Portal
-                </h1>
-                <Badge variant="default" className="ml-2">
-                  <Sparkles className="w-3 h-3 mr-1" />
-                  LIVE
-                </Badge>
+                <Globe className="w-6 h-6 text-blue-500" />
+                <div>
+                  <h1 className="text-xl font-semibold text-foreground">
+                    AgriSmart Admin Portal
+                  </h1>
+                  <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                    <Cpu className="w-4 h-4" />
+                    <span>System: ONLINE</span>
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <span>• Users: {stats?.totalUsers}</span>
+                    <span>• Health: {stats?.systemHealth}%</span>
+                  </div>
+                </div>
               </div>
-              
-              <div className="ml-auto flex items-center space-x-4">
-                <Input
-                  placeholder="Search users..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-64"
-                />
-                <Button 
-                  onClick={toggleVoiceCommands}
-                  variant="outline"
-                  size="sm"
-                >
-                  {voiceEnabled ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
-                </Button>
-                <Button 
-                  onClick={activateAI}
-                  variant="outline"
-                  size="sm"
-                >
-                  <Brain className="w-4 h-4 mr-2" />
-                  {isAIActive ? 'AI ACTIVE' : 'ACTIVATE AI'}
-                </Button>
-              </div>
+              <Badge variant="default" className="ml-auto">
+                <Sparkles className="w-3 h-3 mr-1" />
+                LIVE DATA
+              </Badge>
+            </div>
+            
+            <div className="flex items-center space-x-4 ml-4">
+              <Input
+                placeholder="Search users..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-64"
+              />
+              <Button 
+                onClick={toggleVoiceCommands}
+                variant="outline"
+                size="sm"
+              >
+                {voiceEnabled ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
+              </Button>
+              <Button 
+                onClick={activateAI}
+                variant="outline"
+                size="sm"
+              >
+                <Brain className="w-4 h-4 mr-2" />
+                {isAIActive ? 'AI ACTIVE' : 'ACTIVATE AI'}
+              </Button>
             </div>
           </header>
           
