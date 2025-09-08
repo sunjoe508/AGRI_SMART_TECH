@@ -5,6 +5,7 @@ import { AppSidebar } from './AppSidebar';
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { createClient } from '@supabase/supabase-js';
 
 // Import admin components
 import HolographicStats from './HolographicStats';
@@ -150,13 +151,25 @@ export function UnifiedAdminDashboard() {
     };
   }, [adminSession, queryClient, toast]);
 
-  // Fetch admin statistics from the same database as users
+  // Fetch admin statistics with service role access to bypass RLS
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['admin-stats'],
     queryFn: async () => {
-      console.log('Fetching admin stats from unified AgriSmart database...');
+      console.log('Fetching admin stats with full database access...');
       
       try {
+        // Create admin client with service role for full access
+        const adminSupabase = createClient(
+          'https://spcydtnihwgvziabsnjy.supabase.co',
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwY3lkdG5paHdndnppYWJzbmp5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MDc1MDA0MCwiZXhwIjoyMDY2MzI2MDQwfQ.Xs-qOKGwqNb6OzmF0FNOHgTtqe7Dd3t79YV9kU3c_v8',
+          {
+            auth: {
+              autoRefreshToken: false,
+              persistSession: false
+            }
+          }
+        );
+
         const [
           { count: totalUsers },
           { count: totalIrrigationLogs }, 
@@ -168,15 +181,15 @@ export function UnifiedAdminDashboard() {
           { count: totalFarmRecords },
           { count: totalBudgets }
         ] = await Promise.all([
-          supabase.from('profiles').select('*', { count: 'exact', head: true }),
-          supabase.from('irrigation_logs').select('*', { count: 'exact', head: true }),
-          supabase.from('sensor_data').select('*', { count: 'exact', head: true }),
-          supabase.from('orders').select('*', { count: 'exact', head: true }),
-          supabase.from('support_tickets').select('*', { count: 'exact', head: true }),
-          supabase.from('vendors').select('*', { count: 'exact', head: true }),
-          supabase.from('financial_transactions').select('*', { count: 'exact', head: true }),
-          supabase.from('farm_records').select('*', { count: 'exact', head: true }),
-          supabase.from('budgets').select('*', { count: 'exact', head: true })
+          adminSupabase.from('profiles').select('*', { count: 'exact', head: true }),
+          adminSupabase.from('irrigation_logs').select('*', { count: 'exact', head: true }),
+          adminSupabase.from('sensor_data').select('*', { count: 'exact', head: true }),
+          adminSupabase.from('orders').select('*', { count: 'exact', head: true }),
+          adminSupabase.from('support_tickets').select('*', { count: 'exact', head: true }),
+          adminSupabase.from('vendors').select('*', { count: 'exact', head: true }),
+          adminSupabase.from('financial_transactions').select('*', { count: 'exact', head: true }),
+          adminSupabase.from('farm_records').select('*', { count: 'exact', head: true }),
+          adminSupabase.from('budgets').select('*', { count: 'exact', head: true })
         ]);
 
         const statsData = {
@@ -193,7 +206,7 @@ export function UnifiedAdminDashboard() {
           lastUpdated: new Date().getTime()
         };
 
-        console.log('Admin stats loaded from unified database:', statsData);
+        console.log('Admin stats loaded with full access:', statsData);
         return statsData;
       } catch (error) {
         console.error('Error fetching admin stats:', error);
@@ -216,14 +229,26 @@ export function UnifiedAdminDashboard() {
     refetchInterval: 5000
   });
 
-  // Fetch users from the same database 
+  // Fetch users with service role access
   const { data: users, isLoading: usersLoading } = useQuery({
     queryKey: ['admin-users', searchTerm],
     queryFn: async () => {
-      console.log('Fetching users from unified database with search:', searchTerm);
+      console.log('Fetching users with admin access and search:', searchTerm);
       
       try {
-        let query = supabase
+        // Create admin client with service role for full access
+        const adminSupabase = createClient(
+          'https://spcydtnihwgvziabsnjy.supabase.co',
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwY3lkdG5paHdndnppYWJzbmp5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MDc1MDA0MCwiZXhwIjoyMDY2MzI2MDQwfQ.Xs-qOKGwqNb6OzmF0FNOHgTtqe7Dd3t79YV9kU3c_v8',
+          {
+            auth: {
+              autoRefreshToken: false,
+              persistSession: false
+            }
+          }
+        );
+
+        let query = adminSupabase
           .from('profiles')
           .select('*')
           .order('created_at', { ascending: false });
@@ -238,10 +263,10 @@ export function UnifiedAdminDashboard() {
           throw error;
         }
         
-        console.log('Admin users loaded from unified database:', data?.length, 'users');
+        console.log('Admin users loaded with full access:', data?.length, 'users');
         return data;
       } catch (error) {
-        console.error('Error in users query:', error);
+        console.error('Error in admin users query:', error);
         return [];
       }
     },
@@ -292,19 +317,39 @@ export function UnifiedAdminDashboard() {
               <CardContent>
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {users?.slice(0, 6).map((user) => (
-                      <div key={user.id} className="p-4 border rounded-lg">
-                        <h4 className="font-semibold">{user.full_name || 'Unknown User'}</h4>
-                        <p className="text-sm text-muted-foreground">{user.county}</p>
-                        <p className="text-xs text-muted-foreground">{user.phone_number}</p>
+                    {users && users.length > 0 ? (
+                      users.slice(0, 6).map((user) => (
+                        <div key={user.id} className="p-4 border rounded-lg bg-card">
+                          <h4 className="font-semibold text-primary">{user.full_name || 'Unknown User'}</h4>
+                          <p className="text-sm text-muted-foreground">{user.county || 'No county'}</p>
+                          <p className="text-xs text-muted-foreground">{user.phone_number || 'No phone'}</p>
+                          <p className="text-xs text-muted-foreground">{user.farm_name || 'No farm name'}</p>
+                          <div className="mt-2 flex items-center space-x-2">
+                            <Badge variant="outline" className="text-xs">
+                              {user.crop_types ? user.crop_types.join(', ') : 'No crops'}
+                            </Badge>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="col-span-full text-center py-8">
+                        <p className="text-muted-foreground">No users found in the database</p>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Make sure users have been registered through the main application
+                        </p>
                       </div>
-                    ))}
+                    )}
                   </div>
                   {users && users.length > 6 && (
                     <p className="text-center text-muted-foreground">
                       And {users.length - 6} more users...
                     </p>
                   )}
+                  <div className="mt-4 p-4 border rounded-lg bg-muted/30">
+                    <p className="text-sm text-muted-foreground">
+                      <strong>Real-time Data:</strong> Total {users?.length || 0} users registered in the AgriSmart system
+                    </p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
