@@ -227,27 +227,69 @@ const EnhancedFinancialManagement = ({ user }: EnhancedFinancialManagementProps)
   }, [transactions, budgetAnalytics]);
 
   const generateComprehensiveReport = () => {
-    const reportData = {
-      summary: financialSummary,
-      transactions: transactions?.slice(0, 100) || [],
-      budgets: budgetAnalytics,
-      analytics: reportingData,
-      generatedAt: new Date().toISOString()
-    };
+    const jsPDF = require('jspdf');
+    const pdf = new jsPDF();
     
-    const blob = new Blob([JSON.stringify(reportData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `financial-report-${format(new Date(), 'yyyy-MM-dd')}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    // Header
+    pdf.setFontSize(20);
+    pdf.text('Financial Report', 20, 20);
+    
+    // User info
+    pdf.setFontSize(12);
+    pdf.text(`Generated: ${format(new Date(), 'yyyy-MM-dd HH:mm')}`, 20, 35);
+    pdf.text(`User: ${user.email}`, 20, 45);
+    
+    // Financial Summary
+    pdf.setFontSize(16);
+    pdf.text('Financial Summary', 20, 65);
+    pdf.setFontSize(12);
+    pdf.text(`Total Income: $${financialSummary.totalIncome.toFixed(2)}`, 20, 80);
+    pdf.text(`Total Expenses: $${financialSummary.totalExpenses.toFixed(2)}`, 20, 90);
+    pdf.text(`Net Income: $${financialSummary.netIncome.toFixed(2)}`, 20, 100);
+    pdf.text(`Budget Variance: ${financialSummary.budgetVariance.toFixed(2)}%`, 20, 110);
+    
+    // Recent Transactions
+    pdf.setFontSize(16);
+    pdf.text('Recent Transactions', 20, 130);
+    pdf.setFontSize(10);
+    
+    let yPos = 145;
+    const recentTransactions = (transactions || []).slice(0, 10);
+    
+    recentTransactions.forEach((transaction, index) => {
+      if (yPos > 270) {
+        pdf.addPage();
+        yPos = 20;
+      }
+      
+      const amount = transaction.transaction_type === 'income' ? `+$${transaction.amount}` : `-$${transaction.amount}`;
+      pdf.text(`${format(new Date(transaction.transaction_date), 'MM/dd')} - ${transaction.description}: ${amount}`, 20, yPos);
+      yPos += 10;
+    });
+    
+    // Budget Status
+    pdf.addPage();
+    pdf.setFontSize(16);
+    pdf.text('Budget Status', 20, 20);
+    pdf.setFontSize(10);
+    
+    yPos = 35;
+    budgetAnalytics.forEach((budget) => {
+      if (yPos > 270) {
+        pdf.addPage();
+        yPos = 20;
+      }
+      
+      pdf.text(`${budget.category}: $${budget.actualSpent.toFixed(2)} / $${budget.allocated_amount.toFixed(2)} (${budget.spentPercentage.toFixed(1)}%)`, 20, yPos);
+      yPos += 15;
+    });
+    
+    // Save PDF
+    pdf.save(`financial-report-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
     
     toast({
-      title: "📊 Report Generated",
-      description: "Comprehensive financial report has been downloaded",
+      title: "📊 PDF Report Generated",
+      description: "Comprehensive financial PDF report has been downloaded",
     });
   };
 
