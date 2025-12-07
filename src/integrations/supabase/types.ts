@@ -14,13 +14,210 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      admin_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      irrigation_logs: {
+        Row: {
+          created_at: string
+          duration_minutes: number | null
+          id: string
+          status: string | null
+          user_id: string | null
+          water_used_liters: number | null
+          zone: string | null
+        }
+        Insert: {
+          created_at?: string
+          duration_minutes?: number | null
+          id?: string
+          status?: string | null
+          user_id?: string | null
+          water_used_liters?: number | null
+          zone?: string | null
+        }
+        Update: {
+          created_at?: string
+          duration_minutes?: number | null
+          id?: string
+          status?: string | null
+          user_id?: string | null
+          water_used_liters?: number | null
+          zone?: string | null
+        }
+        Relationships: []
+      }
+      orders: {
+        Row: {
+          created_at: string
+          id: string
+          product_name: string | null
+          quantity: number | null
+          status: string | null
+          total_amount: number | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          product_name?: string | null
+          quantity?: number | null
+          status?: string | null
+          total_amount?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          product_name?: string | null
+          quantity?: number | null
+          status?: string | null
+          total_amount?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          county: string | null
+          created_at: string
+          crop_types: string[] | null
+          farm_name: string | null
+          farm_size_acres: number | null
+          full_name: string | null
+          id: string
+          latitude: number | null
+          longitude: number | null
+          phone_number: string | null
+          sub_county: string | null
+          updated_at: string
+          user_id: string | null
+          ward: string | null
+        }
+        Insert: {
+          county?: string | null
+          created_at?: string
+          crop_types?: string[] | null
+          farm_name?: string | null
+          farm_size_acres?: number | null
+          full_name?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          phone_number?: string | null
+          sub_county?: string | null
+          updated_at?: string
+          user_id?: string | null
+          ward?: string | null
+        }
+        Update: {
+          county?: string | null
+          created_at?: string
+          crop_types?: string[] | null
+          farm_name?: string | null
+          farm_size_acres?: number | null
+          full_name?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          phone_number?: string | null
+          sub_county?: string | null
+          updated_at?: string
+          user_id?: string | null
+          ward?: string | null
+        }
+        Relationships: []
+      }
+      sensor_data: {
+        Row: {
+          created_at: string
+          humidity: number | null
+          id: string
+          ph_level: number | null
+          sensor_id: string | null
+          soil_moisture: number | null
+          temperature: number | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          humidity?: number | null
+          id?: string
+          ph_level?: number | null
+          sensor_id?: string | null
+          soil_moisture?: number | null
+          temperature?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          humidity?: number | null
+          id?: string
+          ph_level?: number | null
+          sensor_id?: string | null
+          soil_moisture?: number | null
+          temperature?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      support_tickets: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          priority: string | null
+          status: string | null
+          subject: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          priority?: string | null
+          status?: string | null
+          subject: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          priority?: string | null
+          status?: string | null
+          subject?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_admin_token: { Args: never; Returns: string }
     }
     Enums: {
       [_ in never]: never

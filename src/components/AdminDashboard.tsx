@@ -119,12 +119,12 @@ const AdminDashboard = () => {
         { count: totalSensorData },
         { count: totalSupportTickets }
       ] = await Promise.all([
-        supabase.from('profiles').select('*', { count: 'exact', head: true }),
-        supabase.from('admin_roles').select('*', { count: 'exact', head: true }),
-        supabase.from('orders').select('*', { count: 'exact', head: true }),
-        supabase.from('irrigation_logs').select('*', { count: 'exact', head: true }),
-        supabase.from('sensor_data').select('*', { count: 'exact', head: true }),
-        supabase.from('support_tickets').select('*', { count: 'exact', head: true })
+        (supabase.from('profiles' as any) as any).select('*', { count: 'exact', head: true }),
+        (supabase.from('admin_roles' as any) as any).select('*', { count: 'exact', head: true }),
+        (supabase.from('orders' as any) as any).select('*', { count: 'exact', head: true }),
+        (supabase.from('irrigation_logs' as any) as any).select('*', { count: 'exact', head: true }),
+        (supabase.from('sensor_data' as any) as any).select('*', { count: 'exact', head: true }),
+        (supabase.from('support_tickets' as any) as any).select('*', { count: 'exact', head: true })
       ]);
 
       const statsData = {
@@ -148,8 +148,8 @@ const AdminDashboard = () => {
     queryFn: async () => {
       console.log('Fetching users with search term:', searchTerm);
       
-      let query = supabase
-        .from('profiles')
+      let query = (supabase
+        .from('profiles' as any) as any)
         .select('*')
         .order('created_at', { ascending: false });
 
@@ -174,8 +174,8 @@ const AdminDashboard = () => {
     queryFn: async () => {
       console.log('Fetching recent activity logs...');
       
-      const { data: logs, error } = await supabase
-        .from('irrigation_logs')
+      const { data: logs, error } = await (supabase
+        .from('irrigation_logs' as any) as any)
         .select('*')
         .order('created_at', { ascending: false })
         .limit(10);
@@ -186,17 +186,17 @@ const AdminDashboard = () => {
       }
 
       // Get user profiles separately
-      const userIds = [...new Set(logs.map(log => log.user_id))];
+      const userIds = [...new Set((logs || []).map((log: any) => log.user_id))];
       if (userIds.length === 0) return [];
       
-      const { data: profiles } = await supabase
-        .from('profiles')
+      const { data: profiles } = await (supabase
+        .from('profiles' as any) as any)
         .select('id, full_name, farm_name')
         .in('id', userIds);
 
       // Map profiles to logs
-      const activityWithProfiles = logs.map(log => {
-        const profile = profiles?.find(p => p.id === log.user_id);
+      const activityWithProfiles = (logs || []).map((log: any) => {
+        const profile = (profiles || []).find((p: any) => p.id === log.user_id);
         return {
           ...log,
           profiles: profile
@@ -214,8 +214,8 @@ const AdminDashboard = () => {
     queryFn: async () => {
       console.log('Fetching support tickets...');
       
-      const { data: tickets, error } = await supabase
-        .from('support_tickets')
+      const { data: tickets, error } = await (supabase
+        .from('support_tickets' as any) as any)
         .select('*')
         .order('created_at', { ascending: false })
         .limit(20);
@@ -226,17 +226,17 @@ const AdminDashboard = () => {
       }
 
       // Get user profiles separately
-      const userIds = [...new Set(tickets.map(ticket => ticket.user_id))];
+      const userIds = [...new Set((tickets || []).map((ticket: any) => ticket.user_id))];
       if (userIds.length === 0) return [];
       
-      const { data: profiles } = await supabase
-        .from('profiles')
+      const { data: profiles } = await (supabase
+        .from('profiles' as any) as any)
         .select('id, full_name, phone_number')
         .in('id', userIds);
 
       // Map profiles to tickets
-      const ticketsWithProfiles = tickets.map(ticket => {
-        const profile = profiles?.find(p => p.id === ticket.user_id);
+      const ticketsWithProfiles = (tickets || []).map((ticket: any) => {
+        const profile = (profiles || []).find((p: any) => p.id === ticket.user_id);
         return {
           ...ticket,
           profiles: profile
@@ -252,8 +252,8 @@ const AdminDashboard = () => {
   const deleteUserMutation = useMutation({
     mutationFn: async (userId: string) => {
       console.log('Deleting user:', userId);
-      const { error } = await supabase
-        .from('profiles')
+      const { error } = await (supabase
+        .from('profiles' as any) as any)
         .delete()
         .eq('id', userId);
       
@@ -293,11 +293,11 @@ const AdminDashboard = () => {
         { data: allSensorData },
         { data: allTickets }
       ] = await Promise.all([
-        supabase.from('profiles').select('*'),
-        supabase.from('orders').select('*'),
-        supabase.from('irrigation_logs').select('*'),
-        supabase.from('sensor_data').select('*'),
-        supabase.from('support_tickets').select('*')
+        (supabase.from('profiles' as any) as any).select('*'),
+        (supabase.from('orders' as any) as any).select('*'),
+        (supabase.from('irrigation_logs' as any) as any).select('*'),
+        (supabase.from('sensor_data' as any) as any).select('*'),
+        (supabase.from('support_tickets' as any) as any).select('*')
       ]);
       
       const exportData = {
@@ -346,7 +346,7 @@ const AdminDashboard = () => {
   const sendBulkSMS = async () => {
     try {
       console.log('Starting bulk SMS campaign...');
-      const activeUsers = users?.filter(user => user.phone_number) || [];
+      const activeUsers = users?.filter((user: any) => user.phone_number) || [];
       
       toast({
         title: "📱 SMS Campaign Started",
@@ -396,9 +396,9 @@ const AdminDashboard = () => {
       };
       
       // Calculate user distribution by county
-      users?.forEach(user => {
+      users?.forEach((user: any) => {
         if (user.county) {
-          reportData.userDistribution[user.county] = (reportData.userDistribution[user.county] || 0) + 1;
+          (reportData.userDistribution as any)[user.county] = ((reportData.userDistribution as any)[user.county] || 0) + 1;
         }
       });
       
@@ -740,12 +740,12 @@ const AdminDashboard = () => {
                         🏢 {activity.profiles?.farm_name || activity.profiles?.full_name || 'Unknown Farm'}
                       </h4>
                       <p className="text-sm text-gray-600 dark:text-gray-300">
-                        📍 Zone: {activity.zone} • 💧 Water: {activity.water_amount_liters}L • 
+                        📍 Zone: {activity.zone} • 💧 Water: {activity.water_used_liters}L • 
                         ⏱️ Duration: {activity.duration_minutes} mins
                       </p>
-                      {activity.soil_moisture_before && (
+                      {activity.status && (
                         <p className="text-xs text-blue-600">
-                          🌱 Soil Moisture: {activity.soil_moisture_before}% → {activity.soil_moisture_after || 'N/A'}%
+                          🌱 Status: {activity.status}
                         </p>
                       )}
                       <p className="text-xs text-gray-500">

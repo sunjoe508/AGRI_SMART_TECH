@@ -16,6 +16,12 @@ const AdminManagement = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  const generateAdminToken = (): string => {
+    const array = new Uint8Array(32);
+    crypto.getRandomValues(array);
+    return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+  };
+
   const sendAdminInvite = async () => {
     if (!inviteEmail) {
       toast({
@@ -38,11 +44,8 @@ const AdminManagement = () => {
 
     setIsLoading(true);
     try {
-      // Generate admin token
-      const { data: tokenData, error: tokenError } = await supabase
-        .rpc('generate_admin_token', { admin_email: inviteEmail });
-
-      if (tokenError) throw tokenError;
+      // Generate admin token locally
+      const tokenData = generateAdminToken();
 
       // Send invitation email
       const { data: emailData, error: emailError } = await supabase.functions.invoke('send-admin-email', {
