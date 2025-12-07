@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import type { SupportTicket } from '@/types/database';
 
 interface CustomerSupportProps {
   user: any;
@@ -33,7 +34,7 @@ const CustomerSupport = ({ user }: CustomerSupportProps) => {
     priority: 'medium'
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [supportTickets, setSupportTickets] = useState([]);
+  const [supportTickets, setSupportTickets] = useState<SupportTicket[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -44,11 +45,11 @@ const CustomerSupport = ({ user }: CustomerSupportProps) => {
 
   const fetchSupportTickets = async () => {
     try {
-      const { data, error } = await supabase
-        .from('support_tickets')
+      const { data, error } = await (supabase
+        .from('support_tickets' as any)
         .select('*')
         .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false }) as any);
 
       if (error) throw error;
       setSupportTickets(data || []);
@@ -69,15 +70,15 @@ const CustomerSupport = ({ user }: CustomerSupportProps) => {
 
     setIsSubmitting(true);
     try {
-      const { error } = await supabase
-        .from('support_tickets')
+      const { error } = await (supabase
+        .from('support_tickets' as any)
         .insert({
           user_id: user.id,
           subject: ticketForm.subject,
           message: ticketForm.message,
           priority: ticketForm.priority,
           status: 'open'
-        });
+        } as any) as any);
 
       if (error) throw error;
 

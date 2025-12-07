@@ -29,20 +29,20 @@ const AdminAuthForm = () => {
 
   const ensureAdminRole = async (userId: string) => {
     try {
-      const { data: existingRole } = await supabase
-        .from('admin_roles')
+      const { data: existingRole } = await (supabase
+        .from('admin_roles' as any)
         .select('*')
         .eq('user_id', userId)
         .eq('role', 'admin')
-        .single();
+        .single() as any);
 
       if (!existingRole) {
-        const { error: roleError } = await supabase
-          .from('admin_roles')
+        const { error: roleError } = await (supabase
+          .from('admin_roles' as any)
           .insert({
             user_id: userId,
             role: 'admin'
-          });
+          } as any) as any);
 
         if (roleError) {
           console.error('Error creating admin role:', roleError);
@@ -116,12 +116,12 @@ const AdminAuthForm = () => {
         
         await ensureAdminRole(data.user.id);
         
-        const { data: adminCheck, error: adminError } = await supabase
-          .from('admin_roles')
+        const { data: adminCheck, error: adminError } = await (supabase
+          .from('admin_roles' as any)
           .select('role')
           .eq('user_id', data.user.id)
           .eq('role', 'admin')
-          .single();
+          .single() as any);
 
         console.log('Admin check result:', adminCheck, adminError);
 
