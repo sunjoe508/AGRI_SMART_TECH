@@ -141,7 +141,7 @@ const AdminAuthForm = () => {
           description: "Successfully signed in to AgriSmart Admin Dashboard",
         });
         
-        navigate('/');
+        navigate('/admin-dashboard');
       }
     } catch (error: any) {
       console.error('Sign in error:', error);
@@ -184,9 +184,9 @@ const AdminAuthForm = () => {
 
   return (
     <div className="space-y-4">
-      <Alert className="border-blue-200 bg-blue-50">
-        <AlertTriangle className="h-4 w-4 text-blue-600" />
-        <AlertDescription className="text-blue-800">
+      <Alert className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/30">
+        <AlertTriangle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+        <AlertDescription className="text-blue-800 dark:text-blue-200">
           <strong>Default Admin:</strong> joemunga329@gmail.com | Password: joe123
         </AlertDescription>
       </Alert>
@@ -194,7 +194,7 @@ const AdminAuthForm = () => {
       <div className="space-y-4 mb-6">
         <Button 
           onClick={signInWithGoogle}
-          className="w-full bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+          className="w-full bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-700"
           disabled={isLoading}
         >
           <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
@@ -208,10 +208,10 @@ const AdminAuthForm = () => {
         
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
+            <span className="w-full border-t dark:border-gray-600" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white px-2 text-muted-foreground">Or continue with email</span>
+            <span className="bg-background px-2 text-muted-foreground">Or continue with email</span>
           </div>
         </div>
       </div>

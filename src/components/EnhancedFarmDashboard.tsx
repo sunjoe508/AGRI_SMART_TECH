@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -34,9 +33,9 @@ const EnhancedFarmDashboard = ({ user }: EnhancedFarmDashboardProps) => {
       if (!user?.id) return null;
 
       const [irrigationResult, sensorResult, profileResult] = await Promise.all([
-        supabase.from('irrigation_logs').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(10),
-        supabase.from('sensor_data').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(50),
-        supabase.from('profiles').select('*').eq('id', user.id).single()
+        supabase.from('irrigation_logs' as any).select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(10) as any,
+        supabase.from('sensor_data' as any).select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(50) as any,
+        supabase.from('profiles' as any).select('*').eq('id', user.id).single() as any
       ]);
 
       const irrigationData = irrigationResult.data || [];
@@ -44,18 +43,18 @@ const EnhancedFarmDashboard = ({ user }: EnhancedFarmDashboardProps) => {
       const profile = profileResult.data;
 
       // Calculate statistics
-      const totalWaterUsed = irrigationData.reduce((sum, log) => sum + (log.water_amount_liters || 0), 0);
+      const totalWaterUsed = irrigationData.reduce((sum: number, log: any) => sum + (log.water_used_liters || 0), 0);
       const avgSoilMoisture = sensorData
-        .filter(s => s.sensor_type === 'soil_moisture')
-        .reduce((sum, s, _, arr) => sum + (s.value / arr.length), 0) || 0;
+        .filter((s: any) => s.soil_moisture)
+        .reduce((sum: number, s: any, _: any, arr: any[]) => sum + ((s.soil_moisture || 0) / arr.length), 0) || 0;
       
       const avgTemperature = sensorData
-        .filter(s => s.sensor_type === 'temperature')
-        .reduce((sum, s, _, arr) => sum + (s.value / arr.length), 0) || 0;
+        .filter((s: any) => s.temperature)
+        .reduce((sum: number, s: any, _: any, arr: any[]) => sum + ((s.temperature || 0) / arr.length), 0) || 0;
 
       const avgHumidity = sensorData
-        .filter(s => s.sensor_type === 'humidity')
-        .reduce((sum, s, _, arr) => sum + (s.value / arr.length), 0) || 0;
+        .filter((s: any) => s.humidity)
+        .reduce((sum: number, s: any, _: any, arr: any[]) => sum + ((s.humidity || 0) / arr.length), 0) || 0;
 
       return {
         totalWaterUsed: Math.round(totalWaterUsed),
@@ -70,34 +69,26 @@ const EnhancedFarmDashboard = ({ user }: EnhancedFarmDashboardProps) => {
       };
     },
     enabled: !!user?.id,
-    refetchInterval: 10000 // Update every 10 seconds
+    refetchInterval: 10000
   });
 
   const getSystemHealthScore = () => {
     if (!dashboardStats) return 0;
     
     let score = 0;
-    
-    // Water usage efficiency (0-30 points)
     if (dashboardStats.totalWaterUsed > 0) score += 30;
-    
-    // Sensor activity (0-25 points)  
     if (dashboardStats.totalSensorReadings > 10) score += 25;
-    
-    // Soil moisture optimal range (0-25 points)
     if (dashboardStats.avgSoilMoisture >= 40 && dashboardStats.avgSoilMoisture <= 70) score += 25;
-    
-    // Temperature range (0-20 points)
     if (dashboardStats.avgTemperature >= 18 && dashboardStats.avgTemperature <= 30) score += 20;
     
     return Math.min(score, 100);
   };
 
   const getHealthStatus = (score: number) => {
-    if (score >= 80) return { label: 'Excellent', color: 'text-green-600', bgColor: 'bg-green-100' };
-    if (score >= 60) return { label: 'Good', color: 'text-blue-600', bgColor: 'bg-blue-100' };
-    if (score >= 40) return { label: 'Fair', color: 'text-yellow-600', bgColor: 'bg-yellow-100' };
-    return { label: 'Needs Attention', color: 'text-red-600', bgColor: 'bg-red-100' };
+    if (score >= 80) return { label: 'Excellent', color: 'text-green-600 dark:text-green-400', bgColor: 'bg-green-100 dark:bg-green-900' };
+    if (score >= 60) return { label: 'Good', color: 'text-blue-600 dark:text-blue-400', bgColor: 'bg-blue-100 dark:bg-blue-900' };
+    if (score >= 40) return { label: 'Fair', color: 'text-yellow-600 dark:text-yellow-400', bgColor: 'bg-yellow-100 dark:bg-yellow-900' };
+    return { label: 'Needs Attention', color: 'text-red-600 dark:text-red-400', bgColor: 'bg-red-100 dark:bg-red-900' };
   };
 
   if (isLoading) {
@@ -105,10 +96,10 @@ const EnhancedFarmDashboard = ({ user }: EnhancedFarmDashboardProps) => {
       <div className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[...Array(4)].map((_, i) => (
-            <Card key={i} className="animate-pulse">
+            <Card key={i} className="animate-pulse bg-card">
               <CardContent className="p-6">
-                <div className="h-8 bg-gray-200 rounded mb-4"></div>
-                <div className="h-6 bg-gray-200 rounded"></div>
+                <div className="h-8 bg-muted rounded mb-4"></div>
+                <div className="h-6 bg-muted rounded"></div>
               </CardContent>
             </Card>
           ))}
@@ -124,14 +115,14 @@ const EnhancedFarmDashboard = ({ user }: EnhancedFarmDashboardProps) => {
     <div className="space-y-6">
       {/* Farm Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 border-blue-200">
+        <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 border-blue-200 dark:border-blue-800">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-blue-600 font-medium">Water Used Today</p>
-                <p className="text-2xl font-bold text-blue-700">{dashboardStats?.totalWaterUsed || 0}L</p>
+                <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">Water Used Today</p>
+                <p className="text-2xl font-bold text-foreground">{dashboardStats?.totalWaterUsed || 0}L</p>
               </div>
-              <Droplets className="w-8 h-8 text-blue-600" />
+              <Droplets className="w-8 h-8 text-blue-600 dark:text-blue-400" />
             </div>
             <div className="mt-2">
               <Badge variant="secondary" className="text-xs">
@@ -141,14 +132,14 @@ const EnhancedFarmDashboard = ({ user }: EnhancedFarmDashboardProps) => {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
+        <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200 dark:border-green-800">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-green-600 font-medium">Soil Moisture</p>
-                <p className="text-2xl font-bold text-green-700">{dashboardStats?.avgSoilMoisture || 0}%</p>
+                <p className="text-sm text-green-600 dark:text-green-400 font-medium">Soil Moisture</p>
+                <p className="text-2xl font-bold text-foreground">{dashboardStats?.avgSoilMoisture || 0}%</p>
               </div>
-              <Gauge className="w-8 h-8 text-green-600" />
+              <Gauge className="w-8 h-8 text-green-600 dark:text-green-400" />
             </div>
             <div className="mt-2">
               <Progress value={dashboardStats?.avgSoilMoisture || 0} className="h-2" />
@@ -156,14 +147,14 @@ const EnhancedFarmDashboard = ({ user }: EnhancedFarmDashboardProps) => {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-orange-50 to-red-50 border-orange-200">
+        <Card className="bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-950 dark:to-red-950 border-orange-200 dark:border-orange-800">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-orange-600 font-medium">Temperature</p>
-                <p className="text-2xl font-bold text-orange-700">{dashboardStats?.avgTemperature || 0}°C</p>
+                <p className="text-sm text-orange-600 dark:text-orange-400 font-medium">Temperature</p>
+                <p className="text-2xl font-bold text-foreground">{dashboardStats?.avgTemperature || 0}°C</p>
               </div>
-              <Thermometer className="w-8 h-8 text-orange-600" />
+              <Thermometer className="w-8 h-8 text-orange-600 dark:text-orange-400" />
             </div>
             <div className="mt-2">
               <Badge 
@@ -176,14 +167,14 @@ const EnhancedFarmDashboard = ({ user }: EnhancedFarmDashboardProps) => {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200">
+        <Card className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950 dark:to-pink-950 border-purple-200 dark:border-purple-800">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-purple-600 font-medium">System Health</p>
-                <p className="text-2xl font-bold text-purple-700">{healthScore}%</p>
+                <p className="text-sm text-purple-600 dark:text-purple-400 font-medium">System Health</p>
+                <p className="text-2xl font-bold text-foreground">{healthScore}%</p>
               </div>
-              <Activity className="w-8 h-8 text-purple-600" />
+              <Activity className="w-8 h-8 text-purple-600 dark:text-purple-400" />
             </div>
             <div className="mt-2">
               <Badge className={`text-xs ${healthStatus.bgColor} ${healthStatus.color}`}>
@@ -196,7 +187,7 @@ const EnhancedFarmDashboard = ({ user }: EnhancedFarmDashboardProps) => {
 
       {/* Main Dashboard Content */}
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-5 bg-muted">
           <TabsTrigger value="overview">Farm Overview</TabsTrigger>
           <TabsTrigger value="weather">Weather</TabsTrigger>
           <TabsTrigger value="sensors">Sensors</TabsTrigger>
@@ -207,70 +198,70 @@ const EnhancedFarmDashboard = ({ user }: EnhancedFarmDashboardProps) => {
         <TabsContent value="overview" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Farm Info */}
-            <Card>
+            <Card className="bg-card">
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Leaf className="w-5 h-5 text-green-600" />
+                <CardTitle className="flex items-center space-x-2 text-foreground">
+                  <Leaf className="w-5 h-5 text-green-600 dark:text-green-400" />
                   <span>Farm Information</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Farm Name:</span>
-                    <span className="font-medium">{dashboardStats?.profile?.farm_name || 'N/A'}</span>
+                    <span className="text-muted-foreground">Farm Name:</span>
+                    <span className="font-medium text-foreground">{dashboardStats?.profile?.farm_name || 'N/A'}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Location:</span>
-                    <span className="font-medium">{dashboardStats?.profile?.county}, {dashboardStats?.profile?.ward}</span>
+                    <span className="text-muted-foreground">Location:</span>
+                    <span className="font-medium text-foreground">{dashboardStats?.profile?.county || 'N/A'}, {dashboardStats?.profile?.ward || ''}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Farm Size:</span>
-                    <span className="font-medium">{dashboardStats?.profile?.farm_size_acres} acres</span>
+                    <span className="text-muted-foreground">Farm Size:</span>
+                    <span className="font-medium text-foreground">{dashboardStats?.profile?.farm_size_acres || 'N/A'} acres</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Crop Types:</span>
-                    <span className="font-medium">{dashboardStats?.profile?.crop_types?.join(', ') || 'N/A'}</span>
+                    <span className="text-muted-foreground">Crop Types:</span>
+                    <span className="font-medium text-foreground">{dashboardStats?.profile?.crop_types?.join(', ') || 'N/A'}</span>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             {/* Recent Activity */}
-            <Card>
+            <Card className="bg-card">
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <TrendingUp className="w-5 h-5 text-blue-600" />
+                <CardTitle className="flex items-center space-x-2 text-foreground">
+                  <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                   <span>Recent Activity</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   {dashboardStats?.lastIrrigation ? (
-                    <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg">
-                      <Droplets className="w-5 h-5 text-blue-600" />
+                    <div className="flex items-center space-x-3 p-3 bg-blue-50 dark:bg-blue-950 rounded-lg">
+                      <Droplets className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                       <div>
-                        <p className="font-medium">Last Irrigation</p>
-                        <p className="text-sm text-gray-600">
-                          {dashboardStats.lastIrrigation.zone} - {dashboardStats.lastIrrigation.water_amount_liters}L
+                        <p className="font-medium text-foreground">Last Irrigation</p>
+                        <p className="text-sm text-muted-foreground">
+                          {dashboardStats.lastIrrigation.zone} - {dashboardStats.lastIrrigation.water_used_liters}L
                         </p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-muted-foreground">
                           {new Date(dashboardStats.lastIrrigation.created_at).toLocaleString()}
                         </p>
                       </div>
                     </div>
                   ) : (
-                    <div className="text-center text-gray-500 py-4">
+                    <div className="text-center text-muted-foreground py-4">
                       <AlertTriangle className="w-8 h-8 mx-auto mb-2" />
                       <p>No recent irrigation data</p>
                     </div>
                   )}
                   
-                  <div className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
-                    <Activity className="w-5 h-5 text-green-600" />
+                  <div className="flex items-center space-x-3 p-3 bg-green-50 dark:bg-green-950 rounded-lg">
+                    <Activity className="w-5 h-5 text-green-600 dark:text-green-400" />
                     <div>
-                      <p className="font-medium">Sensor Readings</p>
-                      <p className="text-sm text-gray-600">{dashboardStats?.totalSensorReadings || 0} readings today</p>
+                      <p className="font-medium text-foreground">Sensor Readings</p>
+                      <p className="text-sm text-muted-foreground">{dashboardStats?.totalSensorReadings || 0} readings today</p>
                     </div>
                   </div>
                 </div>
@@ -292,19 +283,19 @@ const EnhancedFarmDashboard = ({ user }: EnhancedFarmDashboardProps) => {
         </TabsContent>
 
         <TabsContent value="analytics">
-          <Card>
+          <Card className="bg-card">
             <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <BarChart3 className="w-5 h-5 text-purple-600" />
+              <CardTitle className="flex items-center space-x-2 text-foreground">
+                <BarChart3 className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                 <span>Farm Analytics</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
-                  <h3 className="font-semibold">Irrigation Efficiency</h3>
+                  <h3 className="font-semibold text-foreground">Irrigation Efficiency</h3>
                   <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
+                    <div className="flex justify-between text-sm text-muted-foreground">
                       <span>Water Usage</span>
                       <span>{dashboardStats?.totalWaterUsed || 0}L</span>
                     </div>
@@ -313,20 +304,20 @@ const EnhancedFarmDashboard = ({ user }: EnhancedFarmDashboardProps) => {
                 </div>
                 
                 <div className="space-y-4">
-                  <h3 className="font-semibold">Environmental Conditions</h3>
+                  <h3 className="font-semibold text-foreground">Environmental Conditions</h3>
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm">Soil Moisture</span>
+                      <span className="text-sm text-muted-foreground">Soil Moisture</span>
                       <Badge variant={dashboardStats?.avgSoilMoisture >= 40 ? "default" : "destructive"}>
                         {dashboardStats?.avgSoilMoisture || 0}%
                       </Badge>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm">Temperature</span>
+                      <span className="text-sm text-muted-foreground">Temperature</span>
                       <Badge variant="secondary">{dashboardStats?.avgTemperature || 0}°C</Badge>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm">Humidity</span>
+                      <span className="text-sm text-muted-foreground">Humidity</span>
                       <Badge variant="outline">{dashboardStats?.avgHumidity || 0}%</Badge>
                     </div>
                   </div>

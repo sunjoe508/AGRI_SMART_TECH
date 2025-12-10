@@ -50,18 +50,12 @@ const DemoDataGenerator = ({ user, onDataGenerated }: DemoDataGeneratorProps) =>
     { name: 'Nutrient Sensor F1', type: 'nutrients', ip: '192.168.1.106', zone: 'Main Field' }
   ];
 
-  const sampleVendors = [
-    { name: 'AgriSupply Kenya Ltd', phone: '+254720123456', email: 'info@agrisupply.co.ke', location: 'Nairobi', specialization: ['Seeds', 'Fertilizers'], rating: 4.8 },
-    { name: 'Green Valley Supplies', phone: '+254731234567', email: 'sales@greenvalley.co.ke', location: 'Nakuru', specialization: ['Irrigation Equipment'], rating: 4.6 },
-    { name: 'Farm Tech Solutions', phone: '+254742345678', email: 'orders@farmtech.co.ke', location: 'Eldoret', specialization: ['Sensors', 'Technology'], rating: 4.9 }
-  ];
-
   const generateProfile = async () => {
     try {
       const profile = sampleProfiles[0];
-      const { error } = await supabase
-        .from('profiles')
-        .upsert(profile, { onConflict: 'id' });
+      const { error } = await (supabase
+        .from('profiles' as any)
+        .upsert(profile as any, { onConflict: 'id' }) as any);
 
       if (error) throw error;
       setGeneratedData(prev => [...prev, '✅ User Profile']);
@@ -70,84 +64,27 @@ const DemoDataGenerator = ({ user, onDataGenerated }: DemoDataGeneratorProps) =>
     }
   };
 
-  const generateSensors = async () => {
-    try {
-      for (const sensor of sampleSensors) {
-        const { error } = await supabase
-          .from('registered_sensors')
-          .insert({
-            user_id: user.id,
-            name: sensor.name,
-            ip_address: sensor.ip,
-            sensor_type: sensor.type,
-            location_zone: sensor.zone,
-            status: 'online',
-            last_ping: new Date().toISOString()
-          });
-
-        if (error && !error.message.includes('duplicate')) {
-          console.error('Sensor error:', error);
-        }
-      }
-      setGeneratedData(prev => [...prev, '✅ Registered Sensors']);
-    } catch (error) {
-      console.error('Sensors error:', error);
-    }
-  };
-
   const generateSensorData = async () => {
     try {
       const now = new Date();
-      for (let i = 0; i < 48; i++) { // Last 24 hours, every 30 minutes
+      for (let i = 0; i < 10; i++) {
         const timestamp = new Date(now.getTime() - i * 30 * 60 * 1000);
         
         for (const sensor of sampleSensors) {
-          let value: number;
-          let unit: string;
-
-          switch (sensor.type) {
-            case 'soil_moisture':
-              value = 45 + Math.random() * 30 + Math.sin(i / 8) * 10;
-              unit = '%';
-              break;
-            case 'temperature':
-              value = 20 + Math.random() * 10 + Math.sin(i / 6) * 5;
-              unit = '°C';
-              break;
-            case 'humidity':
-              value = 50 + Math.random() * 30 + Math.cos(i / 10) * 15;
-              unit = '%';
-              break;
-            case 'ph':
-              value = 6.0 + Math.random() * 2;
-              unit = 'pH';
-              break;
-            case 'light_intensity':
-              value = Math.max(0, 30000 + Math.random() * 40000 - Math.abs(Math.sin(i / 12)) * 25000);
-              unit = 'lux';
-              break;
-            case 'nutrients':
-              value = 300 + Math.random() * 300;
-              unit = 'ppm';
-              break;
-            default:
-              value = Math.random() * 100;
-              unit = '';
-          }
-
-          await supabase
-            .from('sensor_data')
+          await (supabase
+            .from('sensor_data' as any)
             .insert({
               user_id: user.id,
-              sensor_type: sensor.type,
-              value: Number(value.toFixed(1)),
-              unit: unit,
-              location_zone: sensor.zone,
+              sensor_id: sensor.name,
+              temperature: 20 + Math.random() * 10,
+              humidity: 50 + Math.random() * 30,
+              soil_moisture: 45 + Math.random() * 30,
+              ph_level: 6.0 + Math.random() * 2,
               created_at: timestamp.toISOString()
-            });
+            } as any) as any);
         }
       }
-      setGeneratedData(prev => [...prev, '✅ Sensor Data (48 hours)']);
+      setGeneratedData(prev => [...prev, '✅ Sensor Data']);
     } catch (error) {
       console.error('Sensor data error:', error);
     }
@@ -159,82 +96,23 @@ const DemoDataGenerator = ({ user, onDataGenerated }: DemoDataGeneratorProps) =>
       const now = new Date();
       
       for (let i = 0; i < 10; i++) {
-        const timestamp = new Date(now.getTime() - i * 12 * 60 * 60 * 1000); // Every 12 hours
+        const timestamp = new Date(now.getTime() - i * 12 * 60 * 60 * 1000);
         const zone = zones[Math.floor(Math.random() * zones.length)];
         
-        await supabase
-          .from('irrigation_logs')
+        await (supabase
+          .from('irrigation_logs' as any)
           .insert({
             user_id: user.id,
             zone: zone,
-            duration_minutes: 20 + Math.random() * 60,
-            water_amount_liters: 50 + Math.random() * 200,
-            soil_moisture_before: 30 + Math.random() * 30,
-            soil_moisture_after: 60 + Math.random() * 25,
-            temperature: 20 + Math.random() * 10,
-            humidity: 50 + Math.random() * 30,
+            duration_minutes: 20 + Math.floor(Math.random() * 60),
+            water_used_liters: 50 + Math.random() * 200,
+            status: 'completed',
             created_at: timestamp.toISOString()
-          });
+          } as any) as any);
       }
       setGeneratedData(prev => [...prev, '✅ Irrigation Logs']);
     } catch (error) {
       console.error('Irrigation error:', error);
-    }
-  };
-
-  const generateVendorsAndProducts = async () => {
-    try {
-      const vendorIds: string[] = [];
-      
-      // Insert vendors
-      for (const vendor of sampleVendors) {
-        const { data, error } = await supabase
-          .from('vendors')
-          .insert({
-            name: vendor.name,
-            contact_phone: vendor.phone,
-            contact_email: vendor.email,
-            location: vendor.location,
-            specialization: vendor.specialization,
-            rating: vendor.rating
-          })
-          .select('id')
-          .single();
-
-        if (error && !error.message.includes('duplicate')) {
-          console.error('Vendor error:', error);
-        } else if (data) {
-          vendorIds.push(data.id);
-        }
-      }
-
-      // Insert products for each vendor
-      const products = [
-        { name: 'Hybrid Maize Seeds', category: 'Seeds', price: 850, stock: 500, unit: 'kg' },
-        { name: 'NPK Fertilizer 17-17-17', category: 'Fertilizers', price: 4200, stock: 200, unit: '50kg bag' },
-        { name: 'Drip Irrigation Kit', category: 'Irrigation', price: 15500, stock: 50, unit: 'set' },
-        { name: 'Soil Moisture Sensor Pro', category: 'Technology', price: 8900, stock: 25, unit: 'piece' },
-        { name: 'Organic Compost', category: 'Fertilizers', price: 1200, stock: 300, unit: '20kg bag' }
-      ];
-
-      for (let i = 0; i < vendorIds.length && i < products.length; i++) {
-        await supabase
-          .from('vendor_products')
-          .insert({
-            vendor_id: vendorIds[i],
-            product_name: products[i].name,
-            category: products[i].category,
-            price: products[i].price,
-            stock_quantity: products[i].stock,
-            unit: products[i].unit,
-            description: `High quality ${products[i].name.toLowerCase()}`,
-            image_url: '/placeholder.svg'
-          });
-      }
-      
-      setGeneratedData(prev => [...prev, '✅ Vendors & Products']);
-    } catch (error) {
-      console.error('Vendors error:', error);
     }
   };
 
@@ -248,8 +126,8 @@ const DemoDataGenerator = ({ user, onDataGenerated }: DemoDataGeneratorProps) =>
 
       for (let i = 0; i < tickets.length; i++) {
         const timestamp = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
-        await supabase
-          .from('support_tickets')
+        await (supabase
+          .from('support_tickets' as any)
           .insert({
             user_id: user.id,
             subject: tickets[i].subject,
@@ -257,7 +135,7 @@ const DemoDataGenerator = ({ user, onDataGenerated }: DemoDataGeneratorProps) =>
             priority: tickets[i].priority,
             status: tickets[i].status,
             created_at: timestamp.toISOString()
-          });
+          } as any) as any);
       }
       setGeneratedData(prev => [...prev, '✅ Support Tickets']);
     } catch (error) {
@@ -265,260 +143,47 @@ const DemoDataGenerator = ({ user, onDataGenerated }: DemoDataGeneratorProps) =>
     }
   };
 
-  const generateDailyReports = async () => {
+  const generateOrders = async () => {
     try {
-      const today = new Date();
-      const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
-
-      await supabase
-        .from('daily_reports')
-        .insert({
-          user_id: user.id,
-          report_date: today.toISOString().split('T')[0],
-          irrigation_summary: {
-            total_water_used: 270.5,
-            irrigation_cycles: 3,
-            zones_irrigated: ['Zone A', 'Zone B', 'Greenhouse 1'],
-            efficiency_score: 87
-          },
-          weather_summary: {
-            avg_temperature: 24.8,
-            humidity: 68.3,
-            rainfall: 0,
-            wind_speed: 12.5,
-            conditions: 'Sunny'
-          },
-          sensor_summary: {
-            soil_moisture_avg: 63.7,
-            ph_level: 6.8,
-            nutrient_status: 'Good',
-            sensors_online: 6
-          },
-          crop_suggestions: ['Consider intercropping with legumes', 'Monitor for pest activity'],
-          recommendations: ['Increase irrigation frequency', 'Apply organic fertilizer next week']
-        });
-
-      await supabase
-        .from('daily_reports')
-        .insert({
-          user_id: user.id,
-          report_date: yesterday.toISOString().split('T')[0],
-          irrigation_summary: {
-            total_water_used: 195.2,
-            irrigation_cycles: 2,
-            zones_irrigated: ['Zone A', 'Field 1'],
-            efficiency_score: 91
-          },
-          weather_summary: {
-            avg_temperature: 22.1,
-            humidity: 75.8,
-            rainfall: 2.5,
-            wind_speed: 8.2,
-            conditions: 'Partly Cloudy'
-          },
-          sensor_summary: {
-            soil_moisture_avg: 71.2,
-            ph_level: 6.9,
-            nutrient_status: 'Excellent',
-            sensors_online: 6
-          },
-          crop_suggestions: ['Good conditions for planting', 'Consider succession planting'],
-          recommendations: ['Reduce irrigation due to rainfall', 'Monitor soil drainage']
-        });
-
-      setGeneratedData(prev => [...prev, '✅ Daily Reports']);
-    } catch (error) {
-      console.error('Daily reports error:', error);
-    }
-  };
-
-  const generateFarmRecords = async () => {
-    try {
-      const recordTypes = ['planting', 'harvesting', 'fertilizing', 'pest_control', 'irrigation', 'maintenance'];
-      const cropTypes = ['Maize', 'Beans', 'Tomatoes', 'Onions', 'Carrots', 'Lettuce'];
-      const zones = ['Field A', 'Field B', 'Greenhouse 1', 'Zone A', 'Zone B', 'Main Field'];
-      const now = new Date();
-
-      for (let i = 0; i < 15; i++) {
-        const recordDate = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000); // Weekly records
-        const recordType = recordTypes[Math.floor(Math.random() * recordTypes.length)];
-        const cropType = cropTypes[Math.floor(Math.random() * cropTypes.length)];
-        const zone = zones[Math.floor(Math.random() * zones.length)];
-
-        let cost = 0;
-        let quantity = null;
-        let unit = null;
-        let area_size = Math.random() * 5 + 1; // 1-6 acres
-
-        switch (recordType) {
-          case 'planting':
-            cost = Math.random() * 5000 + 2000; // Seeds cost
-            quantity = Math.random() * 50 + 10;
-            unit = 'kg';
-            break;
-          case 'harvesting':
-            quantity = Math.random() * 500 + 100;
-            unit = 'kg';
-            break;
-          case 'fertilizing':
-            cost = Math.random() * 8000 + 3000;
-            quantity = Math.random() * 20 + 5;
-            unit = 'bags';
-            break;
-          case 'pest_control':
-            cost = Math.random() * 3000 + 1000;
-            quantity = Math.random() * 5 + 1;
-            unit = 'liters';
-            break;
-          case 'irrigation':
-            cost = Math.random() * 1000 + 500;
-            break;
-          case 'maintenance':
-            cost = Math.random() * 2000 + 800;
-            break;
-        }
-
-        await supabase
-          .from('farm_records')
-          .insert({
-            user_id: user.id,
-            record_type: recordType,
-            crop_type: cropType,
-            area_size: Number(area_size.toFixed(1)),
-            quantity: quantity ? Number(quantity.toFixed(1)) : null,
-            unit: unit,
-            notes: `${recordType} activity for ${cropType} in ${zone}`,
-            record_date: recordDate.toISOString().split('T')[0],
-            location_zone: zone,
-            cost: Number(cost.toFixed(2))
-          });
-      }
-      setGeneratedData(prev => [...prev, '✅ Farm Records']);
-    } catch (error) {
-      console.error('Farm records error:', error);
-    }
-  };
-
-  const generateFinancialData = async () => {
-    try {
-      const now = new Date();
+      const products = ['Fertilizer NPK', 'Seed Package', 'Irrigation Kit', 'pH Sensor'];
       
-      // Generate transactions
-      const incomeCategories = ['Crop Sales', 'Subsidies', 'Grants', 'Equipment Rental'];
-      const expenseCategories = ['Seeds', 'Fertilizers', 'Labor', 'Equipment', 'Fuel', 'Water'];
-      const paymentMethods = ['Cash', 'Bank Transfer', 'Mobile Money', 'Cheque'];
-
-      // Generate income transactions
-      for (let i = 0; i < 8; i++) {
-        const transactionDate = new Date(now.getTime() - i * 15 * 24 * 60 * 60 * 1000); // Every 15 days
-        const category = incomeCategories[Math.floor(Math.random() * incomeCategories.length)];
-        const amount = Math.random() * 50000 + 10000; // 10k - 60k income
-
-        await supabase
-          .from('financial_transactions')
+      for (let i = 0; i < 5; i++) {
+        await (supabase
+          .from('orders' as any)
           .insert({
             user_id: user.id,
-            transaction_type: 'income',
-            category: category,
-            amount: Number(amount.toFixed(2)),
-            description: `${category} - ${transactionDate.toLocaleDateString()}`,
-            transaction_date: transactionDate.toISOString().split('T')[0],
-            payment_method: paymentMethods[Math.floor(Math.random() * paymentMethods.length)]
-          });
+            product_name: products[Math.floor(Math.random() * products.length)],
+            quantity: 1 + Math.floor(Math.random() * 5),
+            total_amount: 1000 + Math.random() * 5000,
+            status: ['pending', 'completed', 'shipped'][Math.floor(Math.random() * 3)]
+          } as any) as any);
       }
-
-      // Generate expense transactions
-      for (let i = 0; i < 12; i++) {
-        const transactionDate = new Date(now.getTime() - i * 10 * 24 * 60 * 60 * 1000); // Every 10 days
-        const category = expenseCategories[Math.floor(Math.random() * expenseCategories.length)];
-        let amount: number;
-
-        // Different expense ranges by category
-        switch (category) {
-          case 'Seeds':
-          case 'Fertilizers':
-            amount = Math.random() * 8000 + 2000;
-            break;
-          case 'Labor':
-            amount = Math.random() * 15000 + 5000;
-            break;
-          case 'Equipment':
-            amount = Math.random() * 25000 + 5000;
-            break;
-          default:
-            amount = Math.random() * 3000 + 500;
-        }
-
-        await supabase
-          .from('financial_transactions')
-          .insert({
-            user_id: user.id,
-            transaction_type: 'expense',
-            category: category,
-            amount: Number(amount.toFixed(2)),
-            description: `${category} purchase - ${transactionDate.toLocaleDateString()}`,
-            transaction_date: transactionDate.toISOString().split('T')[0],
-            payment_method: paymentMethods[Math.floor(Math.random() * paymentMethods.length)]
-          });
-      }
-
-      // Generate budgets
-      const budgetCategories = ['Seeds', 'Fertilizers', 'Labor', 'Equipment'];
-      const budgetPeriods = ['monthly', 'seasonal', 'yearly'];
-
-      for (let i = 0; i < 4; i++) {
-        const category = budgetCategories[i];
-        const period = budgetPeriods[Math.floor(Math.random() * budgetPeriods.length)];
-        const allocatedAmount = Math.random() * 30000 + 10000;
-        const spentAmount = allocatedAmount * (0.3 + Math.random() * 0.5); // 30-80% spent
-
-        const startDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        const endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 3, 0); // 3 months budget
-
-        await supabase
-          .from('budgets')
-          .insert({
-            user_id: user.id,
-            name: `${category} Budget ${startDate.getFullYear()}`,
-            category: category,
-            allocated_amount: Number(allocatedAmount.toFixed(2)),
-            spent_amount: Number(spentAmount.toFixed(2)),
-            budget_period: period,
-            start_date: startDate.toISOString().split('T')[0],
-            end_date: endDate.toISOString().split('T')[0]
-          });
-      }
-
-      setGeneratedData(prev => [...prev, '✅ Financial Data']);
+      setGeneratedData(prev => [...prev, '✅ Orders']);
     } catch (error) {
-      console.error('Financial data error:', error);
+      console.error('Orders error:', error);
     }
   };
 
-  const generateAllDemoData = async () => {
+  const generateAllData = async () => {
     setIsGenerating(true);
     setGeneratedData([]);
-    
+
     try {
       await generateProfile();
-      await generateSensors();
       await generateSensorData();
       await generateIrrigationLogs();
-      await generateVendorsAndProducts();
       await generateSupportTickets();
-      await generateDailyReports();
-      await generateFarmRecords();
-      await generateFinancialData();
+      await generateOrders();
 
       toast({
         title: "🎉 Demo Data Generated!",
-        description: "Complete sample data has been created for your AgriSmart system",
+        description: "All sample data has been created for testing",
       });
 
       onDataGenerated();
     } catch (error: any) {
       toast({
-        title: "❌ Generation Failed",
+        title: "❌ Generation Error",
         description: error.message,
         variant: "destructive"
       });
@@ -528,103 +193,63 @@ const DemoDataGenerator = ({ user, onDataGenerated }: DemoDataGeneratorProps) =>
   };
 
   return (
-    <Card className="border-2 border-dashed border-emerald-300 bg-emerald-50/50">
+    <Card className="border-dashed border-2 border-primary/30 bg-card/50 backdrop-blur-sm">
       <CardHeader>
-        <CardTitle className="flex items-center space-x-2 text-emerald-800">
-          <Database className="w-5 h-5" />
+        <CardTitle className="flex items-center space-x-2 text-foreground">
+          <Database className="w-5 h-5 text-primary" />
           <span>Demo Data Generator</span>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <p className="text-sm text-gray-600">
-          Generate comprehensive sample data to showcase the full AgriSmart system functionality
+        <p className="text-sm text-muted-foreground">
+          Generate sample data to test all system features including sensors, irrigation, orders, and more.
         </p>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-          <div className="flex items-center space-x-2 p-2 bg-white rounded border">
-            <Users className="w-4 h-4 text-blue-600" />
-            <span>User Profile</span>
-          </div>
-          <div className="flex items-center space-x-2 p-2 bg-white rounded border">
-            <Activity className="w-4 h-4 text-green-600" />
-            <span>6 Sensors</span>
-          </div>
-          <div className="flex items-center space-x-2 p-2 bg-white rounded border">
-            <BarChart3 className="w-4 h-4 text-purple-600" />
-            <span>48h Data</span>
-          </div>
-          <div className="flex items-center space-x-2 p-2 bg-white rounded border">
-            <Droplets className="w-4 h-4 text-cyan-600" />
-            <span>Irrigation</span>
-          </div>
-          <div className="flex items-center space-x-2 p-2 bg-white rounded border">
-            <ShoppingCart className="w-4 h-4 text-orange-600" />
-            <span>Marketplace</span>
-          </div>
-          <div className="flex items-center space-x-2 p-2 bg-white rounded border">
-            <MessageSquare className="w-4 h-4 text-red-600" />
-            <span>Support</span>
-          </div>
-          <div className="flex items-center space-x-2 p-2 bg-white rounded border">
-            <BarChart3 className="w-4 h-4 text-indigo-600" />
-            <span>Reports</span>
-          </div>
-          <div className="flex items-center space-x-2 p-2 bg-white rounded border">
-            <BookOpen className="w-4 h-4 text-yellow-600" />
-            <span>Records</span>
-          </div>
-          <div className="flex items-center space-x-2 p-2 bg-white rounded border">
-            <DollarSign className="w-4 h-4 text-green-600" />
-            <span>Finances</span>
-          </div>
-          <div className="flex items-center space-x-2 p-2 bg-white rounded border">
-            <CheckCircle className="w-4 h-4 text-emerald-600" />
-            <span>Complete</span>
-          </div>
-        </div>
-
-        <Button 
-          onClick={generateAllDemoData} 
-          disabled={isGenerating}
-          className="w-full bg-emerald-600 hover:bg-emerald-700"
-          size="lg"
-        >
-          {isGenerating ? (
-            <>
-              <Database className="w-4 h-4 mr-2 animate-spin" />
-              Generating Demo Data...
-            </>
-          ) : (
-            <>
-              <Database className="w-4 h-4 mr-2" />
-              Generate Complete Demo Data
-            </>
-          )}
-        </Button>
-
         {generatedData.length > 0 && (
-          <div className="grid grid-cols-2 gap-2">
-            {generatedData.map((item, index) => (
-              <Badge key={index} variant="secondary" className="justify-start">
+          <div className="flex flex-wrap gap-2">
+            {generatedData.map((item, i) => (
+              <Badge key={i} variant="secondary" className="text-xs">
                 {item}
               </Badge>
             ))}
           </div>
         )}
 
-        <div className="text-xs text-gray-500 p-3 bg-gray-50 rounded-lg">
-          <strong>What gets generated:</strong>
-          <ul className="list-disc list-inside mt-1 space-y-1">
-            <li>Complete user profile with farm details</li>
-            <li>6 different sensor types with realistic data</li>
-            <li>48 hours of historical sensor readings</li>
-            <li>Irrigation logs and water usage data</li>
-            <li>Vendor marketplace with products</li>
-            <li>Support tickets and daily reports</li>
-            <li>Farm activity records and crop tracking</li>
-            <li>Financial transactions and budget management</li>
-          </ul>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1">
+            <Users className="w-3 h-3" /> Profiles
+          </div>
+          <div className="flex items-center gap-1">
+            <Activity className="w-3 h-3" /> Sensors
+          </div>
+          <div className="flex items-center gap-1">
+            <Droplets className="w-3 h-3" /> Irrigation
+          </div>
+          <div className="flex items-center gap-1">
+            <MessageSquare className="w-3 h-3" /> Tickets
+          </div>
+          <div className="flex items-center gap-1">
+            <ShoppingCart className="w-3 h-3" /> Orders
+          </div>
+          <div className="flex items-center gap-1">
+            <BarChart3 className="w-3 h-3" /> Reports
+          </div>
         </div>
+
+        <Button 
+          onClick={generateAllData}
+          disabled={isGenerating}
+          className="w-full"
+        >
+          {isGenerating ? (
+            <>Generating Demo Data...</>
+          ) : (
+            <>
+              <CheckCircle className="w-4 h-4 mr-2" />
+              Generate All Demo Data
+            </>
+          )}
+        </Button>
       </CardContent>
     </Card>
   );
