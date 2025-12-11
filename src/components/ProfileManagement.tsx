@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, Phone, MapPin, Sprout, Save } from 'lucide-react';
+import { User, Phone, MapPin, Sprout, Save, Navigation, Loader2 } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import ProfilePhotoUpload from './ProfilePhotoUpload';
@@ -25,9 +25,12 @@ const ProfileManagement = ({ user }: ProfileManagementProps) => {
     farm_name: '',
     farm_size_acres: '',
     crop_types: [] as string[],
-    profile_picture_url: ''
+    profile_picture_url: '',
+    latitude: '',
+    longitude: ''
   });
   const [loading, setLoading] = useState(false);
+  const [loadingLocation, setLoadingLocation] = useState(false);
   const { toast } = useToast();
 
   const kenyanCounties = [
@@ -58,15 +61,14 @@ const ProfileManagement = ({ user }: ProfileManagementProps) => {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', user.id)
-        .maybeSingle(); // Use maybeSingle for better error handling
+        .eq('user_id', user.id)
+        .maybeSingle();
 
       if (error) {
         console.error('Profile fetch error:', error);
         throw error;
       }
 
-      // Set profile data or default values if no profile exists
       setProfile({
         full_name: data?.full_name || '',
         phone_number: data?.phone_number || '',
@@ -76,10 +78,11 @@ const ProfileManagement = ({ user }: ProfileManagementProps) => {
         farm_name: data?.farm_name || '',
         farm_size_acres: data?.farm_size_acres ? String(data.farm_size_acres) : '',
         crop_types: data?.crop_types || [],
-        profile_picture_url: (data as any)?.profile_picture_url || ''
+        profile_picture_url: (data as any)?.profile_picture_url || '',
+        latitude: data?.latitude ? String(data.latitude) : '',
+        longitude: data?.longitude ? String(data.longitude) : ''
       });
 
-      // If no profile exists, show helpful message
       if (!data) {
         toast({
           title: "👋 Welcome!",
@@ -89,23 +92,58 @@ const ProfileManagement = ({ user }: ProfileManagementProps) => {
     } catch (error: any) {
       console.error('Profile fetch failed:', error);
       toast({
-        title: "❌ Database Connection Error",
+        title: "Database Connection Error",
         description: `Failed to load profile: ${error.message}`,
         variant: "destructive"
       });
     }
   };
 
+  const getMyLocation = () => {
+    if (!navigator.geolocation) {
+      toast({
+        title: "Geolocation Not Supported",
+        description: "Your browser doesn't support geolocation",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoadingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setProfile(prev => ({
+          ...prev,
+          latitude: position.coords.latitude.toFixed(6),
+          longitude: position.coords.longitude.toFixed(6)
+        }));
+        setLoadingLocation(false);
+        toast({
+          title: "Location Retrieved",
+          description: "Your farm location has been captured successfully",
+        });
+      },
+      (error) => {
+        setLoadingLocation(false);
+        toast({
+          title: "Location Error",
+          description: error.message || "Failed to get your location",
+          variant: "destructive"
+        });
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  };
+
   const updateProfile = async () => {
     setLoading(true);
     try {
-      // Validate required fields
       if (!profile.full_name.trim()) {
         throw new Error('Full name is required');
       }
 
       const profileData = {
-        id: user.id,
+        user_id: user.id,
         full_name: profile.full_name.trim(),
         phone_number: profile.phone_number.trim(),
         county: profile.county,
@@ -114,14 +152,15 @@ const ProfileManagement = ({ user }: ProfileManagementProps) => {
         farm_name: profile.farm_name.trim(),
         farm_size_acres: profile.farm_size_acres ? parseFloat(profile.farm_size_acres) : null,
         crop_types: profile.crop_types,
-        profile_picture_url: profile.profile_picture_url,
+        latitude: profile.latitude ? parseFloat(profile.latitude) : null,
+        longitude: profile.longitude ? parseFloat(profile.longitude) : null,
         updated_at: new Date().toISOString()
       };
 
       const { data, error } = await supabase
         .from('profiles')
         .upsert(profileData, { 
-          onConflict: 'id',
+          onConflict: 'user_id',
           ignoreDuplicates: false 
         })
         .select()
@@ -132,10 +171,9 @@ const ProfileManagement = ({ user }: ProfileManagementProps) => {
         throw error;
       }
 
-      // Verify the update was successful
       if (data) {
         toast({
-          title: "✅ Profile Updated Successfully",
+          title: "Profile Updated Successfully",
           description: "Your profile has been saved to the database",
         });
       } else {
@@ -144,7 +182,7 @@ const ProfileManagement = ({ user }: ProfileManagementProps) => {
     } catch (error: any) {
       console.error('Profile update failed:', error);
       toast({
-        title: "❌ Database Update Failed",
+        title: "Database Update Failed",
         description: `Error: ${error.message}`,
         variant: "destructive"
       });
@@ -173,10 +211,10 @@ const ProfileManagement = ({ user }: ProfileManagementProps) => {
 
   return (
     <div className="space-y-6">
-      <Card className="bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-200">
+      <Card className="bg-card border-border">
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <User className="w-6 h-6 text-green-600" />
+          <CardTitle className="flex items-center space-x-2 text-foreground">
+            <User className="w-6 h-6 text-primary" />
             <span>Profile Management</span>
           </CardTitle>
         </CardHeader>
@@ -185,7 +223,7 @@ const ProfileManagement = ({ user }: ProfileManagementProps) => {
           <div className="text-center space-y-4">
             <Avatar className="w-24 h-24 mx-auto">
               <AvatarImage src={profile.profile_picture_url} />
-              <AvatarFallback className="bg-green-100 text-green-600 text-xl">
+              <AvatarFallback className="bg-primary/10 text-primary text-xl">
                 {profile.full_name ? profile.full_name.split(' ').map(n => n[0]).join('') : 'U'}
               </AvatarFallback>
             </Avatar>
@@ -199,31 +237,32 @@ const ProfileManagement = ({ user }: ProfileManagementProps) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Personal Information */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-green-800 flex items-center">
-                <User className="w-5 h-5 mr-2" />
+              <h3 className="text-lg font-semibold text-foreground flex items-center">
+                <User className="w-5 h-5 mr-2 text-primary" />
                 Personal Information
               </h3>
               
               <div className="space-y-2">
-                <Label htmlFor="full_name">Full Name</Label>
+                <Label htmlFor="full_name" className="text-foreground">Full Name</Label>
                 <Input
                   id="full_name"
                   value={profile.full_name}
                   onChange={(e) => setProfile(prev => ({ ...prev, full_name: e.target.value }))}
                   placeholder="John Doe"
+                  className="bg-background text-foreground"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
+                <Label htmlFor="phone" className="text-foreground">Phone Number</Label>
                 <div className="relative">
-                  <Phone className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+                  <Phone className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
                   <Input
                     id="phone"
                     value={profile.phone_number}
                     onChange={(e) => setProfile(prev => ({ ...prev, phone_number: e.target.value }))}
                     placeholder="+254700000000"
-                    className="pl-10"
+                    className="pl-10 bg-background text-foreground"
                   />
                 </div>
               </div>
@@ -231,15 +270,15 @@ const ProfileManagement = ({ user }: ProfileManagementProps) => {
 
             {/* Location Information */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-green-800 flex items-center">
-                <MapPin className="w-5 h-5 mr-2" />
+              <h3 className="text-lg font-semibold text-foreground flex items-center">
+                <MapPin className="w-5 h-5 mr-2 text-primary" />
                 Location Details
               </h3>
 
               <div className="space-y-2">
-                <Label htmlFor="county">County</Label>
+                <Label htmlFor="county" className="text-foreground">County</Label>
                 <Select value={profile.county} onValueChange={(value) => setProfile(prev => ({ ...prev, county: value }))}>
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-background text-foreground">
                     <SelectValue placeholder="Select county" />
                   </SelectTrigger>
                   <SelectContent>
@@ -251,59 +290,127 @@ const ProfileManagement = ({ user }: ProfileManagementProps) => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="sub_county">Sub County</Label>
+                <Label htmlFor="sub_county" className="text-foreground">Sub County</Label>
                 <Input
                   id="sub_county"
                   value={profile.sub_county}
                   onChange={(e) => setProfile(prev => ({ ...prev, sub_county: e.target.value }))}
                   placeholder="Enter sub county"
+                  className="bg-background text-foreground"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="ward">Ward</Label>
+                <Label htmlFor="ward" className="text-foreground">Ward</Label>
                 <Input
                   id="ward"
                   value={profile.ward}
                   onChange={(e) => setProfile(prev => ({ ...prev, ward: e.target.value }))}
                   placeholder="Enter ward"
+                  className="bg-background text-foreground"
                 />
               </div>
             </div>
           </div>
 
+          {/* GPS Coordinates Section */}
+          <div className="space-y-4 p-4 border border-border rounded-lg bg-muted/30">
+            <h3 className="text-lg font-semibold text-foreground flex items-center">
+              <Navigation className="w-5 h-5 mr-2 text-primary" />
+              Farm GPS Coordinates
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              Add your exact farm location for accurate mapping. Click the button below to automatically detect your location.
+            </p>
+            
+            <Button 
+              onClick={getMyLocation} 
+              variant="outline" 
+              disabled={loadingLocation}
+              className="w-full md:w-auto"
+            >
+              {loadingLocation ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Getting Location...
+                </>
+              ) : (
+                <>
+                  <Navigation className="w-4 h-4 mr-2" />
+                  Get My Location
+                </>
+              )}
+            </Button>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="latitude" className="text-foreground">Latitude</Label>
+                <Input
+                  id="latitude"
+                  type="number"
+                  step="0.000001"
+                  value={profile.latitude}
+                  onChange={(e) => setProfile(prev => ({ ...prev, latitude: e.target.value }))}
+                  placeholder="-1.2921"
+                  className="bg-background text-foreground"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="longitude" className="text-foreground">Longitude</Label>
+                <Input
+                  id="longitude"
+                  type="number"
+                  step="0.000001"
+                  value={profile.longitude}
+                  onChange={(e) => setProfile(prev => ({ ...prev, longitude: e.target.value }))}
+                  placeholder="36.8219"
+                  className="bg-background text-foreground"
+                />
+              </div>
+            </div>
+            
+            {profile.latitude && profile.longitude && (
+              <Badge variant="outline" className="bg-primary/10 text-primary">
+                <MapPin className="w-3 h-3 mr-1" />
+                Location set: {profile.latitude}, {profile.longitude}
+              </Badge>
+            )}
+          </div>
+
           {/* Farm Information */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-green-800 flex items-center">
-              <Sprout className="w-5 h-5 mr-2" />
+            <h3 className="text-lg font-semibold text-foreground flex items-center">
+              <Sprout className="w-5 h-5 mr-2 text-primary" />
               Farm Information
             </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="farm_name">Farm Name</Label>
+                <Label htmlFor="farm_name" className="text-foreground">Farm Name</Label>
                 <Input
                   id="farm_name"
                   value={profile.farm_name}
                   onChange={(e) => setProfile(prev => ({ ...prev, farm_name: e.target.value }))}
                   placeholder="Green Valley Farm"
+                  className="bg-background text-foreground"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="farm_size">Farm Size (Acres)</Label>
+                <Label htmlFor="farm_size" className="text-foreground">Farm Size (Acres)</Label>
                 <Input
                   id="farm_size"
                   type="number"
                   value={profile.farm_size_acres}
                   onChange={(e) => setProfile(prev => ({ ...prev, farm_size_acres: e.target.value }))}
                   placeholder="10"
+                  className="bg-background text-foreground"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label>Crop Types</Label>
+              <Label className="text-foreground">Crop Types</Label>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                 {cropTypes.map((crop) => (
                   <div key={crop} className="flex items-center space-x-2">
@@ -312,9 +419,9 @@ const ProfileManagement = ({ user }: ProfileManagementProps) => {
                       id={crop}
                       checked={profile.crop_types.includes(crop)}
                       onChange={(e) => handleCropTypeChange(crop, e.target.checked)}
-                      className="rounded border-gray-300"
+                      className="rounded border-border"
                     />
-                    <Label htmlFor={crop} className="text-sm">{crop}</Label>
+                    <Label htmlFor={crop} className="text-sm text-foreground">{crop}</Label>
                   </div>
                 ))}
               </div>
@@ -323,7 +430,7 @@ const ProfileManagement = ({ user }: ProfileManagementProps) => {
             {profile.crop_types.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {profile.crop_types.map((crop) => (
-                  <Badge key={crop} variant="secondary" className="bg-green-100 text-green-800">
+                  <Badge key={crop} variant="secondary" className="bg-primary/10 text-primary">
                     {crop}
                   </Badge>
                 ))}
@@ -333,7 +440,7 @@ const ProfileManagement = ({ user }: ProfileManagementProps) => {
 
           <Button 
             onClick={updateProfile}
-            className="w-full bg-green-600 hover:bg-green-700"
+            className="w-full"
             disabled={loading}
           >
             <Save className="w-4 h-4 mr-2" />

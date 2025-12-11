@@ -15,12 +15,13 @@ import DataVisualization3D from './DataVisualization3D';
 import FuturisticUserCard from './FuturisticUserCard';
 import EnhancedAdminFunctionalities from './EnhancedAdminFunctionalities';
 import RealTimeUserMonitoring from './RealTimeUserMonitoring';
+import FarmersMap from './FarmersMap';
 import SystemAnalytics from './SystemAnalytics';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Brain, Mic, MicOff, Database, Sparkles, Shield, Globe, Cpu, MessageSquare, Users } from 'lucide-react';
+import { Brain, Mic, MicOff, Database, Sparkles, Shield, Globe, Cpu, MessageSquare, Users, Map } from 'lucide-react';
 
 export function UnifiedAdminDashboard() {
   const [searchParams] = useSearchParams();
@@ -606,6 +607,27 @@ export function UnifiedAdminDashboard() {
                 </div>
               </CardContent>
             </Card>
+          </div>
+        );
+      
+      case 'map':
+        return (
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2 text-foreground">
+                  <Map className="w-5 h-5 text-primary" />
+                  <span>Registered Farmers Map</span>
+                  <Badge variant="secondary">{users?.length || 0} Farmers</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground mb-4">
+                  View all registered farmers on the map. Farmers with GPS coordinates will show exact locations.
+                </p>
+              </CardContent>
+            </Card>
+            <FarmersMap farmers={users || []} />
           </div>
         );
       

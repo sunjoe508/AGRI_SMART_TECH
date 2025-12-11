@@ -135,14 +135,14 @@ const FarmersMap: React.FC<FarmersMapProps> = ({ farmers }) => {
   }
 
   return (
-    <Card>
+    <Card className="bg-card border-border">
       <CardHeader>
-        <CardTitle className="flex items-center justify-between">
+        <CardTitle className="flex items-center justify-between text-foreground">
           <div className="flex items-center space-x-2">
-            <MapPin className="w-5 h-5 text-green-600" />
+            <MapPin className="w-5 h-5 text-primary" />
             <span>Registered Farmers Map</span>
           </div>
-          <Badge variant="outline" className="bg-green-100 text-green-800">
+          <Badge variant="outline" className="bg-primary/10 text-primary">
             <Users className="w-4 h-4 mr-1" />
             {farmers.length} Farmers
           </Badge>
@@ -193,17 +193,17 @@ const FarmersMap: React.FC<FarmersMapProps> = ({ farmers }) => {
                 }}
                 onCloseClick={() => setSelectedFarmer(null)}
               >
-                <div className="p-2 min-w-[200px]">
-                  <h3 className="font-bold text-lg text-green-800">
+                <div className="p-2 min-w-[200px] bg-background text-foreground">
+                  <h3 className="font-bold text-lg text-primary">
                     {selectedFarmer.full_name || 'Unknown Farmer'}
                   </h3>
                   {selectedFarmer.farm_name && (
-                    <p className="text-sm text-gray-600 flex items-center">
+                    <p className="text-sm text-muted-foreground flex items-center">
                       <Wheat className="w-3 h-3 mr-1" />
                       {selectedFarmer.farm_name}
                     </p>
                   )}
-                  <div className="mt-2 space-y-1 text-sm">
+                  <div className="mt-2 space-y-1 text-sm text-foreground">
                     {selectedFarmer.county && (
                       <p><strong>County:</strong> {selectedFarmer.county}</p>
                     )}
@@ -224,7 +224,7 @@ const FarmersMap: React.FC<FarmersMapProps> = ({ farmers }) => {
                         <strong>Crops:</strong>
                         <div className="flex flex-wrap gap-1 mt-1">
                           {selectedFarmer.crop_types.map((crop, i) => (
-                            <span key={i} className="px-2 py-0.5 bg-green-100 text-green-800 rounded text-xs">
+                            <span key={i} className="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs">
                               {crop}
                             </span>
                           ))}
@@ -239,27 +239,27 @@ const FarmersMap: React.FC<FarmersMapProps> = ({ farmers }) => {
         </LoadScript>
 
         <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="p-3 bg-green-50 rounded-lg text-center">
-            <p className="text-2xl font-bold text-green-700">{farmers.length}</p>
-            <p className="text-xs text-green-600">Total Farmers</p>
+          <div className="p-3 bg-primary/10 rounded-lg text-center">
+            <p className="text-2xl font-bold text-primary">{farmers.length}</p>
+            <p className="text-xs text-muted-foreground">Total Farmers</p>
           </div>
-          <div className="p-3 bg-blue-50 rounded-lg text-center">
-            <p className="text-2xl font-bold text-blue-700">
+          <div className="p-3 bg-blue-500/10 rounded-lg text-center">
+            <p className="text-2xl font-bold text-blue-500">
               {new Set(farmers.map(f => f.county).filter(Boolean)).size}
             </p>
-            <p className="text-xs text-blue-600">Counties Covered</p>
+            <p className="text-xs text-muted-foreground">Counties Covered</p>
           </div>
-          <div className="p-3 bg-yellow-50 rounded-lg text-center">
-            <p className="text-2xl font-bold text-yellow-700">
+          <div className="p-3 bg-yellow-500/10 rounded-lg text-center">
+            <p className="text-2xl font-bold text-yellow-500">
               {farmers.reduce((sum, f) => sum + (f.farm_size_acres || 0), 0).toFixed(1)}
             </p>
-            <p className="text-xs text-yellow-600">Total Acres</p>
+            <p className="text-xs text-muted-foreground">Total Acres</p>
           </div>
-          <div className="p-3 bg-purple-50 rounded-lg text-center">
-            <p className="text-2xl font-bold text-purple-700">
+          <div className="p-3 bg-purple-500/10 rounded-lg text-center">
+            <p className="text-2xl font-bold text-purple-500">
               {new Set(farmers.flatMap(f => f.crop_types || [])).size}
             </p>
-            <p className="text-xs text-purple-600">Crop Varieties</p>
+            <p className="text-xs text-muted-foreground">Crop Varieties</p>
           </div>
         </div>
       </CardContent>

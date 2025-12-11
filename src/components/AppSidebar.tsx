@@ -19,7 +19,8 @@ import {
   MessageSquare,
   Award,
   Target,
-  LogOut
+  LogOut,
+  Map
 } from "lucide-react";
 import {
   Sidebar,
@@ -63,6 +64,7 @@ export function AppSidebar({ userType, onLogout, userName }: AppSidebarProps) {
 
   const adminNavItems = [
     { title: "User Monitoring", url: "/admin-dashboard?tab=monitoring", icon: Users },
+    { title: "Farmers Map", url: "/admin-dashboard?tab=map", icon: Map },
     { title: "Analytics", url: "/admin-dashboard?tab=analytics", icon: BarChart3 },
     { title: "AI Insights", url: "/admin-dashboard?tab=insights", icon: Brain },
     { title: "Admin Functions", url: "/admin-dashboard?tab=functions", icon: Shield },
