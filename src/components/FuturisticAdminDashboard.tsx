@@ -223,7 +223,7 @@ const FuturisticAdminDashboard = () => {
         supabase.from('irrigation_logs').select('*', { count: 'exact', head: true }),
         supabase.from('sensor_data').select('*', { count: 'exact', head: true }),
         supabase.from('orders').select('*', { count: 'exact', head: true }),
-        supabase.from('kenyan_locations').select('*', { count: 'exact', head: true }),
+        (supabase as any).from('kenyan_locations').select('*', { count: 'exact', head: true }),
         supabase.from('support_tickets').select('*', { count: 'exact', head: true }),
         supabase.from('admin_roles').select('*', { count: 'exact', head: true })
       ]);
@@ -303,9 +303,9 @@ const FuturisticAdminDashboard = () => {
         .limit(100);
 
       // Calculate real insights based on actual database data
-      const totalWaterUsed = recentLogs?.reduce((sum, log) => sum + (log.water_amount_liters || 0), 0) || 0;
-      const avgSoilMoisture = recentSensorData?.filter(s => s.sensor_type === 'soil_moisture')
-        .reduce((sum, s, _, arr) => sum + s.value / arr.length, 0) || 0;
+      const totalWaterUsed = (recentLogs as any[])?.reduce((sum, log) => sum + (log.water_used_liters || 0), 0) || 0;
+      const avgSoilMoisture = (recentSensorData as any[])?.filter(s => s.soil_moisture !== null)
+        .reduce((sum, s, _, arr) => sum + (s.soil_moisture || 0) / arr.length, 0) || 0;
       
       const activeUsers = users?.length || 0;
       const totalSensors = recentSensorData?.length || 0;

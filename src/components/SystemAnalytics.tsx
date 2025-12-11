@@ -80,10 +80,10 @@ const SystemAnalytics = () => {
           .from('orders')
           .select('*')
           .gte('created_at', startDate.toISOString()),
-        supabase
+        (supabase as any)
           .from('registered_sensors')
           .select('*'),
-        supabase
+        (supabase as any)
           .from('kenyan_locations')
           .select('*')
       ]);
@@ -120,7 +120,7 @@ const SystemAnalytics = () => {
           new Date(log.created_at).toDateString() === date.toDateString()
         ) || [];
         
-        const totalWater = dayLogs.reduce((sum, log) => sum + (log.water_amount_liters || 0), 0);
+        const totalWater = dayLogs.reduce((sum, log) => sum + ((log as any).water_used_liters || 0), 0);
         
         irrigationData.push({
           date: date.toLocaleDateString(),
@@ -149,7 +149,7 @@ const SystemAnalytics = () => {
         };
         
         sensorTypes.forEach(type => {
-          const typeData = dayData.filter(d => d.sensor_type === type);
+          const typeData = dayData.filter((d: any) => d.sensor_id === type);
           dataPoint[type] = typeData.length;
         });
         
@@ -183,7 +183,7 @@ const SystemAnalytics = () => {
         averageSessionDuration: irrigationLogs?.length 
           ? Math.round(irrigationLogs.reduce((sum, log) => sum + (log.duration_minutes || 0), 0) / irrigationLogs.length)
           : 0,
-        sensorHealth: registeredSensors?.filter(s => s.status === 'online').length || 0,
+        sensorHealth: (registeredSensors as any[])?.filter(s => s.status === 'online').length || 0,
         totalSensors: registeredSensors?.length || 0,
         supportResolutionRate: supportTickets?.length 
           ? Math.round(((supportTickets.filter(t => t.status === 'resolved' || t.status === 'closed').length) / supportTickets.length) * 100)
@@ -215,7 +215,7 @@ const SystemAnalytics = () => {
           totalSensorReadings: sensorData?.length || 0,
           totalSupportTickets: supportTickets?.length || 0,
           totalOrders: orders?.length || 0,
-          activeSensors: registeredSensors?.filter(s => s.status === 'online').length || 0,
+          activeSensors: (registeredSensors as any[])?.filter(s => s.status === 'online').length || 0,
           totalSensors: registeredSensors?.length || 0
         },
         userGrowthData,

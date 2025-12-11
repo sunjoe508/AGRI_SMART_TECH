@@ -260,9 +260,9 @@ const RealTimeUserMonitoring = () => {
         supabase.from('sensor_data').delete().eq('user_id', userId),
         supabase.from('support_tickets').delete().eq('user_id', userId),
         supabase.from('orders').delete().eq('user_id', userId),
-        supabase.from('registered_sensors').delete().eq('user_id', userId),
-        supabase.from('daily_reports').delete().eq('user_id', userId),
-        supabase.from('otp_messages').delete().eq('user_id', userId)
+        (supabase as any).from('registered_sensors').delete().eq('user_id', userId),
+        (supabase as any).from('daily_reports').delete().eq('user_id', userId),
+        (supabase as any).from('otp_messages').delete().eq('user_id', userId)
       ]);
 
       // Finally delete the profile

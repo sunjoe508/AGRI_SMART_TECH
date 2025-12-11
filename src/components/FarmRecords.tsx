@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { FarmRecord } from "@/types/database";
 import { 
   Plus, 
   Calendar, 
@@ -33,7 +34,7 @@ const FarmRecords = ({ user }: FarmRecordsProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isAdding, setIsAdding] = useState(false);
-  const [editingRecord, setEditingRecord] = useState<any>(null);
+  const [editingRecord, setEditingRecord] = useState<FarmRecord | null>(null);
 
   const [newRecord, setNewRecord] = useState({
     record_type: '',
@@ -51,14 +52,14 @@ const FarmRecords = ({ user }: FarmRecordsProps) => {
   const { data: farmRecords, isLoading } = useQuery({
     queryKey: ['farm-records', user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('farm_records')
         .select('*')
         .eq('user_id', user.id)
         .order('record_date', { ascending: false });
       
       if (error) throw error;
-      return data || [];
+      return (data || []) as FarmRecord[];
     },
     enabled: !!user?.id,
   });
@@ -85,25 +86,25 @@ const FarmRecords = ({ user }: FarmRecordsProps) => {
       };
 
       if (editingRecord) {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from('farm_records')
           .update(recordData)
           .eq('id', editingRecord.id);
         
         if (error) throw error;
         toast({
-          title: "✅ Record Updated",
+          title: "Record Updated",
           description: "Farm record has been successfully updated",
         });
         setEditingRecord(null);
       } else {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from('farm_records')
           .insert([recordData]);
         
         if (error) throw error;
         toast({
-          title: "✅ Record Added",
+          title: "Record Added",
           description: "New farm record has been successfully created",
         });
       }
@@ -124,22 +125,22 @@ const FarmRecords = ({ user }: FarmRecordsProps) => {
       queryClient.invalidateQueries({ queryKey: ['farm-records'] });
     } catch (error: any) {
       toast({
-        title: "❌ Error",
+        title: "Error",
         description: error.message || "Failed to save record",
         variant: "destructive"
       });
     }
   };
 
-  const handleEdit = (record: any) => {
+  const handleEdit = (record: FarmRecord) => {
     setNewRecord({
-      record_type: record.record_type,
+      record_type: record.record_type || '',
       crop_type: record.crop_type || '',
       area_size: record.area_size?.toString() || '',
       quantity: record.quantity?.toString() || '',
       unit: record.unit || '',
       notes: record.notes || '',
-      record_date: record.record_date,
+      record_date: record.record_date || new Date().toISOString().split('T')[0],
       location_zone: record.location_zone || '',
       cost: record.cost?.toString() || ''
     });
@@ -149,20 +150,20 @@ const FarmRecords = ({ user }: FarmRecordsProps) => {
 
   const handleDelete = async (id: string) => {
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('farm_records')
         .delete()
         .eq('id', id);
       
       if (error) throw error;
       toast({
-        title: "✅ Record Deleted",
+        title: "Record Deleted",
         description: "Farm record has been successfully deleted",
       });
       queryClient.invalidateQueries({ queryKey: ['farm-records'] });
     } catch (error: any) {
       toast({
-        title: "❌ Error",
+        title: "Error",
         description: error.message || "Failed to delete record",
         variant: "destructive"
       });
@@ -176,14 +177,14 @@ const FarmRecords = ({ user }: FarmRecordsProps) => {
 
   const getRecordTypeBadgeColor = (type: string) => {
     const colors: Record<string, string> = {
-      planting: 'bg-green-100 text-green-800',
-      harvesting: 'bg-orange-100 text-orange-800',
-      fertilizing: 'bg-blue-100 text-blue-800',
-      pest_control: 'bg-red-100 text-red-800',
-      irrigation: 'bg-cyan-100 text-cyan-800',
-      maintenance: 'bg-gray-100 text-gray-800',
+      planting: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+      harvesting: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
+      fertilizing: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+      pest_control: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+      irrigation: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200',
+      maintenance: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200',
     };
-    return colors[type] || 'bg-gray-100 text-gray-800';
+    return colors[type] || 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
   };
 
   return (
@@ -191,8 +192,8 @@ const FarmRecords = ({ user }: FarmRecordsProps) => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Farm Records</h2>
-          <p className="text-gray-600 dark:text-gray-400">Track your farm activities and maintain detailed records</p>
+          <h2 className="text-2xl font-bold text-foreground">Farm Records</h2>
+          <p className="text-muted-foreground">Track your farm activities and maintain detailed records</p>
         </div>
         <Button 
           onClick={() => setIsAdding(!isAdding)}
@@ -205,9 +206,9 @@ const FarmRecords = ({ user }: FarmRecordsProps) => {
 
       {/* Add/Edit Form */}
       {isAdding && (
-        <Card>
+        <Card className="bg-card">
           <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
+            <CardTitle className="flex items-center space-x-2 text-foreground">
               <FileText className="w-5 h-5" />
               <span>{editingRecord ? 'Edit Record' : 'Add New Record'}</span>
             </CardTitle>
@@ -355,9 +356,9 @@ const FarmRecords = ({ user }: FarmRecordsProps) => {
       )}
 
       {/* Records Table */}
-      <Card>
+      <Card className="bg-card">
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
+          <CardTitle className="flex items-center space-x-2 text-foreground">
             <Calendar className="w-5 h-5" />
             <span>Recent Activities</span>
           </CardTitle>
@@ -383,19 +384,19 @@ const FarmRecords = ({ user }: FarmRecordsProps) => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {farmRecords.map((record: any) => {
-                    const IconComponent = getRecordTypeIcon(record.record_type);
+                  {farmRecords.map((record) => {
+                    const IconComponent = getRecordTypeIcon(record.record_type || '');
                     return (
                       <TableRow key={record.id}>
                         <TableCell>
                           <div className="flex items-center space-x-2">
                             <IconComponent className="w-4 h-4" />
-                            <Badge className={getRecordTypeBadgeColor(record.record_type)}>
+                            <Badge className={getRecordTypeBadgeColor(record.record_type || '')}>
                               {recordTypes.find(rt => rt.value === record.record_type)?.label || record.record_type}
                             </Badge>
                           </div>
                         </TableCell>
-                        <TableCell>{format(new Date(record.record_date), 'MMM dd, yyyy')}</TableCell>
+                        <TableCell>{record.record_date ? format(new Date(record.record_date), 'MMM dd, yyyy') : '-'}</TableCell>
                         <TableCell>{record.crop_type || '-'}</TableCell>
                         <TableCell>
                           {record.area_size ? `${record.area_size} acres` : '-'}
@@ -405,7 +406,7 @@ const FarmRecords = ({ user }: FarmRecordsProps) => {
                            record.quantity ? record.quantity : '-'}
                         </TableCell>
                         <TableCell>
-                          {record.cost > 0 ? `KES ${record.cost.toLocaleString()}` : '-'}
+                          {record.cost && record.cost > 0 ? `KES ${record.cost.toLocaleString()}` : '-'}
                         </TableCell>
                         <TableCell>{record.location_zone || '-'}</TableCell>
                         <TableCell>
@@ -434,8 +435,8 @@ const FarmRecords = ({ user }: FarmRecordsProps) => {
             </div>
           ) : (
             <div className="text-center py-8">
-              <Wheat className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">No farm records yet. Start by adding your first activity!</p>
+              <Wheat className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground">No farm records yet. Start by adding your first activity!</p>
             </div>
           )}
         </CardContent>
