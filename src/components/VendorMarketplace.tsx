@@ -135,7 +135,7 @@ const VendorMarketplace = ({ user }: VendorMarketplaceProps) => {
       const quantity = cart[checkoutProduct.id] || 1;
       const totalAmount = checkoutProduct.price * quantity;
 
-      const vendorResponse = await supabase
+      const vendorResponse = await (supabase as any)
         .from('vendors')
         .select('id')
         .eq('name', checkoutProduct.vendor.name)
