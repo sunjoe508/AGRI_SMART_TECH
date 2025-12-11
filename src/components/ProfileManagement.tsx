@@ -76,7 +76,7 @@ const ProfileManagement = ({ user }: ProfileManagementProps) => {
         farm_name: data?.farm_name || '',
         farm_size_acres: data?.farm_size_acres ? String(data.farm_size_acres) : '',
         crop_types: data?.crop_types || [],
-        profile_picture_url: data?.profile_picture_url || ''
+        profile_picture_url: (data as any)?.profile_picture_url || ''
       });
 
       // If no profile exists, show helpful message

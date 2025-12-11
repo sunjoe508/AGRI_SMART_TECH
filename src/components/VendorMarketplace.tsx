@@ -51,7 +51,7 @@ const VendorMarketplace = ({ user }: VendorMarketplaceProps) => {
 
   const fetchProducts = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('vendor_products')
         .select(`
           id,
@@ -72,7 +72,7 @@ const VendorMarketplace = ({ user }: VendorMarketplaceProps) => {
 
       if (error) throw error;
 
-      const formattedProducts = data.map(item => ({
+      const formattedProducts = (data || []).map((item: any) => ({
         id: item.id,
         product_name: item.product_name,
         category: item.category,
@@ -82,9 +82,9 @@ const VendorMarketplace = ({ user }: VendorMarketplaceProps) => {
         stock_quantity: item.stock_quantity,
         image_url: item.image_url,
         vendor: {
-          name: item.vendors.name,
-          rating: item.vendors.rating,
-          location: item.vendors.location
+          name: item.vendors?.name || 'Unknown',
+          rating: item.vendors?.rating || 0,
+          location: item.vendors?.location || ''
         }
       }));
 

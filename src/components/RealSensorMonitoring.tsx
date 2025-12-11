@@ -64,7 +64,7 @@ const RealSensorMonitoring = ({ user }: RealSensorMonitoringProps) => {
       console.log('Fetching real sensor data for user:', user?.id);
       
       // Fetch real sensor data from registered sensors with error handling
-      const { data: sensors, error: sensorsError } = await supabase
+      const { data: sensors, error: sensorsError } = await (supabase as any)
         .from('registered_sensors')
         .select('*')
         .eq('user_id', user?.id);
@@ -88,7 +88,7 @@ const RealSensorMonitoring = ({ user }: RealSensorMonitoringProps) => {
       const allSensorData: RealSensorData[] = [];
       const errors: string[] = [];
       
-      for (const sensor of sensors as RegisteredSensor[]) {
+      for (const sensor of (sensors as any[]) as RegisteredSensor[]) {
         try {
           if (sensor.status === 'online') {
             // Simulate sensor data for demo purposes since real sensors might not be available
@@ -142,7 +142,7 @@ const RealSensorMonitoring = ({ user }: RealSensorMonitoringProps) => {
           errors.push(`Connection failed: ${sensor.name}`);
           
           // Mark sensor as offline if processing fails
-          await supabase
+          await (supabase as any)
             .from('registered_sensors')
             .update({ 
               status: 'offline',

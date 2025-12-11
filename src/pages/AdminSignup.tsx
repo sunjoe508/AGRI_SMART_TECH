@@ -53,7 +53,7 @@ const AdminSignup = () => {
 
   const validateToken = async (tokenValue: string) => {
     try {
-      const { data, error } = await supabase.rpc('validate_admin_token', {
+      const { data, error } = await (supabase as any).rpc('validate_admin_token', {
         token_value: tokenValue
       });
 

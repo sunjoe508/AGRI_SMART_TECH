@@ -95,7 +95,7 @@ const OTPManager = ({ user }: OTPManagerProps) => {
       const message = messageTemplates[messageType as keyof typeof messageTemplates] || customMessage;
       
       // Save OTP message to database
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('otp_messages')
         .insert({
           user_id: user.id,

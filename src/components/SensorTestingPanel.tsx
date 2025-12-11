@@ -74,7 +74,7 @@ const SensorTestingPanel = ({ user, onDataGenerated }: SensorTestingPanelProps) 
     try {
       // First, register all test sensors
       for (const sensor of testSensors) {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from('registered_sensors')
           .insert({
             user_id: user.id,

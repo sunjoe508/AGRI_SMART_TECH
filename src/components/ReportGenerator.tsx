@@ -206,7 +206,7 @@ const ReportGenerator = ({ user }: ReportGeneratorProps) => {
     pdf.setFontSize(10);
 
     // Safe data calculations
-    const totalWater = irrigationData?.reduce((sum, log) => sum + (Number(log.water_amount_liters) || 0), 0) || 0;
+    const totalWater = (irrigationData as any[])?.reduce((sum, log) => sum + (Number(log.water_used_liters) || 0), 0) || 0;
     const avgDuration = irrigationData?.length ? 
       Math.round(irrigationData.reduce((sum, log) => sum + (Number(log.duration_minutes) || 0), 0) / irrigationData.length) : 0;
 
@@ -244,7 +244,7 @@ const ReportGenerator = ({ user }: ReportGeneratorProps) => {
         const dateText = `${index + 1}. ${new Date(log.created_at).toLocaleDateString()} - Zone: ${log.zone || 'N/A'}`;
         pdf.text(dateText, 25, yPos);
         yPos += 6;
-        const detailText = `   Water: ${log.water_amount_liters || 0}L, Duration: ${log.duration_minutes || 0} min`;
+        const detailText = `   Water: ${(log as any).water_used_liters || 0}L, Duration: ${log.duration_minutes || 0} min`;
         pdf.text(detailText, 25, yPos);
         yPos += 8;
       } catch (error) {
@@ -348,16 +348,16 @@ const ReportGenerator = ({ user }: ReportGeneratorProps) => {
       
       const summary: Record<string, any> = {};
       
-      sensorData.forEach(reading => {
-        const type = reading.sensor_type || 'unknown';
+      (sensorData as any[]).forEach((reading: any) => {
+        const type = reading.sensor_id || 'sensor';
         if (!summary[type]) {
           summary[type] = {
             values: [],
-            unit: reading.unit || '',
+            unit: '',
             count: 0
           };
         }
-        const value = Number(reading.value) || 0;
+        const value = Number(reading.soil_moisture || reading.temperature || reading.humidity || 0);
         summary[type].values.push(value);
         summary[type].count++;
       });
@@ -400,17 +400,16 @@ const ReportGenerator = ({ user }: ReportGeneratorProps) => {
       pdf.save(fileName);
 
       // Record report generation in database for tracking
-      await supabase
+      await (supabase as any)
         .from('daily_reports')
         .insert({
           user_id: user?.id,
           report_date: new Date().toISOString().split('T')[0],
           irrigation_summary: selectedReport === 'irrigation' || selectedReport === 'comprehensive' ? 
-            { total_sessions: irrigationData?.length || 0, total_water: irrigationData?.reduce((sum, log) => sum + (Number(log.water_amount_liters) || 0), 0) || 0 } : null,
+            { total_sessions: irrigationData?.length || 0, total_water: (irrigationData as any[])?.reduce((sum, log) => sum + (Number(log.water_used_liters) || 0), 0) || 0 } : null,
           sensor_summary: selectedReport === 'sensor' || selectedReport === 'comprehensive' ? 
             { total_readings: sensorData?.length || 0, sensor_types: Object.keys(getSensorSummary()).length } : null,
-          recommendations: ['Report generated successfully via PDF export'],
-          sent_at: new Date().toISOString()
+          recommendations: ['Report generated successfully via PDF export']
         });
 
       toast({

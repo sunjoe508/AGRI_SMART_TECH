@@ -52,14 +52,14 @@ const SensorRegistration = ({ user, onSensorUpdate }: SensorRegistrationProps) =
 
   const fetchRegisteredSensors = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('registered_sensors')
         .select('*')
         .eq('user_id', user.id);
 
       if (error) throw error;
       
-      const typedSensors: RegisteredSensor[] = (data || []).map(sensor => ({
+      const typedSensors: RegisteredSensor[] = (data || []).map((sensor: any) => ({
         ...sensor,
         status: sensor.status as 'online' | 'offline'
       }));
@@ -82,7 +82,7 @@ const SensorRegistration = ({ user, onSensorUpdate }: SensorRegistrationProps) =
         
         clearTimeout(timeoutId);
         
-        await supabase
+        await (supabase as any)
           .from('registered_sensors')
           .update({ 
             status: isOnline ? 'online' : 'offline',
@@ -91,7 +91,7 @@ const SensorRegistration = ({ user, onSensorUpdate }: SensorRegistrationProps) =
           .eq('id', sensor.id);
           
       } catch (error) {
-        await supabase
+        await (supabase as any)
           .from('registered_sensors')
           .update({ 
             status: 'offline',
@@ -118,7 +118,7 @@ const SensorRegistration = ({ user, onSensorUpdate }: SensorRegistrationProps) =
     try {
       const status = 'online'; // For testing, assume all manually registered sensors are online
       
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('registered_sensors')
         .insert({
           user_id: user.id,
@@ -162,7 +162,7 @@ const SensorRegistration = ({ user, onSensorUpdate }: SensorRegistrationProps) =
 
   const removeSensor = async (sensorId: string) => {
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('registered_sensors')
         .delete()
         .eq('id', sensorId);
