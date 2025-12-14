@@ -1,8 +1,8 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { GoogleMap, LoadScript, Marker, InfoWindow } from '@react-google-maps/api';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Users, Wheat } from 'lucide-react';
+import { MapPin, Users, Wheat, Loader2 } from 'lucide-react';
 
 interface Farmer {
   id: string;
@@ -24,7 +24,13 @@ interface FarmersMapProps {
 
 const containerStyle = {
   width: '100%',
-  height: '500px'
+  height: '400px'
+};
+
+// Mobile-friendly map height
+const mobileContainerStyle = {
+  width: '100%',
+  height: '300px'
 };
 
 // Kenya center coordinates
@@ -85,8 +91,17 @@ const countyCoordinates: Record<string, { lat: number; lng: number }> = {
 };
 
 const FarmersMap: React.FC<FarmersMapProps> = ({ farmers }) => {
-  const [selectedFarmer, setSelectedFarmer] = React.useState<Farmer | null>(null);
+  const [selectedFarmer, setSelectedFarmer] = useState<Farmer | null>(null);
+  const [isMapLoaded, setIsMapLoaded] = useState(false);
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth < 768);
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+
+  // Handle responsive layout
+  React.useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const farmersWithCoordinates = useMemo(() => {
     return farmers.map((farmer, index) => {
@@ -136,24 +151,35 @@ const FarmersMap: React.FC<FarmersMapProps> = ({ farmers }) => {
 
   return (
     <Card className="bg-card border-border">
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between text-foreground">
+      <CardHeader className="pb-2 md:pb-6">
+        <CardTitle className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-foreground">
           <div className="flex items-center space-x-2">
             <MapPin className="w-5 h-5 text-primary" />
-            <span>Registered Farmers Map</span>
+            <span className="text-base md:text-lg">Registered Farmers Map</span>
           </div>
-          <Badge variant="outline" className="bg-primary/10 text-primary">
+          <Badge variant="outline" className="bg-primary/10 text-primary w-fit">
             <Users className="w-4 h-4 mr-1" />
             {farmers.length} Farmers
           </Badge>
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <LoadScript googleMapsApiKey={apiKey}>
+      <CardContent className="p-2 md:p-6">
+        <LoadScript 
+          googleMapsApiKey={apiKey}
+          loadingElement={
+            <div className="flex items-center justify-center h-[300px] md:h-[400px] bg-muted rounded-lg">
+              <div className="text-center">
+                <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
+                <p className="text-sm text-muted-foreground mt-2">Loading map...</p>
+              </div>
+            </div>
+          }
+        >
           <GoogleMap
-            mapContainerStyle={containerStyle}
+            mapContainerStyle={isMobile ? mobileContainerStyle : containerStyle}
             center={mapCenter}
             zoom={6}
+            onLoad={() => setIsMapLoaded(true)}
             options={{
               styles: [
                 {
@@ -162,9 +188,10 @@ const FarmersMap: React.FC<FarmersMapProps> = ({ farmers }) => {
                   stylers: [{ visibility: 'off' }]
                 }
               ],
-              mapTypeControl: true,
+              mapTypeControl: !isMobile,
               streetViewControl: false,
-              fullscreenControl: true
+              fullscreenControl: true,
+              zoomControl: true
             }}
           >
             {farmersWithCoordinates.map((farmer) => (
@@ -236,28 +263,28 @@ const FarmersMap: React.FC<FarmersMapProps> = ({ farmers }) => {
           </GoogleMap>
         </LoadScript>
 
-        <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="p-3 bg-primary/10 rounded-lg text-center">
-            <p className="text-2xl font-bold text-primary">{farmers.length}</p>
+        <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
+          <div className="p-2 md:p-3 bg-primary/10 rounded-lg text-center">
+            <p className="text-lg md:text-2xl font-bold text-primary">{farmers.length}</p>
             <p className="text-xs text-muted-foreground">Total Farmers</p>
           </div>
-          <div className="p-3 bg-blue-500/10 rounded-lg text-center">
-            <p className="text-2xl font-bold text-blue-500">
+          <div className="p-2 md:p-3 bg-blue-500/10 rounded-lg text-center">
+            <p className="text-lg md:text-2xl font-bold text-blue-500">
               {new Set(farmers.map(f => f.county).filter(Boolean)).size}
             </p>
-            <p className="text-xs text-muted-foreground">Counties Covered</p>
+            <p className="text-xs text-muted-foreground">Counties</p>
           </div>
-          <div className="p-3 bg-yellow-500/10 rounded-lg text-center">
-            <p className="text-2xl font-bold text-yellow-500">
-              {farmers.reduce((sum, f) => sum + (f.farm_size_acres || 0), 0).toFixed(1)}
+          <div className="p-2 md:p-3 bg-yellow-500/10 rounded-lg text-center">
+            <p className="text-lg md:text-2xl font-bold text-yellow-500">
+              {farmers.reduce((sum, f) => sum + (f.farm_size_acres || 0), 0).toFixed(0)}
             </p>
             <p className="text-xs text-muted-foreground">Total Acres</p>
           </div>
-          <div className="p-3 bg-purple-500/10 rounded-lg text-center">
-            <p className="text-2xl font-bold text-purple-500">
+          <div className="p-2 md:p-3 bg-purple-500/10 rounded-lg text-center">
+            <p className="text-lg md:text-2xl font-bold text-purple-500">
               {new Set(farmers.flatMap(f => f.crop_types || [])).size}
             </p>
-            <p className="text-xs text-muted-foreground">Crop Varieties</p>
+            <p className="text-xs text-muted-foreground">Crop Types</p>
           </div>
         </div>
       </CardContent>
