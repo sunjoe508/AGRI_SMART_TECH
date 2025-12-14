@@ -178,9 +178,7 @@ const FarmersMap: React.FC<FarmersMapProps> = ({ farmers }) => {
                       <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
                       <circle cx="12" cy="10" r="3" fill="white"/>
                     </svg>
-                  `),
-                  scaledSize: new window.google.maps.Size(32, 32),
-                  anchor: new window.google.maps.Point(16, 32)
+                  `)
                 }}
               />
             ))}
