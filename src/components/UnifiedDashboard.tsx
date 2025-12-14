@@ -20,6 +20,7 @@ import SensorTestingPanel from "./SensorTestingPanel";
 import DemoDataGenerator from "./DemoDataGenerator";
 import FarmRecords from "./FarmRecords";
 import EnhancedFinancialManagement from "./EnhancedFinancialManagement";
+import CustomerSupport from "./CustomerSupport";
 
 interface UnifiedDashboardProps {
   user: any;
@@ -286,6 +287,9 @@ export function UnifiedDashboard({ user, profile }: UnifiedDashboardProps) {
       case 'finances':
         return <EnhancedFinancialManagement user={user} />;
       
+      case 'support':
+        return <CustomerSupport user={user} />;
+      
       default:
         return <div className="text-center p-8">Select a section from the sidebar to get started.</div>;
     }
@@ -300,22 +304,22 @@ export function UnifiedDashboard({ user, profile }: UnifiedDashboardProps) {
           userName={profile?.full_name || 'Farmer'}
         />
         
-        <main className="flex-1 flex flex-col overflow-hidden">
-          {/* Header */}
-          <header className="h-16 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center px-6">
-            <SidebarTrigger className="mr-4" />
-            <div className="flex items-center space-x-4 flex-1">
-              <h1 className="text-xl font-semibold text-foreground">
-                AgriSmart Dashboard
+        <main className="flex-1 flex flex-col overflow-hidden min-w-0">
+          {/* Header - Mobile responsive */}
+          <header className="h-14 md:h-16 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center px-3 md:px-6 sticky top-0 z-10">
+            <SidebarTrigger className="mr-2 md:mr-4" />
+            <div className="flex items-center space-x-2 md:space-x-4 flex-1 min-w-0">
+              <h1 className="text-lg md:text-xl font-semibold text-foreground truncate">
+                AgriSmart
               </h1>
-              <div className="ml-auto">
+              <div className="ml-auto flex-shrink-0">
                 <NotificationCenter user={user} />
               </div>
             </div>
           </header>
           
-          {/* Content */}
-          <div className="flex-1 overflow-auto p-6">
+          {/* Content - Mobile responsive */}
+          <div className="flex-1 overflow-auto p-3 md:p-6">
             {renderContent()}
           </div>
         </main>

@@ -20,7 +20,8 @@ import {
   Award,
   Target,
   LogOut,
-  Map
+  Map,
+  HelpCircle
 } from "lucide-react";
 import {
   Sidebar,
@@ -55,6 +56,7 @@ export function AppSidebar({ userType, onLogout, userName }: AppSidebarProps) {
     { title: "Irrigation", url: "/?tab=irrigation", icon: Droplets },
     { title: "Reports", url: "/?tab=reports", icon: FileText },
     { title: "Profile", url: "/?tab=profile", icon: User },
+    { title: "Support", url: "/?tab=support", icon: HelpCircle },
     { title: "Mobile App", url: "/?tab=mobile", icon: Smartphone },
     { title: "Testing", url: "/?tab=testing", icon: TestTube },
     { title: "Weather", url: "/?tab=weather", icon: Thermometer },
