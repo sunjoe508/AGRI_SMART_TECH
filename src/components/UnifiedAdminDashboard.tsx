@@ -5,7 +5,6 @@ import { AppSidebar } from './AppSidebar';
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { createClient } from '@supabase/supabase-js';
 
 // Import admin components
 import HolographicStats from './HolographicStats';
@@ -152,62 +151,35 @@ export function UnifiedAdminDashboard() {
     };
   }, [adminSession, queryClient, toast]);
 
-  // Fetch admin statistics with service role access to bypass RLS
+  // Fetch admin statistics via edge function to bypass RLS securely
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['admin-stats'],
     queryFn: async () => {
-      console.log('Fetching admin stats with full database access...');
+      console.log('Fetching admin stats via edge function...');
       
       try {
-        // Create admin client with service role for full access
-        const adminSupabase = createClient(
-          'https://spcydtnihwgvziabsnjy.supabase.co',
-          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwY3lkdG5paHdndnppYWJzbmp5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MDc1MDA0MCwiZXhwIjoyMDY2MzI2MDQwfQ.Xs-qOKGwqNb6OzmF0FNOHgTtqe7Dd3t79YV9kU3c_v8',
-          {
-            auth: {
-              autoRefreshToken: false,
-              persistSession: false
-            }
-          }
-        );
-
-        const [
-          { count: totalUsers },
-          { count: totalIrrigationLogs }, 
-          { count: totalSensorData },
-          { count: totalOrders },
-          { count: totalSupportTickets },
-          { count: totalVendors },
-          { count: totalFinancialTransactions },
-          { count: totalFarmRecords },
-          { count: totalBudgets }
-        ] = await Promise.all([
-          adminSupabase.from('profiles').select('*', { count: 'exact', head: true }),
-          adminSupabase.from('irrigation_logs').select('*', { count: 'exact', head: true }),
-          adminSupabase.from('sensor_data').select('*', { count: 'exact', head: true }),
-          adminSupabase.from('orders').select('*', { count: 'exact', head: true }),
-          adminSupabase.from('support_tickets').select('*', { count: 'exact', head: true }),
-          adminSupabase.from('vendors').select('*', { count: 'exact', head: true }),
-          adminSupabase.from('financial_transactions').select('*', { count: 'exact', head: true }),
-          adminSupabase.from('farm_records').select('*', { count: 'exact', head: true }),
-          adminSupabase.from('budgets').select('*', { count: 'exact', head: true })
-        ]);
+        const { data, error } = await supabase.functions.invoke('admin-stats');
+        
+        if (error) {
+          console.error('Error fetching admin stats:', error);
+          throw error;
+        }
 
         const statsData = {
-          totalUsers: totalUsers || 0,
-          totalIrrigationLogs: totalIrrigationLogs || 0,
-          totalSensorData: totalSensorData || 0,
-          totalOrders: totalOrders || 0,
-          totalSupportTickets: totalSupportTickets || 0,
-          totalVendors: totalVendors || 0,
-          totalFinancialTransactions: totalFinancialTransactions || 0,
-          totalFarmRecords: totalFarmRecords || 0,
-          totalBudgets: totalBudgets || 0,
+          totalUsers: data?.totalUsers || 0,
+          totalIrrigationLogs: data?.totalIrrigationLogs || 0,
+          totalSensorData: data?.totalSensorReadings || 0,
+          totalOrders: data?.totalOrders || 0,
+          totalSupportTickets: data?.totalSupportTickets || 0,
+          totalVendors: 0,
+          totalFinancialTransactions: 0,
+          totalFarmRecords: data?.totalFarmRecords || 0,
+          totalBudgets: 0,
           systemHealth: Math.round((95 + Math.random() * 5) * 10) / 10,
           lastUpdated: new Date().getTime()
         };
 
-        console.log('Admin stats loaded with full access:', statsData);
+        console.log('Admin stats loaded:', statsData);
         return statsData;
       } catch (error) {
         console.error('Error fetching admin stats:', error);
@@ -230,42 +202,34 @@ export function UnifiedAdminDashboard() {
     refetchInterval: 5000
   });
 
-  // Fetch users with service role access
+  // Fetch users via edge function to bypass RLS securely
   const { data: users, isLoading: usersLoading } = useQuery({
     queryKey: ['admin-users', searchTerm],
     queryFn: async () => {
-      console.log('Fetching users with admin access and search:', searchTerm);
+      console.log('Fetching users via edge function...');
       
       try {
-        // Create admin client with service role for full access
-        const adminSupabase = createClient(
-          'https://spcydtnihwgvziabsnjy.supabase.co',
-          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwY3lkdG5paHdndnppYWJzbmp5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MDc1MDA0MCwiZXhwIjoyMDY2MzI2MDQwfQ.Xs-qOKGwqNb6OzmF0FNOHgTtqe7Dd3t79YV9kU3c_v8',
-          {
-            auth: {
-              autoRefreshToken: false,
-              persistSession: false
-            }
-          }
-        );
-
-        let query = adminSupabase
-          .from('profiles')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (searchTerm) {
-          query = query.or(`full_name.ilike.%${searchTerm}%,phone_number.ilike.%${searchTerm}%,county.ilike.%${searchTerm}%`);
-        }
-
-        const { data, error } = await query;
+        const { data, error } = await supabase.functions.invoke('admin-stats');
+        
         if (error) {
           console.error('Error fetching users:', error);
           throw error;
         }
+
+        let allUsers = data?.profiles || [];
         
-        console.log('Admin users loaded with full access:', data?.length, 'users');
-        return data;
+        // Apply client-side search filter
+        if (searchTerm) {
+          const searchLower = searchTerm.toLowerCase();
+          allUsers = allUsers.filter((user: any) => 
+            user.full_name?.toLowerCase().includes(searchLower) ||
+            user.phone_number?.toLowerCase().includes(searchLower) ||
+            user.county?.toLowerCase().includes(searchLower)
+          );
+        }
+        
+        console.log('Admin users loaded:', allUsers.length, 'users');
+        return allUsers;
       } catch (error) {
         console.error('Error in admin users query:', error);
         return [];
