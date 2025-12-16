@@ -4,8 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Shield, Sprout, Eye, EyeOff, AlertTriangle } from 'lucide-react';
+import { Shield, Sprout, Eye, EyeOff } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from 'react-router-dom';
 
@@ -89,12 +88,6 @@ const AdminLogin = () => {
             <CardDescription>Enter your admin credentials to access the dashboard</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Alert className="border-blue-200 bg-blue-50">
-              <AlertTriangle className="h-4 w-4 text-blue-600" />
-              <AlertDescription className="text-blue-800">
-                <strong>Admin Credentials:</strong> Username: joe | Password: mungai123
-              </AlertDescription>
-            </Alert>
 
             <div className="space-y-2">
               <Label htmlFor="admin-username">Username</Label>
