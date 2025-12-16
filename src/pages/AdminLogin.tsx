@@ -68,48 +68,49 @@ const AdminLogin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-100 via-indigo-50 to-blue-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-purple-100 via-indigo-50 to-blue-100 dark:from-purple-950 dark:via-indigo-950 dark:to-blue-950 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center space-x-2 mb-4">
-            <Shield className="w-10 h-10 text-purple-600" />
-            <Sprout className="w-8 h-8 text-green-600" />
+            <Shield className="w-10 h-10 text-purple-600 dark:text-purple-400" />
+            <Sprout className="w-8 h-8 text-green-600 dark:text-green-400" />
           </div>
-          <h1 className="text-3xl font-bold text-purple-800">AgriSmart Admin Portal</h1>
-          <p className="text-gray-600">Secure Administrative Access</p>
+          <h1 className="text-3xl font-bold text-purple-800 dark:text-purple-200">AgriSmart Admin Portal</h1>
+          <p className="text-gray-600 dark:text-gray-300">Secure Administrative Access</p>
         </div>
 
-        <Card className="shadow-xl border-0 bg-white/95 backdrop-blur-sm">
+        <Card className="shadow-xl border-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl text-purple-800 flex items-center justify-center space-x-2">
+            <CardTitle className="text-2xl text-purple-800 dark:text-purple-200 flex items-center justify-center space-x-2">
               <Shield className="w-6 h-6" />
               <span>Admin Login</span>
             </CardTitle>
-            <CardDescription>Enter your admin credentials to access the dashboard</CardDescription>
+            <CardDescription className="text-gray-600 dark:text-gray-400">Enter your admin credentials to access the dashboard</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
 
             <div className="space-y-2">
-              <Label htmlFor="admin-username">Username</Label>
+              <Label htmlFor="admin-username" className="text-gray-700 dark:text-gray-200">Username</Label>
               <Input
                 id="admin-username"
                 type="text"
-                placeholder="joe"
+                placeholder="Enter admin username"
                 value={formData.username}
                 onChange={(e) => handleInputChange('username', e.target.value)}
+                className="bg-white/90 dark:bg-gray-800 border-gray-300 dark:border-gray-600"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="admin-password">Password</Label>
+              <Label htmlFor="admin-password" className="text-gray-700 dark:text-gray-200">Password</Label>
               <div className="relative">
                 <Input
                   id="admin-password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Enter your admin password"
+                  placeholder="Enter admin password"
                   value={formData.password}
                   onChange={(e) => handleInputChange('password', e.target.value)}
-                  className="pr-10"
+                  className="pr-10 bg-white/90 dark:bg-gray-800 border-gray-300 dark:border-gray-600"
                 />
                 <Button
                   type="button"
@@ -119,9 +120,9 @@ const AdminLogin = () => {
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? (
-                    <EyeOff className="h-4 w-4 text-gray-400" />
+                    <EyeOff className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                   ) : (
-                    <Eye className="h-4 w-4 text-gray-400" />
+                    <Eye className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                   )}
                 </Button>
               </div>
@@ -136,16 +137,15 @@ const AdminLogin = () => {
             </Button>
 
             <div className="text-center mt-6">
-              <div className="bg-white/90 backdrop-blur-sm rounded-lg p-4 shadow-lg">
-                <p className="text-sm text-purple-800 font-semibold mb-2">🔐 Independent Admin System</p>
-                <p className="text-xs text-gray-600">
-                  This is a separate admin interface from the farmers system.
-                  All admin functions are isolated and secure.
+              <div className="bg-purple-50/90 dark:bg-purple-900/50 backdrop-blur-sm rounded-lg p-4 shadow-lg border border-purple-200 dark:border-purple-700">
+                <p className="text-sm text-purple-800 dark:text-purple-200 font-semibold mb-2">🔐 Secure Admin Portal</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400">
+                  Authorized personnel only. Contact system administrator for access.
                 </p>
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="mt-3"
+                  className="mt-3 border-purple-300 dark:border-purple-600 text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-800"
                   onClick={() => navigate('/')}
                 >
                   Back to Farmers Portal
