@@ -140,6 +140,42 @@ export function UnifiedAdminDashboard() {
       }, (payload) => {
         console.log('Irrigation change detected:', payload);
         queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
+        toast({
+          title: "🌊 Irrigation Update",
+          description: "New irrigation activity logged",
+        });
+      })
+      .subscribe();
+
+    const ordersChannel = supabase
+      .channel('admin-orders-changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'orders'
+      }, (payload) => {
+        console.log('Orders change detected:', payload);
+        queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
+        toast({
+          title: "🛒 Order Update",
+          description: "New marketplace activity",
+        });
+      })
+      .subscribe();
+
+    const supportChannel = supabase
+      .channel('admin-support-changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'support_tickets'
+      }, (payload) => {
+        console.log('Support ticket change detected:', payload);
+        queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
+        toast({
+          title: "🎫 Support Update",
+          description: "New support ticket activity",
+        });
       })
       .subscribe();
 
@@ -148,6 +184,8 @@ export function UnifiedAdminDashboard() {
       supabase.removeChannel(profilesChannel);
       supabase.removeChannel(sensorChannel);
       supabase.removeChannel(irrigationChannel);
+      supabase.removeChannel(ordersChannel);
+      supabase.removeChannel(supportChannel);
     };
   }, [adminSession, queryClient, toast]);
 
