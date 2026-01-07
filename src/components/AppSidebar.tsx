@@ -108,33 +108,33 @@ export function AppSidebar({ userType, onLogout, userName }: AppSidebarProps) {
 
   return (
     <Sidebar
-      className={collapsed ? "w-16" : "w-64"}
+      className={collapsed ? "w-14 md:w-16" : "w-56 md:w-64"}
       collapsible="icon"
     >
       <SidebarContent className="bg-background border-r">
-        {/* Header */}
-        <div className="p-4 border-b">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-primary rounded-lg">
-              <Droplets className="w-6 h-6 text-primary-foreground" />
+        {/* Header - Responsive */}
+        <div className="p-2 md:p-4 border-b">
+          <div className="flex items-center space-x-2 md:space-x-3">
+            <div className="p-1.5 md:p-2 bg-primary rounded-lg flex-shrink-0">
+              <Droplets className="w-5 h-5 md:w-6 md:h-6 text-primary-foreground" />
             </div>
             {!collapsed && (
-              <div>
-                <h2 className="text-lg font-bold text-foreground">
+              <div className="min-w-0">
+                <h2 className="text-base md:text-lg font-bold text-foreground truncate">
                   AgriSmart
                 </h2>
                 <Badge variant="secondary" className="text-xs">
-                  {userType === 'admin' ? 'Admin Portal' : 'Dashboard'}
+                  {userType === 'admin' ? 'Admin' : 'Dashboard'}
                 </Badge>
               </div>
             )}
           </div>
         </div>
 
-        {/* Navigation Groups */}
-        <SidebarGroup>
-          <SidebarGroupLabel>
-            {userType === 'admin' ? 'Admin Controls' : 'Farm Management'}
+        {/* Navigation Groups - Scrollable */}
+        <SidebarGroup className="flex-1 overflow-y-auto">
+          <SidebarGroupLabel className="text-xs md:text-sm px-2 md:px-4">
+            {userType === 'admin' ? 'Admin' : 'Farm'}
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -143,10 +143,10 @@ export function AppSidebar({ userType, onLogout, userName }: AppSidebarProps) {
                   <SidebarMenuButton asChild>
                     <NavLink 
                       to={item.url} 
-                      className={getNavClassName(isActiveNavItem(item.url))}
+                      className={`${getNavClassName(isActiveNavItem(item.url))} text-sm`}
                     >
-                      <item.icon className="w-4 h-4" />
-                      {!collapsed && <span>{item.title}</span>}
+                      <item.icon className="w-4 h-4 flex-shrink-0" />
+                      {!collapsed && <span className="truncate">{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -155,12 +155,12 @@ export function AppSidebar({ userType, onLogout, userName }: AppSidebarProps) {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* User Info & Logout */}
-        <div className="mt-auto p-4 border-t">
+        {/* User Info & Logout - Responsive */}
+        <div className="mt-auto p-2 md:p-4 border-t">
           {!collapsed && userName && (
-            <div className="mb-3 p-2 bg-accent rounded-lg">
-              <p className="text-sm font-medium text-accent-foreground">
-                Welcome back,
+            <div className="mb-2 md:mb-3 p-2 bg-accent rounded-lg">
+              <p className="text-xs md:text-sm font-medium text-accent-foreground">
+                Welcome,
               </p>
               <p className="text-xs text-muted-foreground truncate">
                 {userName}
@@ -171,7 +171,7 @@ export function AppSidebar({ userType, onLogout, userName }: AppSidebarProps) {
             onClick={onLogout}
             variant="outline"
             size="sm"
-            className="w-full"
+            className="w-full text-xs md:text-sm"
           >
             <LogOut className="w-4 h-4" />
             {!collapsed && <span className="ml-2">Logout</span>}

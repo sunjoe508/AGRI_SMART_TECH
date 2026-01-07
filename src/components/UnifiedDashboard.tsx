@@ -201,27 +201,27 @@ export function UnifiedDashboard({ user, profile }: UnifiedDashboardProps) {
     switch (currentTab) {
       case 'overview':
         return (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+            <div className="lg:col-span-2 space-y-4 md:space-y-6">
               <SensorMonitoring user={user} />
               <IrrigationCycle />
             </div>
-            <div className="space-y-6">
+            <div className="space-y-4 md:space-y-6">
               <WeatherWidget />
-              <div className="p-6 bg-card rounded-lg border">
-                <h3 className="text-lg font-semibold mb-4">Quick Stats</h3>
-                <div className="space-y-3">
+              <div className="p-4 md:p-6 bg-card rounded-lg border">
+                <h3 className="text-base md:text-lg font-semibold mb-3 md:mb-4">Quick Stats</h3>
+                <div className="space-y-2 md:space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Farm Size:</span>
-                    <span className="text-sm font-medium">{profile?.farm_size_acres || 0} acres</span>
+                    <span className="text-xs md:text-sm text-muted-foreground">Farm Size:</span>
+                    <span className="text-xs md:text-sm font-medium">{profile?.farm_size_acres || 0} acres</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Location:</span>
-                    <span className="text-sm font-medium">{profile?.county || 'Kenya'}</span>
+                    <span className="text-xs md:text-sm text-muted-foreground">Location:</span>
+                    <span className="text-xs md:text-sm font-medium truncate max-w-[120px]">{profile?.county || 'Kenya'}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Crops:</span>
-                    <span className="text-sm font-medium">{profile?.crop_types?.length || 0} types</span>
+                    <span className="text-xs md:text-sm text-muted-foreground">Crops:</span>
+                    <span className="text-xs md:text-sm font-medium">{profile?.crop_types?.length || 0} types</span>
                   </div>
                 </div>
               </div>
@@ -264,14 +264,14 @@ export function UnifiedDashboard({ user, profile }: UnifiedDashboardProps) {
       
       case 'weather':
         return (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
             <WeatherWidget />
-            <div className="p-6 bg-card rounded-lg border">
-              <h3 className="text-lg font-semibold mb-4">Weather Integration</h3>
-              <p className="text-muted-foreground mb-4">
+            <div className="p-4 md:p-6 bg-card rounded-lg border">
+              <h3 className="text-base md:text-lg font-semibold mb-3 md:mb-4">Weather Integration</h3>
+              <p className="text-muted-foreground mb-3 md:mb-4 text-sm">
                 Weather data helps optimize your irrigation and farming decisions.
               </p>
-              <div className="space-y-2 text-sm">
+              <div className="space-y-2 text-xs md:text-sm">
                 <div>• Real-time weather conditions</div>
                 <div>• 5-day weather forecast</div>
                 <div>• Rainfall predictions</div>

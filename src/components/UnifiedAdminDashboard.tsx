@@ -306,51 +306,53 @@ export function UnifiedAdminDashboard() {
     switch (currentTab) {
       case 'monitoring':
         return (
-          <div className="space-y-6">
+          <div className="space-y-4 md:space-y-6">
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Users className="w-5 h-5" />
-                  <span>Real-Time User Monitoring</span>
-                  <Badge variant="default" className="ml-2">
-                    {users?.length || 0} Users Online
+              <CardHeader className="pb-3 md:pb-6">
+                <CardTitle className="flex flex-col sm:flex-row sm:items-center gap-2 text-base md:text-lg">
+                  <div className="flex items-center space-x-2">
+                    <Users className="w-4 h-4 md:w-5 md:h-5" />
+                    <span>User Monitoring</span>
+                  </div>
+                  <Badge variant="default" className="w-fit">
+                    {users?.length || 0} Users
                   </Badge>
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
                     {users && users.length > 0 ? (
                       users.slice(0, 6).map((user) => (
-                        <div key={user.id} className="p-4 border rounded-lg bg-card">
-                          <h4 className="font-semibold text-primary">{user.full_name || 'Unknown User'}</h4>
-                          <p className="text-sm text-muted-foreground">{user.county || 'No county'}</p>
-                          <p className="text-xs text-muted-foreground">{user.phone_number || 'No phone'}</p>
-                          <p className="text-xs text-muted-foreground">{user.farm_name || 'No farm name'}</p>
-                          <div className="mt-2 flex items-center space-x-2">
-                            <Badge variant="outline" className="text-xs">
-                              {user.crop_types ? user.crop_types.join(', ') : 'No crops'}
+                        <div key={user.id} className="p-3 md:p-4 border rounded-lg bg-card">
+                          <h4 className="font-semibold text-primary text-sm md:text-base truncate">{user.full_name || 'Unknown User'}</h4>
+                          <p className="text-xs md:text-sm text-muted-foreground truncate">{user.county || 'No county'}</p>
+                          <p className="text-xs text-muted-foreground truncate">{user.phone_number || 'No phone'}</p>
+                          <p className="text-xs text-muted-foreground truncate">{user.farm_name || 'No farm name'}</p>
+                          <div className="mt-2">
+                            <Badge variant="outline" className="text-xs truncate max-w-full">
+                              {user.crop_types ? user.crop_types.slice(0, 2).join(', ') : 'No crops'}
                             </Badge>
                           </div>
                         </div>
                       ))
                     ) : (
-                      <div className="col-span-full text-center py-8">
-                        <p className="text-muted-foreground">No users found in the database</p>
+                      <div className="col-span-full text-center py-6 md:py-8">
+                        <p className="text-muted-foreground text-sm md:text-base">No users found</p>
                         <p className="text-xs text-muted-foreground mt-2">
-                          Make sure users have been registered through the main application
+                          Users must register first
                         </p>
                       </div>
                     )}
                   </div>
                   {users && users.length > 6 && (
-                    <p className="text-center text-muted-foreground">
-                      And {users.length - 6} more users...
+                    <p className="text-center text-muted-foreground text-sm">
+                      +{users.length - 6} more users
                     </p>
                   )}
-                  <div className="mt-4 p-4 border rounded-lg bg-muted/30">
-                    <p className="text-sm text-muted-foreground">
-                      <strong>Real-time Data:</strong> Total {users?.length || 0} users registered in the AgriSmart system
+                  <div className="p-3 md:p-4 border rounded-lg bg-muted/30">
+                    <p className="text-xs md:text-sm text-muted-foreground">
+                      <strong>Total:</strong> {users?.length || 0} registered users
                     </p>
                   </div>
                 </div>
@@ -361,38 +363,38 @@ export function UnifiedAdminDashboard() {
       
       case 'analytics':
         return (
-          <div className="space-y-6">
+          <div className="space-y-4 md:space-y-6">
             <SystemAnalytics />
             <Card>
-              <CardHeader>
-                <CardTitle>System Analytics Overview</CardTitle>
+              <CardHeader className="pb-3 md:pb-6">
+                <CardTitle className="text-base md:text-lg">Analytics Overview</CardTitle>
               </CardHeader>
               <CardContent>
-                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                   <div className="text-center p-4 border rounded">
-                     <h3 className="font-semibold">Total Users</h3>
-                     <p className="text-2xl font-bold text-primary">{stats?.totalUsers}</p>
-                     <p className="text-xs text-muted-foreground">Farmers registered</p>
+                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 md:gap-4">
+                   <div className="text-center p-2 md:p-4 border rounded">
+                     <h3 className="font-semibold text-xs md:text-sm">Users</h3>
+                     <p className="text-lg md:text-2xl font-bold text-primary">{stats?.totalUsers}</p>
+                     <p className="text-xs text-muted-foreground hidden sm:block">Farmers</p>
                    </div>
-                   <div className="text-center p-4 border rounded">
-                     <h3 className="font-semibold">Farm Records</h3>
-                     <p className="text-2xl font-bold text-primary">{stats?.totalFarmRecords}</p>
-                     <p className="text-xs text-muted-foreground">Records tracked</p>
+                   <div className="text-center p-2 md:p-4 border rounded">
+                     <h3 className="font-semibold text-xs md:text-sm">Records</h3>
+                     <p className="text-lg md:text-2xl font-bold text-primary">{stats?.totalFarmRecords}</p>
+                     <p className="text-xs text-muted-foreground hidden sm:block">Farm data</p>
                    </div>
-                   <div className="text-center p-4 border rounded">
-                     <h3 className="font-semibold">Sensor Data</h3>
-                     <p className="text-2xl font-bold text-primary">{stats?.totalSensorData}</p>
-                     <p className="text-xs text-muted-foreground">Data points</p>
+                   <div className="text-center p-2 md:p-4 border rounded">
+                     <h3 className="font-semibold text-xs md:text-sm">Sensors</h3>
+                     <p className="text-lg md:text-2xl font-bold text-primary">{stats?.totalSensorData}</p>
+                     <p className="text-xs text-muted-foreground hidden sm:block">Readings</p>
                    </div>
-                   <div className="text-center p-4 border rounded">
-                     <h3 className="font-semibold">Orders</h3>
-                     <p className="text-2xl font-bold text-primary">{stats?.totalOrders}</p>
-                     <p className="text-xs text-muted-foreground">Marketplace orders</p>
+                   <div className="text-center p-2 md:p-4 border rounded">
+                     <h3 className="font-semibold text-xs md:text-sm">Orders</h3>
+                     <p className="text-lg md:text-2xl font-bold text-primary">{stats?.totalOrders}</p>
+                     <p className="text-xs text-muted-foreground hidden sm:block">Total</p>
                    </div>
-                   <div className="text-center p-4 border rounded">
-                     <h3 className="font-semibold">System Health</h3>
-                     <p className="text-2xl font-bold text-green-600">{stats?.systemHealth}%</p>
-                     <p className="text-xs text-muted-foreground">System status</p>
+                   <div className="text-center p-2 md:p-4 border rounded col-span-2 sm:col-span-1">
+                     <h3 className="font-semibold text-xs md:text-sm">Health</h3>
+                     <p className="text-lg md:text-2xl font-bold text-green-600">{stats?.systemHealth}%</p>
+                     <p className="text-xs text-muted-foreground hidden sm:block">Status</p>
                    </div>
                  </div>
               </CardContent>
@@ -483,28 +485,30 @@ export function UnifiedAdminDashboard() {
       case 'support':
         return (
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <MessageSquare className="w-5 h-5" />
-                <span>Support Tickets</span>
+            <CardHeader className="pb-3 md:pb-6">
+              <CardTitle className="flex flex-col sm:flex-row sm:items-center gap-2 text-base md:text-lg">
+                <div className="flex items-center space-x-2">
+                  <MessageSquare className="w-4 h-4 md:w-5 md:h-5" />
+                  <span>Support Tickets</span>
+                </div>
                 <Badge variant="secondary">{stats?.totalSupportTickets || 0}</Badge>
               </CardTitle>
             </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="text-center p-4 border rounded">
-                      <h4 className="font-medium">Support Tickets</h4>
-                      <p className="text-2xl font-bold text-primary">{stats?.totalSupportTickets || 0}</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+                    <div className="text-center p-3 md:p-4 border rounded">
+                      <h4 className="font-medium text-sm md:text-base">Support Tickets</h4>
+                      <p className="text-xl md:text-2xl font-bold text-primary">{stats?.totalSupportTickets || 0}</p>
                     </div>
-                    <div className="text-center p-4 border rounded">
-                      <h4 className="font-medium">Financial Transactions</h4>
-                      <p className="text-2xl font-bold text-primary">{stats?.totalFinancialTransactions || 0}</p>
+                    <div className="text-center p-3 md:p-4 border rounded">
+                      <h4 className="font-medium text-sm md:text-base">Transactions</h4>
+                      <p className="text-xl md:text-2xl font-bold text-primary">{stats?.totalFinancialTransactions || 0}</p>
                     </div>
                   </div>
-                  <div className="mt-4 p-4 border rounded-lg">
-                    <p className="text-sm text-muted-foreground">
-                      All user support tickets and financial data are tracked in real-time from the unified AgriSmart database.
+                  <div className="p-3 md:p-4 border rounded-lg">
+                    <p className="text-xs md:text-sm text-muted-foreground">
+                      Real-time tracking from AgriSmart database.
                     </p>
                   </div>
                 </div>
@@ -538,49 +542,47 @@ export function UnifiedAdminDashboard() {
       case 'database':
         return (
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Database className="w-5 h-5" />
+            <CardHeader className="pb-3 md:pb-6">
+              <CardTitle className="flex items-center space-x-2 text-base md:text-lg">
+                <Database className="w-4 h-4 md:w-5 md:h-5" />
                 <span>Database Overview</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-4">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                   <div className="text-center p-4 border rounded">
-                     <h4 className="font-medium">User Profiles</h4>
-                     <p className="text-xl font-bold">{stats?.totalUsers}</p>
-                   </div>
-                   <div className="text-center p-4 border rounded">
-                     <h4 className="font-medium">Farm Records</h4>
-                     <p className="text-xl font-bold">{stats?.totalFarmRecords}</p>
-                   </div>
-                   <div className="text-center p-4 border rounded">
-                     <h4 className="font-medium">Sensor Data</h4>
-                     <p className="text-xl font-bold">{stats?.totalSensorData}</p>
-                   </div>
-                   <div className="text-center p-4 border rounded">
-                     <h4 className="font-medium">Vendors</h4>
-                     <p className="text-xl font-bold">{stats?.totalVendors}</p>
-                   </div>
-                   <div className="text-center p-4 border rounded">
-                     <h4 className="font-medium">Orders</h4>
-                     <p className="text-xl font-bold">{stats?.totalOrders}</p>
-                   </div>
-                   <div className="text-center p-4 border rounded">
-                     <h4 className="font-medium">Budgets</h4>
-                     <p className="text-xl font-bold">{stats?.totalBudgets}</p>
-                   </div>
-                   <div className="text-center p-4 border rounded">
-                     <h4 className="font-medium">Irrigation Logs</h4>
-                     <p className="text-xl font-bold">{stats?.totalIrrigationLogs}</p>
-                   </div>
-                   <div className="text-center p-4 border rounded">
-                     <h4 className="font-medium">Support Tickets</h4>
-                     <p className="text-xl font-bold">{stats?.totalSupportTickets}</p>
-                   </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-4">
+                 <div className="text-center p-2 md:p-4 border rounded">
+                   <h4 className="font-medium text-xs md:text-sm">Profiles</h4>
+                   <p className="text-lg md:text-xl font-bold">{stats?.totalUsers}</p>
                  </div>
-              </div>
+                 <div className="text-center p-2 md:p-4 border rounded">
+                   <h4 className="font-medium text-xs md:text-sm">Records</h4>
+                   <p className="text-lg md:text-xl font-bold">{stats?.totalFarmRecords}</p>
+                 </div>
+                 <div className="text-center p-2 md:p-4 border rounded">
+                   <h4 className="font-medium text-xs md:text-sm">Sensors</h4>
+                   <p className="text-lg md:text-xl font-bold">{stats?.totalSensorData}</p>
+                 </div>
+                 <div className="text-center p-2 md:p-4 border rounded">
+                   <h4 className="font-medium text-xs md:text-sm">Vendors</h4>
+                   <p className="text-lg md:text-xl font-bold">{stats?.totalVendors}</p>
+                 </div>
+                 <div className="text-center p-2 md:p-4 border rounded">
+                   <h4 className="font-medium text-xs md:text-sm">Orders</h4>
+                   <p className="text-lg md:text-xl font-bold">{stats?.totalOrders}</p>
+                 </div>
+                 <div className="text-center p-2 md:p-4 border rounded">
+                   <h4 className="font-medium text-xs md:text-sm">Budgets</h4>
+                   <p className="text-lg md:text-xl font-bold">{stats?.totalBudgets}</p>
+                 </div>
+                 <div className="text-center p-2 md:p-4 border rounded">
+                   <h4 className="font-medium text-xs md:text-sm">Irrigation</h4>
+                   <p className="text-lg md:text-xl font-bold">{stats?.totalIrrigationLogs}</p>
+                 </div>
+                 <div className="text-center p-2 md:p-4 border rounded">
+                   <h4 className="font-medium text-xs md:text-sm">Tickets</h4>
+                   <p className="text-lg md:text-xl font-bold">{stats?.totalSupportTickets}</p>
+                 </div>
+               </div>
             </CardContent>
           </Card>
         );
@@ -658,44 +660,51 @@ export function UnifiedAdminDashboard() {
           userName="Administrator"
         />
         
-        <main className="flex-1 flex flex-col overflow-hidden">
-          {/* Header */}
-          <header className="h-16 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center px-6">
-            <SidebarTrigger className="mr-4" />
-            <div className="flex items-center space-x-4 flex-1">
-              <div className="flex items-center space-x-3">
-                <Shield className="w-6 h-6 text-primary" />
-                <Globe className="w-6 h-6 text-blue-500" />
-                <div>
-                  <h1 className="text-xl font-semibold text-foreground">
-                    AgriSmart Admin Portal
+        <main className="flex-1 flex flex-col overflow-hidden min-w-0">
+          {/* Header - Fully Responsive */}
+          <header className="h-14 md:h-16 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center px-3 md:px-6 sticky top-0 z-10">
+            <SidebarTrigger className="mr-2 md:mr-4 flex-shrink-0" />
+            
+            <div className="flex items-center flex-1 min-w-0 gap-2 md:gap-4">
+              {/* Logo & Status - Hidden on mobile, visible on tablet+ */}
+              <div className="hidden sm:flex items-center space-x-2 md:space-x-3 min-w-0">
+                <Shield className="w-5 h-5 md:w-6 md:h-6 text-primary flex-shrink-0" />
+                <div className="min-w-0">
+                  <h1 className="text-base md:text-xl font-semibold text-foreground truncate">
+                    Admin Portal
                   </h1>
-                  <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                    <Cpu className="w-4 h-4" />
-                    <span>System: ONLINE</span>
+                  <div className="hidden md:flex items-center space-x-2 text-xs text-muted-foreground">
+                    <Cpu className="w-3 h-3" />
+                    <span>ONLINE</span>
                     <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                    <span>• Users: {stats?.totalUsers}</span>
-                    <span>• Health: {stats?.systemHealth}%</span>
+                    <span>• {stats?.totalUsers} Users</span>
                   </div>
                 </div>
               </div>
-              <Badge variant="default" className="ml-auto">
+              
+              {/* Mobile Title */}
+              <h1 className="sm:hidden text-base font-semibold text-foreground">Admin</h1>
+              
+              {/* Live Badge - Responsive */}
+              <Badge variant="default" className="hidden lg:flex ml-auto text-xs">
                 <Sparkles className="w-3 h-3 mr-1" />
-                LIVE DATA
+                LIVE
               </Badge>
             </div>
             
-            <div className="flex items-center space-x-4 ml-4">
+            {/* Search & Actions - Responsive */}
+            <div className="flex items-center gap-2 md:gap-3 ml-2 md:ml-4">
               <Input
-                placeholder="Search users..."
+                placeholder="Search..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-64"
+                className="w-24 sm:w-32 md:w-48 lg:w-64 text-sm"
               />
               <Button 
                 onClick={toggleVoiceCommands}
                 variant="outline"
                 size="sm"
+                className="hidden sm:flex p-2"
               >
                 {voiceEnabled ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
               </Button>
@@ -703,15 +712,16 @@ export function UnifiedAdminDashboard() {
                 onClick={activateAI}
                 variant="outline"
                 size="sm"
+                className="p-2 md:px-3"
               >
-                <Brain className="w-4 h-4 mr-2" />
-                {isAIActive ? 'AI ACTIVE' : 'ACTIVATE AI'}
+                <Brain className="w-4 h-4" />
+                <span className="hidden md:inline ml-2">{isAIActive ? 'AI ON' : 'AI'}</span>
               </Button>
             </div>
           </header>
           
-          {/* Content */}
-          <div className="flex-1 overflow-auto p-6">
+          {/* Content - Responsive padding */}
+          <div className="flex-1 overflow-auto p-3 md:p-6">
             {renderContent()}
           </div>
         </main>
