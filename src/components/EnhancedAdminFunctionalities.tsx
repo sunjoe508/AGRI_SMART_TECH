@@ -3,23 +3,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
-  Shield, 
-  Users, 
   Database, 
   Bell, 
   Settings, 
-  BarChart3, 
   Mail, 
-  MessageSquare, 
-  Download,
-  UserPlus,
   Lock,
-  Key,
   Activity,
-  Globe,
   Zap,
   Brain,
   Eye,
@@ -33,26 +24,54 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import jsPDF from 'jspdf';
 
-// Maintenance mode stored in localStorage for persistence across the app
-const MAINTENANCE_KEY = 'agrismart_maintenance_mode';
-
 const EnhancedAdminFunctionalities = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [bulkMessage, setBulkMessage] = useState('');
   const [emailSubject, setEmailSubject] = useState('');
   const [emailContent, setEmailContent] = useState('');
-  const [systemSettings, setSystemSettings] = useState({
-    maintenanceMode: localStorage.getItem(MAINTENANCE_KEY) === 'true',
-    autoBackups: true,
-    realTimeUpdates: true,
-    aiAssistant: true
+  const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [maintenanceMessage, setMaintenanceMessage] = useState('');
+
+  // Fetch and subscribe to system settings (real-time)
+  const { data: systemSettings, refetch: refetchSettings } = useQuery({
+    queryKey: ['system-settings'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('system_settings')
+        .select('*')
+        .eq('id', 'global')
+        .single();
+      if (error) throw error;
+      return data;
+    }
   });
 
-  // Sync maintenance mode to localStorage
+  // Sync local state with database
   useEffect(() => {
-    localStorage.setItem(MAINTENANCE_KEY, String(systemSettings.maintenanceMode));
-  }, [systemSettings.maintenanceMode]);
+    if (systemSettings) {
+      setMaintenanceMode(systemSettings.maintenance_mode);
+      setMaintenanceMessage(systemSettings.maintenance_message || '');
+    }
+  }, [systemSettings]);
+
+  // Real-time subscription for instant updates
+  useEffect(() => {
+    const channel = supabase
+      .channel('system-settings-admin')
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'system_settings'
+      }, () => {
+        refetchSettings();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [refetchSettings]);
 
   // Fetch system analytics
   const { data: systemAnalytics } = useQuery({
@@ -126,13 +145,31 @@ const EnhancedAdminFunctionalities = () => {
     setEmailContent('');
   };
 
-  // System maintenance functions
-  const toggleMaintenanceMode = () => {
-    const newMode = !systemSettings.maintenanceMode;
-    setSystemSettings(prev => ({ ...prev, maintenanceMode: newMode }));
+  // System maintenance functions - now uses database for real-time broadcast
+  const toggleMaintenanceMode = async () => {
+    const newMode = !maintenanceMode;
+    
+    const { error } = await supabase
+      .from('system_settings')
+      .update({ 
+        maintenance_mode: newMode,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', 'global');
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update maintenance mode",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setMaintenanceMode(newMode);
     toast({
       title: newMode ? "🟡 Maintenance Mode Enabled" : "🟢 Maintenance Mode Disabled",
-      description: newMode ? "Users will see maintenance notice" : "System is now live for all users",
+      description: newMode ? "All users will see maintenance notice instantly" : "System is now live for all users",
     });
   };
 
@@ -230,14 +267,14 @@ const EnhancedAdminFunctionalities = () => {
   return (
     <div className="space-y-6">
       {/* Maintenance Mode Banner */}
-      {systemSettings.maintenanceMode && (
+      {maintenanceMode && (
         <Card className="bg-yellow-100 dark:bg-yellow-900 border-yellow-400 dark:border-yellow-600">
           <CardContent className="p-4 flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <AlertTriangle className="w-6 h-6 text-yellow-700 dark:text-yellow-300" />
               <div>
-                <p className="font-semibold text-yellow-800 dark:text-yellow-200">Maintenance Mode Active</p>
-                <p className="text-sm text-yellow-700 dark:text-yellow-300">Users will see a maintenance notice when accessing the system</p>
+                <p className="font-semibold text-yellow-800 dark:text-yellow-200">Maintenance Mode Active (Real-time Broadcast)</p>
+                <p className="text-sm text-yellow-700 dark:text-yellow-300">All users are seeing maintenance notice instantly</p>
               </div>
             </div>
             <Button onClick={toggleMaintenanceMode} variant="outline" className="border-yellow-500 text-yellow-700 dark:text-yellow-300">
@@ -317,13 +354,13 @@ const EnhancedAdminFunctionalities = () => {
                 <Button
                   onClick={toggleMaintenanceMode}
                   className={`h-16 md:h-20 flex flex-col items-center justify-center space-y-1 md:space-y-2 text-xs md:text-sm ${
-                    systemSettings.maintenanceMode 
+                    maintenanceMode 
                       ? 'bg-destructive hover:bg-destructive/90' 
                       : 'bg-green-600 hover:bg-green-700'
                   }`}
                 >
                   <Lock className="w-5 h-5 md:w-6 md:h-6" />
-                  <span>{systemSettings.maintenanceMode ? 'Exit Maintenance' : 'Maintenance Mode'}</span>
+                  <span>{maintenanceMode ? 'Exit Maintenance' : 'Maintenance Mode'}</span>
                 </Button>
 
                 <Button
