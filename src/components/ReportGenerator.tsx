@@ -437,48 +437,48 @@ const ReportGenerator = ({ user }: ReportGeneratorProps) => {
 
   return (
     <Card className="bg-gradient-to-br from-green-50 to-blue-50 dark:from-green-900 dark:to-blue-900 border-2 border-green-200">
-      <CardHeader>
-        <CardTitle className="flex items-center space-x-2 text-green-700 dark:text-green-300">
-          <FileText className="w-6 h-6" />
-          <span>AgriSmart PDF Report Generator</span>
+      <CardHeader className="pb-3 md:pb-6">
+        <CardTitle className="flex items-center space-x-2 text-green-700 dark:text-green-300 text-base md:text-lg">
+          <FileText className="w-5 h-5 md:w-6 md:h-6" />
+          <span>PDF Report Generator</span>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Owner Info Display */}
+      <CardContent className="space-y-4 md:space-y-6">
+        {/* Owner Info Display - Responsive */}
         {profile && (
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border">
-            <h3 className="font-semibold mb-2 flex items-center space-x-2">
+          <div className="bg-white dark:bg-gray-800 p-3 md:p-4 rounded-lg border">
+            <h3 className="font-semibold mb-2 flex items-center space-x-2 text-sm md:text-base">
               <User className="w-4 h-4" />
-              <span>Farm Owner Details</span>
+              <span>Farm Owner</span>
             </h3>
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <div><strong>Name:</strong> {profile.full_name}</div>
-              <div><strong>Farm:</strong> {profile.farm_name || 'N/A'}</div>
-              <div><strong>Location:</strong> {profile.county}, {profile.ward}</div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 md:gap-2 text-xs md:text-sm">
+              <div className="truncate"><strong>Name:</strong> {profile.full_name}</div>
+              <div className="truncate"><strong>Farm:</strong> {profile.farm_name || 'N/A'}</div>
+              <div className="truncate"><strong>Location:</strong> {profile.county}, {profile.ward}</div>
               <div><strong>Size:</strong> {profile.farm_size_acres} acres</div>
             </div>
           </div>
         )}
 
-        {/* Report Type Selection */}
-        <div className="space-y-3">
-          <label className="text-sm font-medium">Select Report Type:</label>
+        {/* Report Type Selection - Responsive */}
+        <div className="space-y-2 md:space-y-3">
+          <label className="text-xs md:text-sm font-medium">Select Report Type:</label>
           <Select value={selectedReport} onValueChange={setSelectedReport}>
-            <SelectTrigger>
+            <SelectTrigger className="text-sm">
               <SelectValue placeholder="Choose report type..." />
             </SelectTrigger>
             <SelectContent>
               {[
-                { value: 'irrigation', label: 'Irrigation Report', icon: Droplets, description: 'Water usage and irrigation data' },
-                { value: 'sensor', label: 'Sensor Data Report', icon: Activity, description: 'Environmental monitoring data' },
-                { value: 'comprehensive', label: 'Comprehensive Report', icon: TrendingUp, description: 'Complete farm analysis' }
+                { value: 'irrigation', label: 'Irrigation Report', icon: Droplets, description: 'Water usage data' },
+                { value: 'sensor', label: 'Sensor Data Report', icon: Activity, description: 'Monitoring data' },
+                { value: 'comprehensive', label: 'Comprehensive Report', icon: TrendingUp, description: 'Full analysis' }
               ].map((type) => (
                 <SelectItem key={type.value} value={type.value}>
                   <div className="flex items-center space-x-2">
-                    <type.icon className="w-4 h-4" />
-                    <div>
-                      <div className="font-medium">{type.label}</div>
-                      <div className="text-xs text-gray-500">{type.description}</div>
+                    <type.icon className="w-4 h-4 flex-shrink-0" />
+                    <div className="min-w-0">
+                      <div className="font-medium text-sm">{type.label}</div>
+                      <div className="text-xs text-gray-500 truncate">{type.description}</div>
                     </div>
                   </div>
                 </SelectItem>
