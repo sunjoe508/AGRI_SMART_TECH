@@ -6,25 +6,56 @@ import { UnifiedDashboard } from "@/components/UnifiedDashboard";
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertTriangle, Wrench } from "lucide-react";
 
-const MAINTENANCE_KEY = 'agrismart_maintenance_mode';
-
 interface DashboardProps {
   user: any;
 }
 
 const Dashboard = ({ user }: DashboardProps) => {
   const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [maintenanceMessage, setMaintenanceMessage] = useState('');
 
-  // Check maintenance mode periodically
+  // Fetch system settings and subscribe to real-time changes
+  const { data: systemSettings, refetch } = useQuery({
+    queryKey: ['system-settings-user'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('system_settings')
+        .select('*')
+        .eq('id', 'global')
+        .single();
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  // Sync with database settings
   useEffect(() => {
-    const checkMaintenance = () => {
-      const isInMaintenance = localStorage.getItem(MAINTENANCE_KEY) === 'true';
-      setMaintenanceMode(isInMaintenance);
-    };
+    if (systemSettings) {
+      setMaintenanceMode(systemSettings.maintenance_mode);
+      setMaintenanceMessage(systemSettings.maintenance_message || 'System is undergoing scheduled maintenance');
+    }
+  }, [systemSettings]);
 
-    checkMaintenance();
-    const interval = setInterval(checkMaintenance, 5000);
-    return () => clearInterval(interval);
+  // Real-time subscription for instant maintenance mode updates
+  useEffect(() => {
+    const channel = supabase
+      .channel('maintenance-mode-broadcast')
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'system_settings'
+      }, (payload) => {
+        // Instant update when admin toggles maintenance mode
+        if (payload.new) {
+          setMaintenanceMode((payload.new as any).maintenance_mode);
+          setMaintenanceMessage((payload.new as any).maintenance_message || 'System is undergoing scheduled maintenance');
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   // Fetch user profile with proper error handling
@@ -63,12 +94,11 @@ const Dashboard = ({ user }: DashboardProps) => {
               System Under Maintenance
             </h1>
             <p className="text-gray-600 dark:text-gray-300 mb-6">
-              AgriSmart is currently undergoing scheduled maintenance to improve your experience. 
-              We'll be back shortly!
+              {maintenanceMessage}
             </p>
             <div className="flex items-center justify-center space-x-2 text-yellow-700 dark:text-yellow-300 bg-yellow-100 dark:bg-yellow-900/50 rounded-lg p-3">
               <AlertTriangle className="w-5 h-5" />
-              <span className="text-sm font-medium">Please check back in a few minutes</span>
+              <span className="text-sm font-medium">We'll be back shortly!</span>
             </div>
           </CardContent>
         </Card>
