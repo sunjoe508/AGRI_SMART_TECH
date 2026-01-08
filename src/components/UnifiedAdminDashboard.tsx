@@ -16,11 +16,12 @@ import EnhancedAdminFunctionalities from './EnhancedAdminFunctionalities';
 import RealTimeUserMonitoring from './RealTimeUserMonitoring';
 import FarmersMap from './FarmersMap';
 import SystemAnalytics from './SystemAnalytics';
+import AdminSupportTickets from './AdminSupportTickets';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Brain, Mic, MicOff, Database, Sparkles, Shield, Globe, Cpu, MessageSquare, Users, Map } from 'lucide-react';
+import { Brain, Mic, MicOff, Database, Sparkles, Shield, Globe, Cpu, MessageSquare, Users, Map, Ticket } from 'lucide-react';
 
 export function UnifiedAdminDashboard() {
   const [searchParams] = useSearchParams();
@@ -483,38 +484,7 @@ export function UnifiedAdminDashboard() {
         );
       
       case 'support':
-        return (
-          <Card>
-            <CardHeader className="pb-3 md:pb-6">
-              <CardTitle className="flex flex-col sm:flex-row sm:items-center gap-2 text-base md:text-lg">
-                <div className="flex items-center space-x-2">
-                  <MessageSquare className="w-4 h-4 md:w-5 md:h-5" />
-                  <span>Support Tickets</span>
-                </div>
-                <Badge variant="secondary">{stats?.totalSupportTickets || 0}</Badge>
-              </CardTitle>
-            </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
-                    <div className="text-center p-3 md:p-4 border rounded">
-                      <h4 className="font-medium text-sm md:text-base">Support Tickets</h4>
-                      <p className="text-xl md:text-2xl font-bold text-primary">{stats?.totalSupportTickets || 0}</p>
-                    </div>
-                    <div className="text-center p-3 md:p-4 border rounded">
-                      <h4 className="font-medium text-sm md:text-base">Transactions</h4>
-                      <p className="text-xl md:text-2xl font-bold text-primary">{stats?.totalFinancialTransactions || 0}</p>
-                    </div>
-                  </div>
-                  <div className="p-3 md:p-4 border rounded-lg">
-                    <p className="text-xs md:text-sm text-muted-foreground">
-                      Real-time tracking from AgriSmart database.
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-          </Card>
-        );
+        return <AdminSupportTickets />;
       
       case 'reports':
         return (

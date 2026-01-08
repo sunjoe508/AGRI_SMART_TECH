@@ -1,4 +1,3 @@
-
 {
   "name": "AgriSmart - Smart Farming App",
   "short_name": "AgriSmart",
@@ -18,28 +17,28 @@
       "type": "image/x-icon"
     },
     {
-      "src": "/placeholder.svg",
-      "type": "image/svg+xml",
+      "src": "/icon-192.png",
+      "type": "image/png",
       "sizes": "192x192",
       "purpose": "any maskable"
     },
     {
-      "src": "/placeholder.svg",
-      "type": "image/svg+xml", 
+      "src": "/icon-512.png",
+      "type": "image/png", 
       "sizes": "512x512",
       "purpose": "any maskable"
     }
   ],
   "screenshots": [
     {
-      "src": "/placeholder.svg",
-      "type": "image/svg+xml",
+      "src": "/icon-192.png",
+      "type": "image/png",
       "sizes": "540x720",
       "form_factor": "narrow"
     },
     {
-      "src": "/placeholder.svg", 
-      "type": "image/svg+xml",
+      "src": "/icon-512.png", 
+      "type": "image/png",
       "sizes": "1024x768",
       "form_factor": "wide"
     }
@@ -52,7 +51,7 @@
       "url": "/",
       "icons": [
         {
-          "src": "/placeholder.svg",
+          "src": "/icon-192.png",
           "sizes": "96x96"
         }
       ]
@@ -64,7 +63,7 @@
       "url": "/?tab=sensors",
       "icons": [
         {
-          "src": "/placeholder.svg",
+          "src": "/icon-192.png",
           "sizes": "96x96"
         }
       ]

@@ -6,12 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Sprout, Droplets, Shield, Users } from 'lucide-react';
+import { Sprout, Droplets, Shield, Eye, EyeOff } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const Login = ({ onLogin }: { onLogin: (user: any) => void }) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
   
   const loginForm = useForm({
@@ -27,63 +29,138 @@ const Login = ({ onLogin }: { onLogin: (user: any) => void }) => {
       password: '',
       confirmPassword: '',
       farmName: '',
-      role: 'farmer'
+      fullName: ''
     }
   });
 
   const handleLogin = async (data: any) => {
     setIsLoading(true);
     
-    // Demo credentials
-    const demoUsers = {
-      'farmer@demo.com': { role: 'farmer', name: 'John Farmer', farmName: 'Green Valley Farm' },
-      'admin@demo.com': { role: 'admin', name: 'Admin User', farmName: 'System Admin' }
-    };
+    try {
+      const { data: authData, error } = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: data.password
+      });
 
-    setTimeout(() => {
-      if (demoUsers[data.email as keyof typeof demoUsers] && data.password === 'demo123') {
-        const user = demoUsers[data.email as keyof typeof demoUsers];
-        onLogin({ ...user, email: data.email });
-        toast({
-          title: "🌱 Welcome to AgriSmart!",
-          description: `Logged in as ${user.role}`,
-        });
-      } else {
+      if (error) {
         toast({
           title: "❌ Login Failed",
-          description: "Use demo credentials: farmer@demo.com / admin@demo.com with password 'demo123'",
+          description: error.message,
           variant: "destructive"
         });
+        setIsLoading(false);
+        return;
       }
+
+      if (authData.user) {
+        // Fetch user profile
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', authData.user.id)
+          .single();
+
+        onLogin({
+          id: authData.user.id,
+          email: authData.user.email,
+          name: profile?.full_name || authData.user.email,
+          farmName: profile?.farm_name || 'My Farm',
+          role: 'farmer'
+        });
+
+        toast({
+          title: "🌱 Welcome to AgriSmart!",
+          description: `Logged in successfully`,
+        });
+      }
+    } catch (err: any) {
+      toast({
+        title: "❌ Login Error",
+        description: err.message || "An unexpected error occurred",
+        variant: "destructive"
+      });
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   const handleSignup = async (data: any) => {
     setIsLoading(true);
     
-    setTimeout(() => {
-      if (data.password !== data.confirmPassword) {
+    if (data.password !== data.confirmPassword) {
+      toast({
+        title: "❌ Signup Failed",
+        description: "Passwords don't match",
+        variant: "destructive"
+      });
+      setIsLoading(false);
+      return;
+    }
+
+    if (data.password.length < 6) {
+      toast({
+        title: "❌ Signup Failed",
+        description: "Password must be at least 6 characters",
+        variant: "destructive"
+      });
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const { data: authData, error } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+        options: {
+          emailRedirectTo: window.location.origin,
+          data: {
+            full_name: data.fullName,
+            farm_name: data.farmName
+          }
+        }
+      });
+
+      if (error) {
         toast({
           title: "❌ Signup Failed",
-          description: "Passwords don't match",
+          description: error.message,
           variant: "destructive"
         });
-      } else {
-        const user = { 
-          role: data.role, 
-          name: data.farmName, 
-          farmName: data.farmName, 
-          email: data.email 
-        };
-        onLogin(user);
+        setIsLoading(false);
+        return;
+      }
+
+      if (authData.user) {
+        // Create user profile
+        await supabase.from('profiles').insert({
+          user_id: authData.user.id,
+          full_name: data.fullName,
+          farm_name: data.farmName
+        });
+
+        // Auto-login since email auto-confirm is enabled
+        onLogin({
+          id: authData.user.id,
+          email: authData.user.email,
+          name: data.fullName || authData.user.email,
+          farmName: data.farmName || 'My Farm',
+          role: 'farmer'
+        });
+
         toast({
           title: "🌱 Account Created!",
           description: "Welcome to AgriSmart irrigation system",
         });
       }
+    } catch (err: any) {
+      toast({
+        title: "❌ Signup Error",
+        description: err.message || "An unexpected error occurred",
+        variant: "destructive"
+      });
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -91,7 +168,7 @@ const Login = ({ onLogin }: { onLogin: (user: any) => void }) => {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center space-x-2 mb-4">
-            <Sprout className="w-10 h-10 text-green-600" />
+            <img src="/icon-192.png" alt="AgriSmart" className="w-12 h-12 rounded-xl" />
             <h1 className="text-3xl font-bold text-green-800">AgriSmart</h1>
           </div>
           <p className="text-gray-600">Smart Irrigation for Sustainable Farming</p>
@@ -133,7 +210,7 @@ const Login = ({ onLogin }: { onLogin: (user: any) => void }) => {
                           <FormControl>
                             <Input 
                               type="email" 
-                              placeholder="farmer@demo.com"
+                              placeholder="your@email.com"
                               className="bg-green-50/50"
                               {...field} 
                             />
@@ -150,12 +227,21 @@ const Login = ({ onLogin }: { onLogin: (user: any) => void }) => {
                         <FormItem>
                           <FormLabel>Password</FormLabel>
                           <FormControl>
-                            <Input 
-                              type="password" 
-                              placeholder="demo123"
-                              className="bg-green-50/50"
-                              {...field} 
-                            />
+                            <div className="relative">
+                              <Input 
+                                type={showPassword ? "text" : "password"}
+                                placeholder="Enter your password"
+                                className="bg-green-50/50 pr-10"
+                                {...field} 
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+                              >
+                                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                              </button>
+                            </div>
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -171,19 +257,29 @@ const Login = ({ onLogin }: { onLogin: (user: any) => void }) => {
                     </Button>
                   </form>
                 </Form>
-
-                <div className="mt-6 p-4 bg-green-50 rounded-lg">
-                  <h4 className="font-semibold text-green-800 mb-2">Demo Credentials</h4>
-                  <div className="text-sm space-y-1">
-                    <p><strong>Farmer:</strong> farmer@demo.com / demo123</p>
-                    <p><strong>Admin:</strong> admin@demo.com / demo123</p>
-                  </div>
-                </div>
               </TabsContent>
 
               <TabsContent value="signup">
                 <Form {...signupForm}>
                   <form onSubmit={signupForm.handleSubmit(handleSignup)} className="space-y-4">
+                    <FormField
+                      control={signupForm.control}
+                      name="fullName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Full Name</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="John Doe"
+                              className="bg-green-50/50"
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
                     <FormField
                       control={signupForm.control}
                       name="farmName"
@@ -228,12 +324,21 @@ const Login = ({ onLogin }: { onLogin: (user: any) => void }) => {
                         <FormItem>
                           <FormLabel>Password</FormLabel>
                           <FormControl>
-                            <Input 
-                              type="password" 
-                              placeholder="Strong password"
-                              className="bg-green-50/50"
-                              {...field} 
-                            />
+                            <div className="relative">
+                              <Input 
+                                type={showPassword ? "text" : "password"}
+                                placeholder="Min 6 characters"
+                                className="bg-green-50/50 pr-10"
+                                {...field} 
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+                              >
+                                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                              </button>
+                            </div>
                           </FormControl>
                           <FormMessage />
                         </FormItem>
