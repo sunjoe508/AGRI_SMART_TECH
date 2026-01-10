@@ -1,10 +1,9 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertTriangle, Mail, Eye, EyeOff } from 'lucide-react';
+import { Shield, Mail, Eye, EyeOff } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from 'react-router-dom';
@@ -27,36 +26,6 @@ const AdminAuthForm = () => {
     return email.includes('@') && email.length > 0;
   };
 
-  const ensureAdminRole = async (userId: string) => {
-    try {
-      const { data: existingRole } = await (supabase
-        .from('admin_roles' as any)
-        .select('*')
-        .eq('user_id', userId)
-        .eq('role', 'admin')
-        .single() as any);
-
-      if (!existingRole) {
-        const { error: roleError } = await (supabase
-          .from('admin_roles' as any)
-          .insert({
-            user_id: userId,
-            role: 'admin'
-          } as any) as any);
-
-        if (roleError) {
-          console.error('Error creating admin role:', roleError);
-        } else {
-          console.log('Admin role created successfully');
-        }
-      }
-      return true;
-    } catch (error) {
-      console.error('Error in ensureAdminRole:', error);
-      return false;
-    }
-  };
-
   const handleSignIn = async () => {
     if (!formData.email || !formData.password) {
       toast({
@@ -76,17 +45,9 @@ const AdminAuthForm = () => {
       return;
     }
 
-    if (formData.email !== 'joemunga329@gmail.com') {
-      toast({
-        title: "❌ Access Denied",
-        description: "This email is not authorized for admin access.",
-        variant: "destructive"
-      });
-      return;
-    }
-
     setIsLoading(true);
     try {
+      // Authenticate with Supabase
       const { data, error } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password
@@ -114,14 +75,13 @@ const AdminAuthForm = () => {
       if (data.user) {
         console.log('User signed in:', data.user.id);
         
-        await ensureAdminRole(data.user.id);
-        
-        const { data: adminCheck, error: adminError } = await (supabase
-          .from('admin_roles' as any)
+        // Verify admin role from database - this is the secure check
+        const { data: adminCheck, error: adminError } = await supabase
+          .from('admin_roles')
           .select('role')
           .eq('user_id', data.user.id)
           .eq('role', 'admin')
-          .single() as any);
+          .single();
 
         console.log('Admin check result:', adminCheck, adminError);
 
@@ -130,7 +90,7 @@ const AdminAuthForm = () => {
           await supabase.auth.signOut();
           toast({
             title: "❌ Access Denied",
-            description: "Unable to verify admin privileges. Please contact support.",
+            description: "You do not have admin privileges. Contact system administrator.",
             variant: "destructive"
           });
           return;
@@ -185,9 +145,9 @@ const AdminAuthForm = () => {
   return (
     <div className="space-y-4">
       <Alert className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/30">
-        <AlertTriangle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+        <Shield className="h-4 w-4 text-blue-600 dark:text-blue-400" />
         <AlertDescription className="text-blue-800 dark:text-blue-200">
-          <strong>Default Admin:</strong> joemunga329@gmail.com | Password: joe123
+          <strong>Secure Admin Portal:</strong> Only users with admin roles can access this dashboard.
         </AlertDescription>
       </Alert>
 
@@ -223,7 +183,7 @@ const AdminAuthForm = () => {
           <Input
             id="admin-email"
             type="email"
-            placeholder="joemunga329@gmail.com"
+            placeholder="Enter your admin email"
             className="pl-10"
             value={formData.email}
             onChange={(e) => handleInputChange('email', e.target.value)}
