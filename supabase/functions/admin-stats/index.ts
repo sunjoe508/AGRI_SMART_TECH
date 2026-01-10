@@ -14,21 +14,62 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    // Create client for auth verification
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
+    
+    // Verify authentication
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Unauthorized - No token provided' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401
+      })
+    }
 
-    // Fetch all stats in parallel
+    const token = authHeader.replace('Bearer ', '')
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
+
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized - Invalid token' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401
+      })
+    }
+
+    // Verify admin role
+    const { data: adminRole, error: adminError } = await supabaseAdmin
+      .from('admin_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .single()
+
+    if (adminError || !adminRole) {
+      return new Response(JSON.stringify({ error: 'Forbidden - Not an admin' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 403
+      })
+    }
+
+    // Fetch all stats in parallel (only counts, not sensitive data)
     const [
       profilesResult,
       irrigationResult,
       ordersResult,
       sensorDataResult,
-      ticketsResult
+      ticketsResult,
+      transactionsResult,
+      budgetsResult,
+      activityResult
     ] = await Promise.all([
-      supabase.from('profiles').select('*', { count: 'exact' }),
-      supabase.from('irrigation_logs').select('*', { count: 'exact' }),
-      supabase.from('orders').select('*', { count: 'exact' }),
-      supabase.from('sensor_data').select('*', { count: 'exact' }),
-      supabase.from('support_tickets').select('*', { count: 'exact' })
+      supabaseAdmin.from('profiles').select('id, full_name, county, created_at', { count: 'exact' }),
+      supabaseAdmin.from('irrigation_logs').select('*', { count: 'exact' }),
+      supabaseAdmin.from('orders').select('*', { count: 'exact' }),
+      supabaseAdmin.from('sensor_data').select('*', { count: 'exact' }),
+      supabaseAdmin.from('support_tickets').select('*', { count: 'exact' }),
+      supabaseAdmin.from('financial_transactions').select('*', { count: 'exact' }),
+      supabaseAdmin.from('budgets').select('*', { count: 'exact' }),
+      supabaseAdmin.from('activity_logs').select('*', { count: 'exact' }).order('created_at', { ascending: false }).limit(100)
     ])
 
     const stats = {
@@ -37,9 +78,18 @@ Deno.serve(async (req) => {
       totalOrders: ordersResult.count || 0,
       totalSensorReadings: sensorDataResult.count || 0,
       totalSupportTickets: ticketsResult.count || 0,
-      totalFarmRecords: profilesResult.count || 0, // Using profiles as farm records proxy
+      totalTransactions: transactionsResult.count || 0,
+      totalBudgets: budgetsResult.count || 0,
+      totalFarmRecords: profilesResult.count || 0,
       activeUsers: profilesResult.data?.length || 0,
-      profiles: profilesResult.data || []
+      recentActivities: activityResult.data || [],
+      // Only return non-sensitive profile data
+      profiles: (profilesResult.data || []).map(p => ({
+        id: p.id,
+        full_name: p.full_name,
+        county: p.county,
+        created_at: p.created_at
+      }))
     }
 
     return new Response(JSON.stringify(stats), {
@@ -48,7 +98,7 @@ Deno.serve(async (req) => {
     })
   } catch (error) {
     console.error('Error fetching admin stats:', error)
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: 'Internal server error' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500
     })

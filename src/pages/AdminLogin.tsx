@@ -1,18 +1,18 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Shield, Sprout, Eye, EyeOff } from 'lucide-react';
+import { Shield, Sprout, Eye, EyeOff, Mail } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from 'react-router-dom';
+import { supabase } from "@/integrations/supabase/client";
 
 const AdminLogin = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
-    username: '',
+    email: '',
     password: ''
   });
   const { toast } = useToast();
@@ -23,19 +23,10 @@ const AdminLogin = () => {
   };
 
   const handleLogin = async () => {
-    if (!formData.username || !formData.password) {
+    if (!formData.email || !formData.password) {
       toast({
         title: "❌ Missing Information",
-        description: "Please enter both username and password",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (formData.username !== 'joe' || formData.password !== 'mungai123') {
-      toast({
-        title: "❌ Invalid Credentials",
-        description: "Please check your username and password and try again.",
+        description: "Please enter both email and password",
         variant: "destructive"
       });
       return;
@@ -43,23 +34,51 @@ const AdminLogin = () => {
 
     setIsLoading(true);
     try {
-      // Store admin session in localStorage
-      localStorage.setItem('adminSession', JSON.stringify({
-        username: formData.username,
-        loginTime: new Date().toISOString(),
-        isAdmin: true
-      }));
-
-      toast({
-        title: "🎉 Welcome Admin!",
-        description: "Successfully signed in to AgriSmart Admin Dashboard",
+      // Authenticate with Supabase - proper server-side auth
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password
       });
-      
-      navigate('/admin-dashboard');
+
+      if (error) {
+        toast({
+          title: "❌ Invalid Credentials",
+          description: "Please check your email and password and try again.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (data.user) {
+        // Verify admin role from database - secure server-side check
+        const { data: adminRole, error: adminError } = await supabase
+          .from('admin_roles')
+          .select('role')
+          .eq('user_id', data.user.id)
+          .eq('role', 'admin')
+          .single();
+
+        if (adminError || !adminRole) {
+          await supabase.auth.signOut();
+          toast({
+            title: "❌ Access Denied",
+            description: "You do not have admin privileges. Contact system administrator.",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        toast({
+          title: "🎉 Welcome Admin!",
+          description: "Successfully signed in to AgriSmart Admin Dashboard",
+        });
+        
+        navigate('/admin-dashboard');
+      }
     } catch (error: any) {
       toast({
         title: "❌ Login Error",
-        description: "An error occurred during login",
+        description: error.message || "An error occurred during login",
         variant: "destructive"
       });
     } finally {
@@ -90,15 +109,18 @@ const AdminLogin = () => {
           <CardContent className="space-y-4">
 
             <div className="space-y-2">
-              <Label htmlFor="admin-username" className="text-gray-700 dark:text-gray-200">Username</Label>
-              <Input
-                id="admin-username"
-                type="text"
-                placeholder="Enter admin username"
-                value={formData.username}
-                onChange={(e) => handleInputChange('username', e.target.value)}
-                className="bg-white/90 dark:bg-gray-800 border-gray-300 dark:border-gray-600"
-              />
+              <Label htmlFor="admin-email" className="text-gray-700 dark:text-gray-200">Email</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+                <Input
+                  id="admin-email"
+                  type="email"
+                  placeholder="Enter admin email"
+                  value={formData.email}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  className="pl-10 bg-white/90 dark:bg-gray-800 border-gray-300 dark:border-gray-600"
+                />
+              </div>
             </div>
 
             <div className="space-y-2">
