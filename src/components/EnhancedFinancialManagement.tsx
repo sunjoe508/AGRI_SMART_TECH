@@ -891,41 +891,107 @@ const EnhancedFinancialManagement = ({ user }: EnhancedFinancialManagementProps)
                 <p className="text-sm">Create a budget to track your spending</p>
               </div>
             ) : (
-              budgetUtilization.map((budget) => (
-                <Card key={budget.id} className="bg-card">
-                  <CardHeader className="pb-2">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle className="text-foreground text-base">{budget.name}</CardTitle>
-                        <p className="text-sm text-muted-foreground">{budget.category} • {budget.budget_period}</p>
+              budgetUtilization.map((budget) => {
+                const percentageUsed = Math.min(budget.percentage, 100);
+                const isOverBudget = budget.percentage > 100;
+                const isWarning = budget.percentage > 80;
+                const progressColor = isOverBudget 
+                  ? 'bg-gradient-to-r from-red-500 to-red-600' 
+                  : isWarning 
+                    ? 'bg-gradient-to-r from-yellow-500 to-orange-500'
+                    : 'bg-gradient-to-r from-green-500 to-emerald-500';
+                
+                return (
+                  <Card key={budget.id} className={`bg-card border-2 transition-all duration-300 hover:shadow-lg ${
+                    isOverBudget ? 'border-red-300 dark:border-red-800' : 
+                    isWarning ? 'border-yellow-300 dark:border-yellow-800' : 
+                    'border-green-200 dark:border-green-800'
+                  }`}>
+                    <CardHeader className="pb-2">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <CardTitle className="text-foreground text-base font-bold">{budget.name}</CardTitle>
+                          <p className="text-sm text-muted-foreground">{budget.category} • {budget.budget_period}</p>
+                        </div>
+                        <Button variant="ghost" size="icon" onClick={() => deleteBudgetMutation.mutate(budget.id)} className="hover:bg-red-100 dark:hover:bg-red-900">
+                          <Trash2 className="w-4 h-4 text-red-500" />
+                        </Button>
                       </div>
-                      <Button variant="ghost" size="icon" onClick={() => deleteBudgetMutation.mutate(budget.id)}>
-                        <Trash2 className="w-4 h-4 text-red-500" />
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      <div className="flex justify-between text-sm">
-                        <span>KES {budget.spent_amount.toLocaleString()} spent</span>
-                        <span>KES {budget.allocated_amount.toLocaleString()} allocated</span>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {/* Spending Summary */}
+                        <div className="flex justify-between items-center text-sm">
+                          <div className="flex items-center gap-2">
+                            <DollarSign className="w-4 h-4 text-muted-foreground" />
+                            <span className="font-semibold text-foreground">KES {budget.spent_amount.toLocaleString()}</span>
+                            <span className="text-muted-foreground">spent</span>
+                          </div>
+                          <span className="text-muted-foreground">of KES {budget.allocated_amount.toLocaleString()}</span>
+                        </div>
+                        
+                        {/* Enhanced Progress Bar */}
+                        <div className="relative">
+                          <div className="h-4 bg-muted rounded-full overflow-hidden shadow-inner">
+                            <div 
+                              className={`h-full rounded-full transition-all duration-500 ease-out ${progressColor} shadow-md`}
+                              style={{ width: `${percentageUsed}%` }}
+                            />
+                          </div>
+                          {/* Percentage Label on Progress */}
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <span className={`text-xs font-bold ${percentageUsed > 50 ? 'text-white' : 'text-foreground'}`}>
+                              {budget.percentage.toFixed(1)}%
+                            </span>
+                          </div>
+                        </div>
+                        
+                        {/* Status & Remaining */}
+                        <div className="flex justify-between items-center">
+                          <Badge 
+                            variant={isOverBudget ? 'destructive' : isWarning ? 'secondary' : 'default'}
+                            className={`${
+                              isOverBudget ? 'bg-red-500 hover:bg-red-600' : 
+                              isWarning ? 'bg-yellow-500 hover:bg-yellow-600 text-black' : 
+                              'bg-green-500 hover:bg-green-600'
+                            } text-white font-bold px-3 py-1`}
+                          >
+                            {isOverBudget ? '⚠️ Over Budget' : isWarning ? '⚡ High Usage' : '✓ On Track'}
+                          </Badge>
+                          <span className={`text-sm font-bold ${budget.remaining >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                            {budget.remaining >= 0 
+                              ? `KES ${budget.remaining.toLocaleString()} remaining` 
+                              : `KES ${Math.abs(budget.remaining).toLocaleString()} over`
+                            }
+                          </span>
+                        </div>
+
+                        {/* Visual Trend Indicator */}
+                        <div className="pt-2 border-t border-border">
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            {isOverBudget ? (
+                              <>
+                                <TrendingUp className="w-4 h-4 text-red-500" />
+                                <span className="text-red-500 font-medium">Exceeded allocated budget</span>
+                              </>
+                            ) : isWarning ? (
+                              <>
+                                <TrendingUp className="w-4 h-4 text-yellow-500" />
+                                <span className="text-yellow-600 dark:text-yellow-400 font-medium">Approaching budget limit</span>
+                              </>
+                            ) : (
+                              <>
+                                <TrendingDown className="w-4 h-4 text-green-500" />
+                                <span className="text-green-600 dark:text-green-400 font-medium">Spending on track</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                      <Progress 
-                        value={Math.min(budget.percentage, 100)} 
-                        className={budget.percentage > 100 ? 'bg-red-200' : 'bg-gray-200'}
-                      />
-                      <div className="flex justify-between text-sm">
-                        <Badge variant={budget.percentage > 100 ? 'destructive' : budget.percentage > 80 ? 'secondary' : 'default'}>
-                          {budget.percentage.toFixed(1)}% used
-                        </Badge>
-                        <span className={budget.remaining >= 0 ? 'text-green-600' : 'text-red-600'}>
-                          {budget.remaining >= 0 ? `KES ${budget.remaining.toLocaleString()} remaining` : `KES ${Math.abs(budget.remaining).toLocaleString()} over budget`}
-                        </span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
+                    </CardContent>
+                  </Card>
+                );
+              })
             )}
           </div>
         </TabsContent>
