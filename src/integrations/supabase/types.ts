@@ -359,6 +359,7 @@ export type Database = {
     }
     Functions: {
       generate_admin_token: { Args: never; Returns: string }
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
