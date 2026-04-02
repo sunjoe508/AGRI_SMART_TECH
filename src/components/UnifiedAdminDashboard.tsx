@@ -37,6 +37,48 @@ export function UnifiedAdminDashboard() {
 
   useEffect(() => {
     const checkAdminAuth = async () => {
+      // First check Supabase session
+      const { data: { session: supabaseSession } } = await supabase.auth.getSession();
+      
+      if (supabaseSession) {
+        // Verify admin role in database
+        const { data: adminRole } = await supabase
+          .from('admin_roles')
+          .select('*')
+          .eq('user_id', supabaseSession.user.id)
+          .eq('role', 'admin')
+          .single();
+        
+        if (adminRole) {
+          setAdminSession({
+            isAdmin: true,
+            username: 'joe',
+            email: supabaseSession.user.email,
+            userId: supabaseSession.user.id,
+            loginTime: new Date().toISOString()
+          });
+          console.log('Admin authenticated with database access');
+          
+          // Sync localStorage
+          localStorage.setItem('adminSession', JSON.stringify({
+            isAdmin: true,
+            username: 'joe',
+            email: supabaseSession.user.email,
+            userId: supabaseSession.user.id,
+            loginTime: new Date().toISOString()
+          }));
+          
+          setTimeout(() => {
+            toast({
+              title: "🚀 Admin Portal Activated",
+              description: "Connected to AgriSmart database with full access!",
+            });
+          }, 1000);
+          return;
+        }
+      }
+
+      // Fallback: check localStorage
       const session = localStorage.getItem('adminSession');
       if (!session) {
         navigate('/admin-login');
@@ -45,43 +87,12 @@ export function UnifiedAdminDashboard() {
       
       try {
         const parsedSession = JSON.parse(session);
-        if (!parsedSession.isAdmin || parsedSession.username !== 'joe') {
+        if (!parsedSession.isAdmin) {
           localStorage.removeItem('adminSession');
           navigate('/admin-login');
           return;
         }
-
-        // Check Supabase session and ensure admin access
-        const { data: { session: supabaseSession } } = await supabase.auth.getSession();
-        
-        if (supabaseSession) {
-          // Verify admin role in database
-          const { data: adminRole } = await supabase
-            .from('admin_roles')
-            .select('*')
-            .eq('user_id', supabaseSession.user.id)
-            .eq('role', 'admin')
-            .single();
-          
-          if (adminRole) {
-            setAdminSession({ ...parsedSession, userId: supabaseSession.user.id });
-            console.log('Admin authenticated with database access');
-          } else {
-            console.log('User is not an admin, using local admin session for demo');
-            setAdminSession(parsedSession);
-          }
-        } else {
-          // For demo purposes, continue with local session
-          setAdminSession(parsedSession);
-          console.log('Using local admin session for demo');
-        }
-        
-        setTimeout(() => {
-          toast({
-            title: "🚀 Admin Portal Activated",
-            description: "Connected to AgriSmart database with full access!",
-          });
-        }, 1000);
+        setAdminSession(parsedSession);
       } catch (error) {
         console.error('Admin auth error:', error);
         localStorage.removeItem('adminSession');
