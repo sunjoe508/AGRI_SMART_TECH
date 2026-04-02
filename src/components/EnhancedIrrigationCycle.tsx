@@ -38,7 +38,7 @@ const EnhancedIrrigationCycle = ({ user }: EnhancedIrrigationCycleProps) => {
   }, []);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setInterval>;
     
     if (globalStatus === 'running') {
       interval = setInterval(() => {
