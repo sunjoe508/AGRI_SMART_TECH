@@ -68,6 +68,15 @@ const AdminLogin = () => {
           return;
         }
 
+        // Set admin session in localStorage for dashboard auth check
+        localStorage.setItem('adminSession', JSON.stringify({
+          isAdmin: true,
+          username: 'joe',
+          email: data.user.email,
+          userId: data.user.id,
+          loginTime: new Date().toISOString()
+        }));
+
         toast({
           title: "🎉 Welcome Admin!",
           description: "Successfully signed in to AgriSmart Admin Dashboard",
