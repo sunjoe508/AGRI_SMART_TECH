@@ -50,7 +50,7 @@ const WeatherWidget = ({ user }: WeatherWidgetProps) => {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', user.id)
+        .eq('user_id', user.id)
         .single();
         
       if (error) {
@@ -86,8 +86,14 @@ const WeatherWidget = ({ user }: WeatherWidgetProps) => {
       let longitude = 36.8219;
       let locationName = userLocation || 'Nairobi, Kenya';
 
-      // Map counties to approximate coordinates
-      if (profile?.county) {
+      // Use profile's saved coordinates if available
+      if (profile?.latitude && profile?.longitude) {
+        latitude = Number(profile.latitude);
+        longitude = Number(profile.longitude);
+        locationName = `${profile.county || profile.ward || 'Your Farm'}, Kenya`;
+        console.log('📍 Using saved profile coordinates:', latitude, longitude);
+      } else if (profile?.county) {
+        // Fall back to county center coordinates
         const countyCoords = getCountyCoordinates(profile.county);
         latitude = countyCoords.lat;
         longitude = countyCoords.lon;
@@ -95,13 +101,13 @@ const WeatherWidget = ({ user }: WeatherWidgetProps) => {
       }
 
       try {
-        // Try to get user's precise location
+        // Try to get user's precise location from browser
         const position = await getCurrentPosition();
         latitude = position.coords.latitude;
         longitude = position.coords.longitude;
-        console.log('📍 Using user location:', latitude, longitude);
+        console.log('📍 Using live GPS location:', latitude, longitude);
       } catch (geoError) {
-        console.log('📍 Using county/default location');
+        console.log('📍 Using profile/county location');
       }
       
       const { data, error } = await supabase.functions.invoke('free-weather', {
@@ -179,7 +185,7 @@ const WeatherWidget = ({ user }: WeatherWidgetProps) => {
       'Kericho': { lat: -0.3691, lon: 35.2861 },
       'Embu': { lat: -0.5312, lon: 37.4504 },
       'Bungoma': { lat: 0.5635, lon: 34.5606 },
-      'Kirinyaga': { lat: -0.6633, lon: 37.3061 },
+      'Kirinyaga': { lat: -0.5090, lon: 37.2803 },
       'Machakos': { lat: -1.5177, lon: 37.2634 },
       'Nandi': { lat: 0.1833, lon: 35.1167 },
       'Siaya': { lat: 0.0607, lon: 34.2881 },
@@ -187,7 +193,15 @@ const WeatherWidget = ({ user }: WeatherWidgetProps) => {
       'Nyandarua': { lat: -0.3167, lon: 36.3500 },
       'Kakamega': { lat: 0.2827, lon: 34.7519 },
       'Bomet': { lat: -0.7833, lon: 35.3417 },
-      'Homa Bay': { lat: -0.5273, lon: 34.4571 }
+      'Homa Bay': { lat: -0.5273, lon: 34.4571 },
+      'Kajiado': { lat: -1.8500, lon: 36.7833 },
+      'Mombasa': { lat: -4.0435, lon: 39.6682 },
+      'Tharaka Nithi': { lat: -0.3000, lon: 37.8000 },
+      'Makueni': { lat: -1.8000, lon: 37.6167 },
+      'Kitui': { lat: -1.3667, lon: 38.0167 },
+      'Garissa': { lat: -0.4532, lon: 39.6461 },
+      'Wajir': { lat: 1.7471, lon: 40.0573 },
+      'Mandera': { lat: 3.9373, lon: 41.8569 },
     };
     
     return coordinates[county] || { lat: -1.2921, lon: 36.8219 };
