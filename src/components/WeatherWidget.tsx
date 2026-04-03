@@ -86,8 +86,14 @@ const WeatherWidget = ({ user }: WeatherWidgetProps) => {
       let longitude = 36.8219;
       let locationName = userLocation || 'Nairobi, Kenya';
 
-      // Map counties to approximate coordinates
-      if (profile?.county) {
+      // Use profile's saved coordinates if available
+      if (profile?.latitude && profile?.longitude) {
+        latitude = Number(profile.latitude);
+        longitude = Number(profile.longitude);
+        locationName = `${profile.county || profile.ward || 'Your Farm'}, Kenya`;
+        console.log('📍 Using saved profile coordinates:', latitude, longitude);
+      } else if (profile?.county) {
+        // Fall back to county center coordinates
         const countyCoords = getCountyCoordinates(profile.county);
         latitude = countyCoords.lat;
         longitude = countyCoords.lon;
@@ -95,13 +101,13 @@ const WeatherWidget = ({ user }: WeatherWidgetProps) => {
       }
 
       try {
-        // Try to get user's precise location
+        // Try to get user's precise location from browser
         const position = await getCurrentPosition();
         latitude = position.coords.latitude;
         longitude = position.coords.longitude;
-        console.log('📍 Using user location:', latitude, longitude);
+        console.log('📍 Using live GPS location:', latitude, longitude);
       } catch (geoError) {
-        console.log('📍 Using county/default location');
+        console.log('📍 Using profile/county location');
       }
       
       const { data, error } = await supabase.functions.invoke('free-weather', {
