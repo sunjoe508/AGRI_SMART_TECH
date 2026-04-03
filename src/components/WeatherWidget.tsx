@@ -50,7 +50,7 @@ const WeatherWidget = ({ user }: WeatherWidgetProps) => {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', user.id)
+        .eq('user_id', user.id)
         .single();
         
       if (error) {
