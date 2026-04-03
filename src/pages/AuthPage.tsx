@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sprout, Mail, Phone, User, Eye, EyeOff, CheckCircle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable/index";
 import { useNavigate } from 'react-router-dom';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -103,19 +104,23 @@ const AuthPage = () => {
   const signInWithGoogle = async () => {
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/`
-        }
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
       });
-      
-      if (error) throw error;
-      
+
+      if (result.error) {
+        throw result.error;
+      }
+
+      if (result.redirected) {
+        return;
+      }
+
       toast({
         title: "🌱 Welcome to AgriSmart!",
-        description: "Signing in with Google...",
+        description: "Successfully signed in with Google!",
       });
+      navigate('/');
     } catch (error: any) {
       toast({
         title: "❌ Authentication Error",

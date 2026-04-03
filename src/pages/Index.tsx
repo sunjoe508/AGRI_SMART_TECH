@@ -346,6 +346,7 @@ const Index = () => {
               <a href="#" className="hover:text-green-400 transition-colors">Privacy Policy</a>
               <a href="#" className="hover:text-green-400 transition-colors">Terms of Service</a>
               <a href="#" className="hover:text-green-400 transition-colors">Cookie Policy</a>
+              <Link to="/admin-login" className="hover:text-purple-400 transition-colors">Admin Portal</Link>
             </div>
           </div>
         </div>

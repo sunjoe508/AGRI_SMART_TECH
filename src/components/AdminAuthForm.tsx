@@ -6,6 +6,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Shield, Mail, Eye, EyeOff } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable/index";
 import { useNavigate } from 'react-router-dom';
 
 const AdminAuthForm = () => {
@@ -127,19 +128,52 @@ const AdminAuthForm = () => {
   const signInWithGoogle = async () => {
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/admin-auth?verify=admin`
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin + '/admin-auth',
+      });
+
+      if (result.error) {
+        throw result.error;
+      }
+
+      if (result.redirected) {
+        return;
+      }
+
+      // After Google sign-in, verify admin role
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: adminCheck, error: adminError } = await supabase
+          .from('admin_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .eq('role', 'admin')
+          .single();
+
+        if (adminError || !adminCheck) {
+          await supabase.auth.signOut();
+          toast({
+            title: "❌ Access Denied",
+            description: "You do not have admin privileges. Contact system administrator.",
+            variant: "destructive"
+          });
+          return;
         }
-      });
-      
-      if (error) throw error;
-      
-      toast({
-        title: "🔐 Admin Google Sign In",
-        description: "Signing in with Google...",
-      });
+
+        localStorage.setItem('adminSession', JSON.stringify({
+          isAdmin: true,
+          username: 'joe',
+          email: user.email,
+          userId: user.id,
+          loginTime: new Date().toISOString()
+        }));
+
+        toast({
+          title: "🎉 Welcome Admin!",
+          description: "Successfully signed in with Google",
+        });
+        navigate('/admin-dashboard');
+      }
     } catch (error: any) {
       toast({
         title: "❌ Authentication Error",
