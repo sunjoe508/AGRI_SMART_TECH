@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sprout, Mail, Phone, User, Eye, EyeOff, CheckCircle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable/index";
 import { useNavigate } from 'react-router-dom';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
