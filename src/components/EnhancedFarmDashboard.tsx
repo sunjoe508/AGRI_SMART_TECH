@@ -35,7 +35,7 @@ const EnhancedFarmDashboard = ({ user }: EnhancedFarmDashboardProps) => {
       const [irrigationResult, sensorResult, profileResult] = await Promise.all([
         supabase.from('irrigation_logs' as any).select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(10) as any,
         supabase.from('sensor_data' as any).select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(50) as any,
-        supabase.from('profiles' as any).select('*').eq('id', user.id).single() as any
+        supabase.from('profiles' as any).select('*').eq('user_id', user.id).single() as any
       ]);
 
       const irrigationData = irrigationResult.data || [];
