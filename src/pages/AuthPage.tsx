@@ -30,6 +30,24 @@ const AuthPage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  // Redirect if already authenticated (handles OAuth callback)
+  React.useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        navigate('/', { replace: true });
+      }
+    });
+
+    // Also check current session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        navigate('/', { replace: true });
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
   const kenyanCounties = [
     'Nairobi', 'Kiambu', 'Nakuru', 'Meru', 'Kisumu', 'Mombasa', 
     'Uasin Gishu', 'Murang\'a', 'Nyeri', 'Machakos', 'Kajiado',

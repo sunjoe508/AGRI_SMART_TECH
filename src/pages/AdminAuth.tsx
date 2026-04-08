@@ -16,6 +16,47 @@ const AdminAuth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Handle OAuth callback - when Google redirects back, check admin role and redirect
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        // Verify admin role
+        const { data: adminCheck, error: adminError } = await supabase
+          .from('admin_roles')
+          .select('role')
+          .eq('user_id', session.user.id)
+          .eq('role', 'admin')
+          .single();
+
+        if (adminError || !adminCheck) {
+          await supabase.auth.signOut();
+          toast({
+            title: "❌ Access Denied",
+            description: "You do not have admin privileges. Contact system administrator.",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        localStorage.setItem('adminSession', JSON.stringify({
+          isAdmin: true,
+          username: 'joe',
+          email: session.user.email,
+          userId: session.user.id,
+          loginTime: new Date().toISOString()
+        }));
+
+        toast({
+          title: "🎉 Welcome Admin!",
+          description: "Successfully signed in with Google",
+        });
+        navigate('/admin-dashboard', { replace: true });
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate, toast]);
+
   // Check for password reset flow
   useEffect(() => {
     const checkPasswordReset = async () => {
@@ -26,7 +67,6 @@ const AdminAuth = () => {
       if (accessToken && refreshToken && type === 'recovery') {
         setIsResettingPassword(true);
         
-        // Set the session with the tokens
         const { error } = await supabase.auth.setSession({
           access_token: accessToken,
           refresh_token: refreshToken
