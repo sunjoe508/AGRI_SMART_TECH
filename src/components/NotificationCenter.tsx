@@ -104,15 +104,16 @@ const NotificationCenter = ({ user }: NotificationCenterProps) => {
         filter: `user_id=eq.${user.id}`,
       }, (payload) => {
         const a = payload.new as any;
-        setNotifications(prev => [{
+        const newNotif: Notification = {
           id: a.id,
-          type: 'info',
+          type: 'info' as const,
           title: a.activity_type?.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) || 'Activity',
           message: a.activity_description,
           timestamp: new Date(a.created_at),
           read: false,
           source: 'activity',
-        }, ...prev].slice(0, 20));
+        };
+        setNotifications(prev => [newNotif, ...prev].slice(0, 20));
       })
       .subscribe();
 
@@ -125,15 +126,16 @@ const NotificationCenter = ({ user }: NotificationCenterProps) => {
         filter: `user_id=eq.${user.id}`,
       }, (payload) => {
         const t = payload.new as any;
-        setNotifications(prev => [{
+        const ticketNotif: Notification = {
           id: `ticket-${t.id}-${Date.now()}`,
-          type: t.status === 'resolved' ? 'success' : 'info',
+          type: (t.status === 'resolved' ? 'success' : 'info') as Notification['type'],
           title: `Ticket ${t.status === 'resolved' ? 'Resolved' : 'Updated'}`,
           message: `Your ticket "${t.subject}" is now ${t.status?.replace('_', ' ')}`,
           timestamp: new Date(),
           read: false,
           source: 'ticket',
-        }, ...prev].slice(0, 20));
+        };
+        setNotifications(prev => [ticketNotif, ...prev].slice(0, 20));
 
         toast({
           title: "🎫 Ticket Updated",
