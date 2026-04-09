@@ -2,7 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Users, Wheat } from 'lucide-react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, CircleMarker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -56,6 +56,32 @@ const countyCoordinates: Record<string, { lat: number; lng: number }> = {
   'Nyeri': { lat: -0.4167, lng: 36.9500 },
   'Kirinyaga': { lat: -0.5000, lng: 37.3000 },
   'Embu': { lat: -0.5333, lng: 37.4500 },
+  'Nyandarua': { lat: -0.3833, lng: 36.5167 },
+  'Muranga': { lat: -0.7167, lng: 37.1500 },
+  'Laikipia': { lat: 0.3606, lng: 36.7819 },
+  'Nandi': { lat: 0.1833, lng: 35.1000 },
+  'Kericho': { lat: -0.3692, lng: 35.2863 },
+  'Bungoma': { lat: 0.5636, lng: 34.5608 },
+  'Trans Nzoia': { lat: 1.0167, lng: 34.9500 },
+  'Kakamega': { lat: 0.2827, lng: 34.7519 },
+  'Bomet': { lat: -0.7817, lng: 35.3427 },
+  'Elgeyo Marakwet': { lat: 0.8333, lng: 35.5000 },
+};
+
+// Color coding: intensity based on farmer count per county
+const getCountyColor = (count: number): string => {
+  if (count >= 10) return '#15803d'; // green-700 - very active
+  if (count >= 5) return '#22c55e';  // green-500 - active
+  if (count >= 3) return '#f59e0b';  // amber-500 - moderate
+  if (count >= 1) return '#3b82f6';  // blue-500 - low
+  return '#94a3b8';                   // slate-400
+};
+
+const getCountyOpacity = (count: number): number => {
+  if (count >= 10) return 0.5;
+  if (count >= 5) return 0.4;
+  if (count >= 3) return 0.35;
+  return 0.25;
 };
 
 const FitBounds = ({ positions }: { positions: [number, number][] }) => {
@@ -80,11 +106,26 @@ const FarmersMap: React.FC<FarmersMapProps> = ({ farmers }) => {
       const offset = index * 0.01;
       return {
         ...farmer,
-        lat: coords.lat + (Math.random() - 0.5) * 0.1 + offset * 0.001,
-        lng: coords.lng + (Math.random() - 0.5) * 0.1 + offset * 0.001
+        lat: coords.lat + (Math.random() - 0.5) * 0.08 + offset * 0.001,
+        lng: coords.lng + (Math.random() - 0.5) * 0.08 + offset * 0.001
       };
     });
   }, [farmers]);
+
+  // Group farmers by county for color-coded circles
+  const countyGroups = useMemo(() => {
+    const groups: Record<string, { count: number; coords: { lat: number; lng: number }; farmers: typeof farmersWithCoordinates }> = {};
+    farmersWithCoordinates.forEach(f => {
+      const county = f.county || 'Unknown';
+      if (!groups[county]) {
+        const coords = countyCoordinates[county] || { lat: f.lat, lng: f.lng };
+        groups[county] = { count: 0, coords, farmers: [] };
+      }
+      groups[county].count++;
+      groups[county].farmers.push(f);
+    });
+    return groups;
+  }, [farmersWithCoordinates]);
 
   const mapCenter = useMemo((): [number, number] => {
     if (farmersWithCoordinates.length === 0) return defaultCenter;
@@ -110,6 +151,15 @@ const FarmersMap: React.FC<FarmersMapProps> = ({ farmers }) => {
         </CardTitle>
       </CardHeader>
       <CardContent className="p-2 md:p-6">
+        {/* Legend */}
+        <div className="flex flex-wrap gap-3 mb-3 text-xs">
+          <span className="font-semibold text-muted-foreground">Activity Level:</span>
+          <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-green-700 inline-block"></span> Very Active (10+)</span>
+          <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-green-500 inline-block"></span> Active (5-9)</span>
+          <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-amber-500 inline-block"></span> Moderate (3-4)</span>
+          <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-blue-500 inline-block"></span> Low (1-2)</span>
+        </div>
+
         <div className="rounded-lg overflow-hidden" style={{ height: '400px' }}>
           <MapContainer center={mapCenter} zoom={6} style={{ height: '100%', width: '100%' }} scrollWheelZoom={true}>
             <TileLayer
@@ -117,6 +167,33 @@ const FarmersMap: React.FC<FarmersMapProps> = ({ farmers }) => {
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
             {positions.length > 0 && <FitBounds positions={positions} />}
+
+            {/* Color-coded county circles */}
+            {Object.entries(countyGroups).map(([county, group]) => (
+              <CircleMarker
+                key={`county-${county}`}
+                center={[group.coords.lat, group.coords.lng]}
+                radius={Math.min(15 + group.count * 3, 40)}
+                pathOptions={{
+                  color: getCountyColor(group.count),
+                  fillColor: getCountyColor(group.count),
+                  fillOpacity: getCountyOpacity(group.count),
+                  weight: 2,
+                }}
+              >
+                <Popup>
+                  <div className="min-w-[160px]">
+                    <h3 className="font-bold text-sm">{county} County</h3>
+                    <p className="text-xs mt-1"><strong>{group.count}</strong> registered farmer{group.count !== 1 ? 's' : ''}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Total acres: {group.farmers.reduce((s, f) => s + (f.farm_size_acres || 0), 0).toFixed(0)}
+                    </p>
+                  </div>
+                </Popup>
+              </CircleMarker>
+            ))}
+
+            {/* Individual farmer markers */}
             {farmersWithCoordinates.map((farmer) => (
               <Marker key={farmer.id} position={[farmer.lat!, farmer.lng!]} icon={greenIcon}>
                 <Popup>

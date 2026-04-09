@@ -222,9 +222,9 @@ export function UnifiedAdminDashboard() {
           totalOrders: data?.totalOrders || 0,
           totalSupportTickets: data?.totalSupportTickets || 0,
           totalVendors: 0,
-          totalFinancialTransactions: 0,
+          totalFinancialTransactions: data?.totalTransactions || 0,
           totalFarmRecords: data?.totalFarmRecords || 0,
-          totalBudgets: 0,
+          totalBudgets: data?.totalBudgets || 0,
           systemHealth: Math.round((95 + Math.random() * 5) * 10) / 10,
           lastUpdated: new Date().getTime()
         };
