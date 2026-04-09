@@ -1,9 +1,10 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Bell, X, CheckCircle, AlertTriangle, Info, Droplets, Ticket, DollarSign, Activity } from 'lucide-react';
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Bell, X, CheckCircle, AlertTriangle, Info, Ticket, Check } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -25,6 +26,18 @@ const NotificationCenter = ({ user }: NotificationCenterProps) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const { toast } = useToast();
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close on outside click
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [isOpen]);
 
   // Load real notifications from activity_logs and support_tickets
   useEffect(() => {
@@ -32,7 +45,6 @@ const NotificationCenter = ({ user }: NotificationCenterProps) => {
 
     const loadNotifications = async () => {
       try {
-        // Fetch recent activity logs
         const { data: activities } = await supabase
           .from('activity_logs')
           .select('*')
@@ -40,7 +52,6 @@ const NotificationCenter = ({ user }: NotificationCenterProps) => {
           .order('created_at', { ascending: false })
           .limit(10);
 
-        // Fetch recent ticket updates
         const { data: tickets } = await supabase
           .from('support_tickets')
           .select('*')
@@ -50,7 +61,6 @@ const NotificationCenter = ({ user }: NotificationCenterProps) => {
 
         const notifs: Notification[] = [];
 
-        // Convert activities to notifications
         activities?.forEach((a) => {
           let type: Notification['type'] = 'info';
           if (a.activity_type?.includes('irrigation')) type = 'success';
@@ -69,7 +79,6 @@ const NotificationCenter = ({ user }: NotificationCenterProps) => {
           });
         });
 
-        // Convert ticket status changes to notifications
         tickets?.forEach((t) => {
           if (t.status !== 'open') {
             notifs.push({
@@ -84,7 +93,6 @@ const NotificationCenter = ({ user }: NotificationCenterProps) => {
           }
         });
 
-        // Sort by timestamp
         notifs.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
         setNotifications(notifs.slice(0, 15));
       } catch (err) {
@@ -94,7 +102,6 @@ const NotificationCenter = ({ user }: NotificationCenterProps) => {
 
     loadNotifications();
 
-    // Realtime subscriptions for live notifications
     const activityChannel = supabase
       .channel('user-activity-notifs')
       .on('postgres_changes', {
@@ -106,7 +113,7 @@ const NotificationCenter = ({ user }: NotificationCenterProps) => {
         const a = payload.new as any;
         const newNotif: Notification = {
           id: a.id,
-          type: 'info' as const,
+          type: 'info',
           title: a.activity_type?.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) || 'Activity',
           message: a.activity_description,
           timestamp: new Date(a.created_at),
@@ -136,7 +143,6 @@ const NotificationCenter = ({ user }: NotificationCenterProps) => {
           source: 'ticket',
         };
         setNotifications(prev => [ticketNotif, ...prev].slice(0, 20));
-
         toast({
           title: "🎫 Ticket Updated",
           description: `Your ticket "${t.subject}" status: ${t.status?.replace('_', ' ')}`,
@@ -165,12 +171,32 @@ const NotificationCenter = ({ user }: NotificationCenterProps) => {
   };
 
   const getIcon = (type: string, source?: string) => {
-    if (source === 'ticket') return <Ticket className="w-5 h-5 text-orange-500" />;
+    if (source === 'ticket') return <Ticket className="w-4 h-4" />;
     switch (type) {
-      case 'success': return <CheckCircle className="w-5 h-5 text-green-500" />;
-      case 'warning': return <AlertTriangle className="w-5 h-5 text-yellow-500" />;
-      case 'error': return <AlertTriangle className="w-5 h-5 text-red-500" />;
-      default: return <Info className="w-5 h-5 text-blue-500" />;
+      case 'success': return <CheckCircle className="w-4 h-4" />;
+      case 'warning': return <AlertTriangle className="w-4 h-4" />;
+      case 'error': return <AlertTriangle className="w-4 h-4" />;
+      default: return <Info className="w-4 h-4" />;
+    }
+  };
+
+  const getTypeColor = (type: string, source?: string) => {
+    if (source === 'ticket') return 'text-orange-500 bg-orange-100 dark:bg-orange-900/40';
+    switch (type) {
+      case 'success': return 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/40';
+      case 'warning': return 'text-amber-600 bg-amber-100 dark:bg-amber-900/40';
+      case 'error': return 'text-red-600 bg-red-100 dark:bg-red-900/40';
+      default: return 'text-blue-600 bg-blue-100 dark:bg-blue-900/40';
+    }
+  };
+
+  const getBorderColor = (type: string, source?: string) => {
+    if (source === 'ticket') return 'border-l-orange-500';
+    switch (type) {
+      case 'success': return 'border-l-emerald-500';
+      case 'warning': return 'border-l-amber-500';
+      case 'error': return 'border-l-red-500';
+      default: return 'border-l-blue-500';
     }
   };
 
@@ -181,108 +207,136 @@ const NotificationCenter = ({ user }: NotificationCenterProps) => {
     if (mins < 60) return `${mins}m ago`;
     const hrs = Math.floor(mins / 60);
     if (hrs < 24) return `${hrs}h ago`;
+    const days = Math.floor(hrs / 24);
+    if (days < 7) return `${days}d ago`;
     return date.toLocaleDateString();
   };
 
   return (
-    <div className="relative">
+    <div className="relative" ref={dropdownRef}>
+      {/* Bell Button */}
       <Button
-        variant="default"
-        size="default"
+        variant="ghost"
+        size="icon"
         onClick={() => setIsOpen(!isOpen)}
-        className="relative bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 border-0 px-4 py-2"
+        className="relative h-10 w-10 rounded-full hover:bg-accent"
       >
-        <Bell className={`w-5 h-5 ${unreadCount > 0 ? 'animate-pulse' : ''}`} />
-        <span className="ml-2 font-semibold hidden sm:inline">Alerts</span>
+        <Bell className={`w-5 h-5 text-foreground ${unreadCount > 0 ? 'animate-[ring_0.5s_ease-in-out_infinite]' : ''}`} />
         {unreadCount > 0 && (
-          <Badge className="absolute -top-2 -right-2 w-6 h-6 p-0 flex items-center justify-center text-xs bg-red-600 text-white border-2 border-white shadow-md animate-bounce">
-            {unreadCount}
-          </Badge>
+          <span className="absolute -top-0.5 -right-0.5 flex h-5 w-5 items-center justify-center">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-destructive/60"></span>
+            <span className="relative inline-flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </span>
+          </span>
         )}
       </Button>
 
+      {/* Dropdown Panel */}
       {isOpen && (
-        <Card className="absolute right-0 top-14 w-[340px] sm:w-96 max-h-[500px] overflow-hidden shadow-2xl z-50 border-2 border-amber-200 dark:border-amber-800 bg-gradient-to-b from-card to-card/95 backdrop-blur-sm">
-          <CardHeader className="pb-3 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950 dark:to-orange-950 border-b border-amber-200 dark:border-amber-800">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Bell className="w-5 h-5 text-amber-600" />
-                <CardTitle className="text-lg font-bold text-foreground">Notifications</CardTitle>
-                {unreadCount > 0 && (
-                  <Badge className="bg-red-500 text-white text-xs">{unreadCount} new</Badge>
-                )}
-              </div>
-              <div className="flex items-center space-x-2">
-                {unreadCount > 0 && (
-                  <Button variant="outline" size="sm" onClick={markAllAsRead} className="text-xs hover:bg-amber-100 dark:hover:bg-amber-900">
-                    Mark all read
-                  </Button>
-                )}
-                <Button variant="ghost" size="sm" onClick={() => setIsOpen(false)} className="hover:bg-red-100 dark:hover:bg-red-900">
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="p-0 max-h-[380px] overflow-y-auto">
-            {notifications.length === 0 ? (
-              <div className="p-8 text-center text-muted-foreground">
-                <Bell className="w-12 h-12 mx-auto mb-3 opacity-50 text-amber-400" />
-                <p className="text-lg font-medium">No notifications</p>
-                <p className="text-sm">Activity will appear here as you use the system</p>
-              </div>
-            ) : (
-              <div className="divide-y divide-border">
-                {notifications.map((notification) => (
-                  <div
-                    key={notification.id}
-                    onClick={() => markAsRead(notification.id)}
-                    className={`p-4 hover:bg-muted/50 transition-all duration-200 cursor-pointer ${
-                      !notification.read ? 'bg-gradient-to-r from-amber-50/80 to-orange-50/80 dark:from-amber-950/50 dark:to-orange-950/50 border-l-4 border-l-amber-500' : ''
-                    }`}
+        <div className="absolute right-0 top-12 z-[100] w-[360px] max-w-[calc(100vw-1rem)] animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-200">
+          <Card className="shadow-2xl border border-border overflow-hidden">
+            {/* Header */}
+            <CardHeader className="px-4 py-3 border-b bg-muted/50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Bell className="w-4 h-4 text-primary" />
+                  <CardTitle className="text-sm font-semibold">Notifications</CardTitle>
+                  {unreadCount > 0 && (
+                    <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-5">
+                      {unreadCount} new
+                    </Badge>
+                  )}
+                </div>
+                <div className="flex items-center gap-1">
+                  {unreadCount > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={markAllAsRead}
+                      className="h-7 text-xs text-muted-foreground hover:text-foreground gap-1"
+                    >
+                      <Check className="w-3 h-3" />
+                      Read all
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsOpen(false)}
+                    className="h-7 w-7 rounded-full"
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-start space-x-3 flex-1">
-                        <div className={`p-2 rounded-full flex-shrink-0 ${
-                          notification.type === 'success' ? 'bg-green-100 dark:bg-green-900/50' :
-                          notification.type === 'warning' ? 'bg-yellow-100 dark:bg-yellow-900/50' :
-                          notification.type === 'error' ? 'bg-red-100 dark:bg-red-900/50' :
-                          'bg-blue-100 dark:bg-blue-900/50'
-                        }`}>
+                    <X className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+
+            {/* Content */}
+            <CardContent className="p-0">
+              {notifications.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+                  <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
+                    <Bell className="w-6 h-6 text-muted-foreground" />
+                  </div>
+                  <p className="text-sm font-medium text-foreground">All caught up!</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    New activity will appear here
+                  </p>
+                </div>
+              ) : (
+                <ScrollArea className="max-h-[400px]">
+                  <div className="divide-y divide-border">
+                    {notifications.map((notification) => (
+                      <div
+                        key={notification.id}
+                        onClick={() => markAsRead(notification.id)}
+                        className={`flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors hover:bg-muted/50 border-l-[3px] ${
+                          !notification.read
+                            ? `bg-muted/30 ${getBorderColor(notification.type, notification.source)}`
+                            : 'border-l-transparent'
+                        }`}
+                      >
+                        {/* Icon */}
+                        <div className={`mt-0.5 flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${getTypeColor(notification.type, notification.source)}`}>
                           {getIcon(notification.type, notification.source)}
                         </div>
+
+                        {/* Text */}
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-2">
-                            <h4 className="text-sm font-bold text-foreground truncate">
+                          <div className="flex items-center gap-2">
+                            <span className={`text-sm font-medium truncate ${!notification.read ? 'text-foreground' : 'text-muted-foreground'}`}>
                               {notification.title}
-                            </h4>
+                            </span>
                             {!notification.read && (
-                              <span className="w-3 h-3 bg-amber-500 rounded-full animate-pulse flex-shrink-0 shadow-lg shadow-amber-500/50"></span>
+                              <span className="flex-shrink-0 w-2 h-2 rounded-full bg-primary" />
                             )}
                           </div>
-                          <p className="text-sm text-muted-foreground mt-1 leading-relaxed line-clamp-2">
+                          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2 leading-relaxed">
                             {notification.message}
                           </p>
-                          <p className="text-xs text-muted-foreground/70 mt-2 font-medium">
+                          <span className="text-[10px] text-muted-foreground/60 mt-1 block">
                             {formatTime(notification.timestamp)}
-                          </p>
+                          </span>
                         </div>
+
+                        {/* Dismiss */}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => { e.stopPropagation(); removeNotification(notification.id); }}
+                          className="flex-shrink-0 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
+                        >
+                          <X className="w-3 h-3" />
+                        </Button>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => { e.stopPropagation(); removeNotification(notification.id); }}
-                        className="p-1 h-auto hover:bg-red-100 dark:hover:bg-red-900 rounded-full flex-shrink-0"
-                      >
-                        <X className="w-4 h-4 text-muted-foreground hover:text-red-500" />
-                      </Button>
-                    </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                </ScrollArea>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       )}
     </div>
   );
